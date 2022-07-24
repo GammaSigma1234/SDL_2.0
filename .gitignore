@@ -1,3 +1,7 @@
-.vscode/settings.json
+# Visual Studio Code
+# .vscode/settings.json
 
 *.exe
+
+# Vario
+Commit_Message.md

@@ -1,4 +1,4 @@
-/* Settings.json backup. The original settings.json is not versioned for ease of use. */
+// Settings.json backup. The original settings.json is usually not versioned for ease of use.
 
 {
   "window.title": "${dirty}${activeEditorShort}${separator}${rootName}${separator}${appName} ${separator} [Branch: master]"

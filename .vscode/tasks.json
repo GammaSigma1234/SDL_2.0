@@ -1,10 +1,25 @@
 {
   "version": "2.0.0",
-  "tasks": 
+  "tasks":
   [
+    {
+      "label": "TrimTrailingWhitespace",
+      "command": "${command:editor.action.trimTrailingWhitespace}",
+      "type": "shell",
+      "problemMatcher": []
+    },
+
+    {
+      "label": "SaveAllFiles",
+      "command": "${command:workbench.action.files.saveAll}",
+      "type": "shell",
+      "problemMatcher": []
+    },
+
     {
       "label": "BUILD with batch file in current folder",
       "type": "shell",
+      "dependsOn": [ "TrimTrailingWhitespace", "SaveAllFiles" ],
       "command": "${fileDirname}/Build.bat",
       "args": [],
       "options": { "cwd": "${fileDirname}" },
@@ -16,6 +31,7 @@
     {
       "label": "CLEAN with batch file in current folder",
       "type": "shell",
+      "dependsOn": [ "TrimTrailingWhitespace", "SaveAllFiles" ],
       "command": "${fileDirname}/Build.bat -c",
       "args": [],
       "options": { "cwd": "${fileDirname}" },
@@ -27,12 +43,25 @@
     {
       "label": "Run executable",
       "type": "shell",
+      "dependsOn": [ "TrimTrailingWhitespace", "SaveAllFiles" ],
       "command": "${fileDirname}\\Run.bat",
       "args": [],
       "options": { "cwd": "${fileDirname}" },
       "problemMatcher": "$gcc",
       "group": "none",
       "detail": "Batch script"
-    }
+    },
+
+    {
+      "label": "Open Windows Terminal",
+      "type": "shell",
+      "command": "C:\\Users\\giova\\AppData\\Local\\microsoft\\windowsapps\\wt.exe -d \"${fileDirname}\"",
+      "args": [],
+      "options": { "cwd": "${fileDirname}" },
+      "problemMatcher": "$gcc",
+      "group": "none",
+      "detail": "Open Windows Terminal in the same folder of the open file"
+    },
+
   ] // tasks
 }

@@ -1,4 +1,10 @@
+@REM By GS - Settembre 2021 - Rivisitato Lug 2022
+
 @echo off
+
+@REM Assign global variables from TXT file
+for /f "delims== tokens=1,2 skip=2" %%G in (..\Global_Variables_For_Batch_Files.txt) do set %%G=%%H
+
 cls
 echo.
 
@@ -6,67 +12,37 @@ echo.
 if %1.==-c. goto Clean
 
 
-@REM Setting path to SDL2 Development Tools
-if not defined SDL_PATH (
-  goto Path_Not_Defined
-) else (
-  goto Path_Defined
-)
-
-:Path_Not_Defined
-  echo Setting path to SDL2 Development Tools...
+@REM Build executable
+if exist %SDL2_PROJECT_NAME%.exe (
+  echo %SDL2_PROJECT_NAME%.exe already exists. Deleting...
   echo.
-  set SDL_PATH=D:/Dati/SDL2-2.0.16/x86_64-w64-mingw32/
-  goto Path_End
-
-:Path_Defined
-  echo Already set: %SDL_PATH%
-  echo.
-
-:Path_End
-
-
-@REM Setting path to SDL2.dll dynamic library
-if not defined PATH_DLL_IS_OK (
-  goto Path_SDL2_Add
-) else (
-  goto Path_SDL2_No_Add
-)
-
-:Path_SDL2_Add
-  echo Adding path to SDL2.dll...
-  echo.
-  SET PATH=%PATH%;D:/Dati/SDL2-2.0.16/x86_64-w64-mingw32/bin
-  SET PATH_DLL_IS_OK=1
-  goto Path_SDL2_End
-
-:Path_SDL2_No_Add
-  echo Path to SDL2.dll already added
-  echo.
-
-:Path_SDL2_End
-
-
-@REM Building executable
-if exist 01_hello_SDL.exe (
-  echo 01_hello_SDL.exe already exists. Deleting...
-  echo.
-  del 01_hello_SDL.exe
+  del %SDL2_PROJECT_NAME%.exe
 ) else (
   echo.
 )
 
 
-echo Building...
+echo Building executable...
 echo.
 
-g++ 01_hello_SDL.cpp -I%SDL_PATH%include/SDL2 -L%SDL_PATH%lib -w -Wl,-subsystem,windows -lmingw32 -lSDL2main -lSDL2 -o 01_hello_SDL
+g++ %SDL2_PROJECT_NAME%.cpp -I%SDL2_LATEST_VER_ROOT%\%SDL2_INCLUDE_PATH% -L%SDL2_LATEST_VER_ROOT%\%SDL2_LIB_PATH% -w %SDL2_LINKER_OPTIONS% %SDL2_LIBRARIES% -o %SDL2_PROJECT_NAME%.exe
+
+IF %ERRORLEVEL% EQU 0 (
+  echo.
+  echo [32mCompilation was successful![0m
+  echo.
+) else (
+  echo.
+  echo [31m*** Error ***[0m
+  echo.
+  echo Compilation errors were encountered.
+)
 exit /b
 
 
 :Clean
   echo Cleaning artifacts...
   echo.
-  del 01_hello_SDL.exe
+  del %SDL2_PROJECT_NAME%.exe
   echo Done.
   echo.

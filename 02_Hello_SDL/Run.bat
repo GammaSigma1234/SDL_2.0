@@ -3,7 +3,7 @@
 @echo off
 
 @REM Assign project's name
-set SDL2_PROJECT_NAME=01_hello_SDL
+set SDL2_PROJECT_NAME=02_getting_an_image_on_the_screen
 
 @REM Assign global variables from TXT file
 for /f "delims== tokens=1,2 skip=2" %%G in (..\Global_Variables_For_Batch_Files.txt) do set %%G=%%H

@@ -2,8 +2,6 @@ Do not modify this line! This file is a repository for all the environment varia
 
 SDL2_LATEST_VER_ROOT=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32
 SDL2_DLL_LATEST_VER_DIR=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32\bin
-SDL2_PROJECT_NAME=01_hello_SDL
 SDL2_INCLUDE_PATH=include\SDL2
 SDL2_LIB_PATH=lib
-SDL2_LINKER_OPTIONS=-Wl,-subsystem,windows
 SDL2_LIBRARIES=-lmingw32 -lSDL2main -lSDL2

@@ -1,15 +1,13 @@
 /**
- * @file 02_getting_an_image_on_the_screen.cpp
+ * @file 03_event_driven_programming.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/02_getting_an_image_on_the_screen/index.php
+ * @brief https://lazyfoo.net/tutorials/SDL/03_event_driven_programming/index.php
  *
- * Lievemente modificato da GS.
- *
- * - Per avviare il nostro programma, dobbiamo creare una finestra.
- * - Per visualizzare qualcosa in quella finestra, dobbiamo poterne manipolare la superficie.
- * - Se vogliamo ad esempio visualizzare un immagine bitmap nella superficie della finestra,
- *   dobbiamo creare un'altra superficie, su cui caricheremo l'immagine, e "blittare" la
- *   superficie contenente l'immagine sulla superficie della finestra.
+ * Nel main loop while( !quit ) continuiamo a fare l'update dell'immagine da visualizzare, cioè il
+ * sistema sta continuamente ridisegnando la superficie della finestra. Essendo una procedura molto
+ * veloce, l'occhio umano non se ne accorge. Negli esempi precedenti non c'era un ciclo while, bensì
+ * l'immagine veniva disegnata una volta, e poi congelata per alcuni secondi mediante
+ * SDL_Delay(...).
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
  * redistributed without written permission.
@@ -30,8 +28,11 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int SCREEN_WIDTH  = 640;
-static constexpr int SCREEN_HEIGHT = 480;
+static constexpr int    SCREEN_WIDTH  = 640;
+static constexpr int    SCREEN_HEIGHT = 480;
+static constexpr size_t ONE_SECOND_S  = 1;
+static constexpr size_t WAIT_TIME_S   = 3;    // How long to wait (in seconds) in case of error messages
+static constexpr size_t MS_IN_S       = 1000; // Milliseconds in a second
 
 
 /***************************************************************************************************
@@ -41,6 +42,7 @@ static constexpr int SCREEN_HEIGHT = 480;
 static bool init(void);
 static bool loadMedia(void);
 static void close(void);
+static void ErrorTimer(void);
 
 
 /***************************************************************************************************
@@ -48,9 +50,9 @@ static void close(void);
 ****************************************************************************************************/
 
 static SDL_Window*  gWindow        = NULL; // The window we'll be rendering to
-static SDL_Surface* gWindowSurface = NULL; // The surface contained by the window
-static SDL_Surface* gHelloWorld    = NULL; // The image we will load and show on the screen
-static const char*  Image          = ".\\hello_world.bmp"; // The path to the image to be loaded
+static SDL_Surface* gScreenSurface = NULL; // The surface contained by the window
+static SDL_Surface* gXOut          = NULL; // The image we will load and show on the screen
+static const char*  Image          = "x.bmp";
 
 
 /***************************************************************************************************
@@ -73,7 +75,7 @@ static bool init(void)
   {
     printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
     success = false;
-    SDL_Delay(3000);
+    ErrorTimer();
   }
   else
   {
@@ -84,12 +86,12 @@ static bool init(void)
     {
       printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
       success = false;
-      SDL_Delay(3000);
+      ErrorTimer();
     }
     else
     {
       // Get window surface
-      gWindowSurface = SDL_GetWindowSurface( gWindow );
+      gScreenSurface = SDL_GetWindowSurface( gWindow );
     }
   }
 
@@ -109,13 +111,12 @@ static bool loadMedia(void)
   bool success = true;
 
   // Load splash image
-  gHelloWorld = SDL_LoadBMP( Image );
-
-  if( gHelloWorld == NULL )
+  gXOut = SDL_LoadBMP( Image );
+  if( gXOut == NULL )
   {
     printf( "Unable to load image %s! SDL Error: %s\n", Image, SDL_GetError() );
     success = false;
-    SDL_Delay(3000);
+    ErrorTimer();
   }
 
   return success;
@@ -128,8 +129,8 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Deallocate surface
-  SDL_FreeSurface( gHelloWorld );
-  gHelloWorld = NULL;
+  SDL_FreeSurface( gXOut );
+  gXOut = NULL;
 
   // Destroy window
   SDL_DestroyWindow( gWindow );
@@ -137,6 +138,18 @@ static void close(void)
 
   // Quit SDL subsystems
   SDL_Quit();
+}
+
+
+static void ErrorTimer(void)
+{
+  for (size_t i = 0; i != WAIT_TIME_S; ++i)
+  {
+    printf(".");
+    SDL_Delay(ONE_SECOND_S * MS_IN_S);
+  }
+
+  printf("\n");
 }
 
 
@@ -150,7 +163,7 @@ int main( int argc, char* args[] )
   if( !init() )
   {
     printf( "Failed to initialize!\n" );
-    SDL_Delay(3000);
+    ErrorTimer();
   }
   else
   {
@@ -158,18 +171,38 @@ int main( int argc, char* args[] )
     if( !loadMedia() )
     {
       printf( "Failed to load media!\n" );
-      SDL_Delay(3000);
+			ErrorTimer();
     }
     else
     {
-      // Apply the image
-      SDL_BlitSurface( gHelloWorld, NULL, gWindowSurface, NULL );
+      // Main loop flag
+      bool quit = false;
 
-      // Update the surface
-      SDL_UpdateWindowSurface( gWindow );
+      // Event handler
+      SDL_Event e;
 
-      // Wait two seconds
-      SDL_Delay( 2000 );
+      // While application is running (main loop)
+      while( !quit )
+      {
+        // Handle events on queue (event loop)
+        // If events queue is empty, returns 0
+        while( SDL_PollEvent( &e ) != 0 )
+        {
+          // User requests quit
+          if( e.type == SDL_QUIT )
+          {
+            quit = true;
+          }
+					else
+					{;} // Continue running program
+        }
+
+        // Apply the image
+        SDL_BlitSurface( gXOut, NULL, gScreenSurface, NULL );
+
+        // Update the surface
+        SDL_UpdateWindowSurface( gWindow );
+      }
     }
   }
 

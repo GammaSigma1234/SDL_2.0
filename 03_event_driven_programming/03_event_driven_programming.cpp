@@ -30,6 +30,7 @@
 // Screen dimension constants
 static constexpr int    SCREEN_WIDTH  = 640;
 static constexpr int    SCREEN_HEIGHT = 480;
+
 static constexpr size_t ONE_SECOND_S  = 1;
 static constexpr size_t WAIT_TIME_S   = 3;    // How long to wait (in seconds) in case of error messages
 static constexpr size_t MS_IN_S       = 1000; // Milliseconds in a second
@@ -141,6 +142,10 @@ static void close(void)
 }
 
 
+/**
+ * @brief Used to keep the console open for a short time when an error message is displayed, to
+ * allow the user to read it before the console automatically closes.
+ **/
 static void ErrorTimer(void)
 {
   for (size_t i = 0; i != WAIT_TIME_S; ++i)

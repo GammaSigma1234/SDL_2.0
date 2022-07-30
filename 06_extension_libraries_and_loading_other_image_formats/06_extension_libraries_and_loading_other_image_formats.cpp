@@ -1,6 +1,6 @@
 /**
  * @file 06_extension_libraries_and_loading_other_image_formats.cpp
- * 
+ *
  * https://lazyfoo.net/tutorials/SDL/06_extension_libraries_and_loading_other_image_formats/index.php
  *
  * @brief Now that we're using SDL_image, we need to initialize it. Here we want to initialize

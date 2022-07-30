@@ -43,7 +43,7 @@ static constexpr size_t MS_IN_S       = 1000; // Milliseconds in a second
 static bool init(void);
 static bool loadMedia(void);
 static void close(void);
-static void ErrorTimer(void);
+static void ErrorTimer(void); // Esperimento by GS - Abbandonata negli esempi successivi
 
 
 /***************************************************************************************************
@@ -51,7 +51,7 @@ static void ErrorTimer(void);
 ****************************************************************************************************/
 
 static SDL_Window*  gWindow        = NULL; // The window we'll be rendering to
-static SDL_Surface* gScreenSurface = NULL; // The surface contained by the window
+static SDL_Surface* gWindowSurface = NULL; // The surface contained by the window
 static SDL_Surface* gXOut          = NULL; // The image we will load and show on the screen
 static const char*  Image          = "x.bmp";
 
@@ -63,8 +63,7 @@ static const char*  Image          = "x.bmp";
 /**
  * @brief Starts up SDL and creates window
  *
- * @return true
- * @return false
+ * @return true in case of success; false otherwise
  **/
 static bool init(void)
 {
@@ -74,27 +73,44 @@ static bool init(void)
   // Initialize SDL
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
-    printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
+    printf( "\nSDL could not initialize! SDL_Error: %s", SDL_GetError() );
     success = false;
     ErrorTimer();
   }
   else
   {
+    printf( "\nSDL initialised" );
+
     // Create window
     gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
-      printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
+      printf( "\nWindow could not be created! SDL_Error: %s", SDL_GetError() );
       success = false;
       ErrorTimer();
     }
     else
     {
+      printf( "\nWindow created" );
+
       // Get window surface
-      gScreenSurface = SDL_GetWindowSurface( gWindow );
-    }
-  }
+      gWindowSurface = SDL_GetWindowSurface( gWindow );
+
+      if( gWindowSurface == NULL )
+      {
+        printf( "\nSurface could not be created! SDL_Error: %s", SDL_GetError() );
+        success = false;
+        SDL_Delay(3000);
+      }
+      else
+      {
+        printf( "\nSurface created" );
+      }
+
+    } // Window created
+
+  } // SDL initialised
 
   return success;
 }
@@ -103,8 +119,7 @@ static bool init(void)
 /**
  * @brief Loads media
  *
- * @return true
- * @return false
+ * @return true in case of success; false otherwise
  **/
 static bool loadMedia(void)
 {
@@ -113,11 +128,16 @@ static bool loadMedia(void)
 
   // Load splash image
   gXOut = SDL_LoadBMP( Image );
+
   if( gXOut == NULL )
   {
-    printf( "Unable to load image %s! SDL Error: %s\n", Image, SDL_GetError() );
+    printf( "\nUnable to load image %s! SDL Error: %s", Image, SDL_GetError() );
     success = false;
     ErrorTimer();
+  }
+  else
+  {
+    printf( "\nImage \"%s\" loaded", Image );
   }
 
   return success;
@@ -164,22 +184,30 @@ static void ErrorTimer(void)
 
 int main( int argc, char* args[] )
 {
+  bool HasProgramSucceeded = true;
+
   // Start up SDL and create window
   if( !init() )
   {
-    printf( "Failed to initialize!\n" );
+    printf( "\nFailed to initialize!" );
+    HasProgramSucceeded = false;
     ErrorTimer();
   }
   else
   {
+    printf( "\nSDL initialised" );
+
     // Load media
     if( !loadMedia() )
     {
-      printf( "Failed to load media!\n" );
+      printf( "\nFailed to load media!" );
+      HasProgramSucceeded = false;
 			ErrorTimer();
     }
     else
     {
+      printf( "\nAll media have been loaded" );
+
       // Main loop flag
       bool quit = false;
 
@@ -203,16 +231,33 @@ int main( int argc, char* args[] )
         }
 
         // Apply the image
-        SDL_BlitSurface( gXOut, NULL, gScreenSurface, NULL );
+        SDL_BlitSurface( gXOut, NULL, gWindowSurface, NULL );
+        // printf( "\nSurface blitted" ); // Commentata perché continua a ripetere (è in un ciclo while!)
 
         // Update the surface
         SDL_UpdateWindowSurface( gWindow );
+        // printf( "\nWindow's surface updated" ); // Commentata perché continua a ripetere (è in un ciclo while!)
       }
-    }
-  }
+
+    } // All media loaded
+
+  } // SDL initialised
 
   // Free resources and close SDL
   close();
+
+  // Integrity check - Questi messaggi saranno leggibili solo grazie all'uso di SDL_Delay.
+  // Nei prossimi esempi si userà una funzione di nome "PressEnter".
+  if ( HasProgramSucceeded == true )
+  {
+    printf("\nProgram ended successfully! Exiting in a few seconds...\n");
+    SDL_Delay(2000);
+  }
+  else
+  {
+    printf("\nThere was a problem during the execution of the program!\n");
+    SDL_Delay(2000);
+  }
 
   return 0;
 }

@@ -2,15 +2,17 @@
 
 @echo off
 
-@REM Assign project's name
-set SDL2_PROJECT_NAME=05_optimized_surface_loading_and_soft_stretching
-
-@REM Assign global variables from TXT file
-for /f "delims== tokens=1,2 skip=2" %%G in (..\Global_Variables_For_Batch_Files.txt) do set %%G=%%H
-
 cls
 echo Starting program in %cd%...
 echo.
+
+
+@REM Set temporary environment variables
+set SDL2_PROJECT_NAME=05_optimized_surface_loading_and_soft_stretching
+set SDL2_DLL_LATEST_VER_PATH=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32\bin
+
+@REM Assign global variables from TXT file
+@REM for /f "delims== tokens=1,2 skip=2" %%G in (..\Global_Variables_For_Batch_Files.txt) do set %%G=%%H
 
 @REM Check whether path to SDL2.dll dynamic library is already present
 if not defined PATH_TO_DLL_IS_PRESENT (
@@ -22,7 +24,7 @@ if not defined PATH_TO_DLL_IS_PRESENT (
 :Path_SDL2_Add
   echo Adding path to SDL2.dll...
   echo.
-  SET PATH=%PATH%;%SDL2_DLL_LATEST_VER_DIR%
+  SET PATH=%PATH%;%SDL2_DLL_LATEST_VER_PATH%
   SET PATH_TO_DLL_IS_PRESENT=1
   goto Path_SDL2_End
 

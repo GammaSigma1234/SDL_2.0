@@ -1,7 +1,30 @@
 /**
- * @file 07_texture_loading_and_rendering_IMG_LoadTexture.cpp
+ * @file 09_the_viewport.cpp
  *
- * @brief Come il precedente, ma con l'uso di "IMG_LoadTexture".
+ * @brief https:// lazyfoo.net/tutorials/SDL/09_the_viewport/index.php
+ *
+ * Sometimes you only want to render part of the screen for things like minimaps. Using the
+ * viewport you can control where you render on the screen.
+ *
+ * After we clear the screen, it's time to get drawing. There are 3 regions we're going to draw a full
+ * screen image to.
+ *
+ * First we're going to render the top left. This is as easy as creating a rectangle with half the
+ * width/height as the screen, and passing this region to SDL_RenderSetViewport. Any rendering done
+ * after that call (usando "SDL_RenderPresent"? NdGS) will render inside the region defined by the
+ * given viewport. It will also use the coordinate system of the window it was created in, so the
+ * bottom of the view we created will still be y = 480 even though it's only 240 pixels down from
+ * the top.
+ *
+ * Then we define the top right area and draw to it. It's pretty much the same as before, only now
+ * the x coordinate is half the screen over.
+ *
+ * Finally we render one more time in the bottom half of the screen. Again, the viewport will use
+ * the same coordinate system as the window it is used in, so the image will appear squished since
+ * the viewport is half the height.
+ *
+ * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
+ * and may not be redistributed without written permission.
  **/
 
 
@@ -9,7 +32,7 @@
 * Includes
 ****************************************************************************************************/
 
-// Using SDL, SDL_image, standard IO, and strings
+// Using SDL, SDL_image, standard I/O, and strings
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
@@ -23,7 +46,7 @@
 // Screen dimension constants
 static constexpr int         SCREEN_WIDTH  = 640;
 static constexpr int         SCREEN_HEIGHT = 480;
-static const     std::string TexturePath("texture.png");
+static const     std::string TexturePath("viewport.png");
 
 
 /***************************************************************************************************
@@ -142,7 +165,7 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Load PNG texture
+  // Load texture
   gTexture = loadTexture( TexturePath );
 
   if( gTexture == NULL )
@@ -181,15 +204,14 @@ static void close(void)
 
 
 /**
- * @brief Loads individual image as texture. Versione modificata rispetto all'altro esempio 07. Fa
- * uso di "IMG_LoadTexture", che risparmia di dover creare una texture temporanea per poi
- * eliminarla.
+ * @brief Loads individual image as texture.
  *
  * @param path The path to the image.
  * @return SDL_Surface* Pointer to the loaded image.
  **/
 static SDL_Texture* loadTexture( std::string path )
 {
+  // The final texture
   SDL_Texture* newTexture = NULL;
 
   newTexture = IMG_LoadTexture( gRenderer, path.c_str() );
@@ -266,16 +288,54 @@ int main( int argc, char* args[] )
         }
 
         // Clear screen
+        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
         SDL_RenderClear( gRenderer );
+
+        // Top left corner viewport
+        SDL_Rect topLeftViewport;
+        topLeftViewport.x = 0;
+        topLeftViewport.y = 0;
+        topLeftViewport.w = SCREEN_WIDTH / 2;
+        topLeftViewport.h = SCREEN_HEIGHT / 2;
+        SDL_RenderSetViewport( gRenderer, &topLeftViewport );
 
         // Render texture to screen
         SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
 
+
+        // Top right viewport
+        SDL_Rect topRightViewport;
+        topRightViewport.x = SCREEN_WIDTH / 2;
+        topRightViewport.y = 0;
+        topRightViewport.w = SCREEN_WIDTH / 2;
+        topRightViewport.h = SCREEN_HEIGHT / 2;
+        SDL_RenderSetViewport( gRenderer, &topRightViewport );
+
+        // Render texture to screen
+        SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
+
+
+        // Bottom viewport
+        SDL_Rect bottomViewport;
+        bottomViewport.x = 0;
+        bottomViewport.y = SCREEN_HEIGHT / 2;
+        bottomViewport.w = SCREEN_WIDTH;
+        bottomViewport.h = SCREEN_HEIGHT / 2;
+        SDL_RenderSetViewport( gRenderer, &bottomViewport );
+
+
+        // Render texture to screen
+        SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
+
+
         // Update screen
         SDL_RenderPresent( gRenderer );
-      }
-    }
-  }
+
+      } // event loop
+
+    } // media loaded
+
+  } // SDL initialised
 
   // Free resources and close SDL
   close();

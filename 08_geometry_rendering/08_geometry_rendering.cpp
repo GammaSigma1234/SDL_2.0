@@ -283,7 +283,7 @@ static void PressEnter(void)
 {
   int UserChoice = '\0';
 
-  printf("\nPress ENTER to exit...");
+  printf("\nPress ENTER to continue...");
 
   while ( ( UserChoice = getchar() ) != '\n' )
   {;}

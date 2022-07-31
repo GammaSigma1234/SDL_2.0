@@ -21,9 +21,9 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-constexpr    int         SCREEN_WIDTH  = 640;
-constexpr    int         SCREEN_HEIGHT = 480;
-static const std::string TexturePath("texture.png");
+static constexpr int         SCREEN_WIDTH  = 640;
+static constexpr int         SCREEN_HEIGHT = 480;
+static const     std::string TexturePath("texture.png");
 
 
 /***************************************************************************************************
@@ -33,6 +33,7 @@ static const std::string TexturePath("texture.png");
 static bool init(void);
 static bool loadMedia(void);
 static void close(void);
+static void PressEnter(void);
 
 static SDL_Texture* loadTexture( std::string path );
 
@@ -170,7 +171,7 @@ static void close(void)
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
   SDL_DestroyWindow( gWindow );
-  gWindow = NULL;
+  gWindow   = NULL;
   gRenderer = NULL;
 
   // Quit SDL subsystems
@@ -224,6 +225,8 @@ static void PressEnter(void)
 int main( int argc, char* args[] )
 {
   bool HasProgramSucceeded = true;
+
+  printf("\n*** Debugging console ***\n");
 
   // Start up SDL and create window
   if( !init() )

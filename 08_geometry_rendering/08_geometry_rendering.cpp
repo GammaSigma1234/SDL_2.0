@@ -1,46 +1,55 @@
 /**
- * @file 07_texture_loading_and_rendering.cpp
+ * @file 08_geometry_rendering.cpp
  *
- * @brief This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
+ * https://lazyfoo.net/tutorials/SDL/08_geometry_rendering/index.php
  *
- * Textures in SDL have their own data type, intuitively called an "SDL_Texture". When we deal with
- * SDL textures, you need an "SDL_Renderer" object to render it to the screen, which is why we
- * declare a global renderer named "gRenderer".
+ * @brief Along with the new texturing API, SDL has new primitive rendering calls as part of its
+ * rendering API. So, if you need some basic shapes rendered and you don't want to create additional
+ * graphics for them, SDL can save you the effort.
  *
- * We have a new image loading routine ("loadTexture") and a globally declared texture ("gTexture")
- * we're going to load.
+ * In our media loading function, we load no media. SDL's primitive rendering allows you to render
+ * shapes without loading special graphics.
  *
- * After we create our window, we have to create a renderer for our window, so we can render textures
- * on it. This is easily done with a call to "SDL_CreateRenderer".
+ * At the top of the main loop we handle the quit event as before, and clear the screen. Also notice
+ * that we're setting the clearing color to white with "SDL_SetRenderDrawColor" every frame as
+ * opposed to setting it once in the initialization function. We'll cover why this happens when we
+ * get to the end of the main loop.
  *
- * After creating the renderer, we want to initialize the rendering color using
- * "SDL_SetRenderDrawColor". This controls what color is used for various rendering operations.
+ * The first primitive we're going to draw is a fill rectangle, which is a solid rectangle.
  *
- * Our texture loading function looks largely the same as the earlier "loadSurface", only now
- * instead of converting the loaded surface to the display format, we create a texture from the
- * loaded surface using "SDL_CreateTextureFromSurface". As before, this function creates a new
- * texture from an existing surface, which means like before we have to free the loaded surface and
- * then return the loaded texture.
+ * First we define a rectangle to define the area we want to fill with color. If you have never seen
+ * a struct initialized like this, know that the member variables that make up an SDL rect are x, y,
+ * w, and h for the x position, y position, width, and height respectively. You can initialize a
+ * struct by giving it an array of variables in the order they are in the struct. Here we're setting
+ * the rectangle one quarter of the screen width in the x direction, one quarter of the screen
+ * height in the y direction, and with half the screen's width/height.
  *
- * Since texture loading is abstracted with our image loading function, the "loadMedia" function
- * works pretty much the same as before.
+ * After defining the rectangle area, we set the rendering color with SDL_SetRenderDrawColor. This
+ * function takes in the renderer for the window we're using and the RGBA values for the color we
+ * want to render with. R is the red component, G is green, B is blue, and A is alpha. Alpha
+ * controls how opaque something is and we'll cover that in the transparency tutorial. These values
+ * go from 0 to 255 (or FF hex as you see above) and are mixed together to create all the colors you
+ * see on your screen. This call to SDL_SetRenderDrawColor sets the drawing color to opaque red.
  *
- * In our clean up function, we have to remember to deallocate our textures using
- * "SDL_DestroyTexture".
+ * After the rectangle and color have been set, SDL_RenderFillRect is called to draw the rectangle.
  *
- * In the main loop after the event loop, we call "SDL_RenderClear". This function fills the screen
- * with the color that was last set with "SDL_SetRenderDrawColor".
+ * You can also draw a rectangle outline with an empty center using SDL_RenderDrawRect. As you can
+ * see it pretty much works the same as a solid filled rectangle as this piece of code is almost the
+ * same as the one above it. The major difference is that this rectangle is 2 thirds of the screen
+ * in size and that the color we're using here is green.
  *
- * With the screen cleared, we render the texture with "SDL_RenderCopy". With the texture rendered, we
- * still have to update the screen, but since we're not using "SDL_Surfaces" to render, we can't use
- * "SDL_UpdateWindowSurface". Instead we have to use "SDL_RenderPresent".
+ * Also if you mess with the position of the rectangle, you may notice something strange about the y
+ * coordinate. Making the y coordinate larger makes it go down and making the y coordinate smaller
+ * makes it go up. This is because SDL and many 2D rendering APIs use a different coordinate system.
  *
- * Now, there is a new API call called "IMG_LoadTexture". It's not in the official documentation as of
- * this writing, but you can find it in the SDL_image header files. It allows you to load a texture
- * without having to create a temporary surface. The reason I haven't gone back and updated the
- * tutorial to use this method is because I don't want to go back an update 40+ tutorials. Even
- * though it is undocumented, it works just fine.
+ * The last bit of geometry we render is a sequence of dots using SDL_RenderDrawPoint. We're just
+ * taking a set of points and drawing them from top to bottom. Again notice the y coordinate and the
+ * inverted y axis. After we're finished drawing all our geometry, we update the screen.
+ *
+ * Notice the call to SDL_SetRenderDrawColor. We're using 255 red and 255 green which combine
+ * together to make yellow. Remember that call to SDL_SetRenderDrawColor at the top of the loop? If
+ * that wasn't there, the screen would be cleared with whatever color was last set with
+ * SDL_SetRenderDrawColor, resulting in a yellow background in this case.
  *
  * Sunto:
  *
@@ -51,23 +60,22 @@
  * |    |----SDL_Init               (inizializzazione SDL)
  * |    |----SDL_SetHint            (abilita linear texture filtering)
  * |    |----SDL_CreateWindow       (crea la finestra principale del programma)
- * |    |----SDL_CreateRenderer     (renderizza le immagini nella finestra)
+ * |    |----SDL_CreateRenderer     (motore di renderizzazione per le immagini nella finestra)
  * |    |----SDL_SetRenderDrawColor (imposta il colore della renderizzazione)
  * |    |----IMG_Init               (inizializzazione SDL_image)
  * |
- * |----loadMedia
- * |    |
- * |    |----loadTexture
- * |         |
- * |         |----IMG_Load                      (carica immagine come surface, e non come texture)
- * |         |----SDL_CreateTextureFromSurface  (converte l'immagine a texture)
- * |         |----SDL_FreeSurface               (libera l'immagine, ora inutilizzata)
+ * |----loadMedia (vuoto: in questo esempio disegniamo delle forme basilari con il renderer)
  * |
- * |----SDL_PollEvent     (gestisce l'ultimo evento nella coda degli eventi)
- * |----SDL_RenderClear   (riempie lo schermo del colore impostato tramite SDL_SetRenderDrawColor)
- * |----SDL_RenderCopy    (predispone la texture ad essere renderizzata)
- * |----SDL_RenderPresent (l'alternativa a SDL_UpdateWindowSurface quando si usano le texture)
+ * |----SDL_SetRenderDrawColor     (a ogni nuova renderizzazione bisogna reimpostare il colore)
+ * |----SDL_RenderClear            (ripulisce la finestra  con il colore impostato da SDL_SetRenderDrawColor)
+ * |----SDL_RenderFillRect         (riempie un rettangolo  con il colore impostato da SDL_SetRenderDrawColor)
+ * |----SDL_RenderDrawRect         (contorna un rettangolo con il colore impostato da SDL_SetRenderDrawColor)
+ * |----SDL_RenderDrawLine         (disegna una linea      con il colore impostato da SDL_SetRenderDrawColor)
+ * |----SDL_RenderDrawPoint        (disegna un punto       con il colore impostato da SDL_SetRenderDrawColor)
  * |----close
+ *
+ * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
+ * redistributed without written permission.
  **/
 
 
@@ -75,10 +83,11 @@
 * Includes
 ****************************************************************************************************/
 
-// Using SDL, SDL_image, standard IO, and strings
+// Using SDL, SDL_image, standard I/O, math, and strings
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
+#include <cmath>
 #include <string>
 
 
@@ -87,9 +96,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int         SCREEN_WIDTH  = 640;
-static constexpr int         SCREEN_HEIGHT = 480;
-static const     std::string TexturePath("texture.png");
+static constexpr int SCREEN_WIDTH  = 640;
+static constexpr int SCREEN_HEIGHT = 480;
 
 
 /***************************************************************************************************
@@ -108,9 +116,8 @@ static SDL_Texture* loadTexture( std::string path );
 * Private global variables
 ****************************************************************************************************/
 
-SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
-SDL_Renderer* gRenderer = NULL; // The window renderer
-SDL_Texture*  gTexture  = NULL; // Currently displayed texture
+static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
+static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 
 /***************************************************************************************************
@@ -208,19 +215,7 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Load PNG texture
-  gTexture = loadTexture( TexturePath );
-
-  if( gTexture == NULL )
-  {
-    printf( "\nFailed to load texture image \"%s\"!", TexturePath.c_str() );
-    success = false;
-  }
-  else
-  {
-    printf( "\nTexture image \"%s\" loaded", TexturePath.c_str() );
-  }
-
+  // Nothing to load
   return success;
 }
 
@@ -230,10 +225,6 @@ static bool loadMedia(void)
  **/
 static void close(void)
 {
-  // Free loaded image
-  SDL_DestroyTexture( gTexture );
-  gTexture = NULL;
-
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
   SDL_DestroyWindow( gWindow );
@@ -249,8 +240,8 @@ static void close(void)
 /**
  * @brief Loads individual image as texture.
  *
- * @param path The path to the image.
- * @return SDL_Surface* Pointer to the loaded image.
+ * @param path The path to the image
+ * @return SDL_Surface* Pointer to the loaded image
  **/
 static SDL_Texture* loadTexture( std::string path )
 {
@@ -346,11 +337,33 @@ int main( int argc, char* args[] )
           {;} // Wait for events
         }
 
+        // We're setting the clearing color to white at every frame as opposed to setting it once in
+        // the initialization function
+        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+
         // Clear screen
         SDL_RenderClear( gRenderer );
 
-        // Render texture to screen
-        SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
+        // Render red filled quad
+        SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0x00, 0x00, 0xFF );
+        SDL_RenderFillRect( gRenderer, &fillRect );
+
+        // Render green outlined quad
+        SDL_Rect outlineRect = { SCREEN_WIDTH / 6, SCREEN_HEIGHT / 6, SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT * 2 / 3 };
+        SDL_SetRenderDrawColor( gRenderer, 0x00, 0xFF, 0x00, 0xFF );
+        SDL_RenderDrawRect( gRenderer, &outlineRect );
+
+        // Draw blue horizontal line
+        SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0xFF, 0xFF );
+        SDL_RenderDrawLine( gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2 );
+
+        // Draw vertical line of yellow dots
+        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0x00, 0xFF );
+        for( int i = 0; i != SCREEN_HEIGHT; i += 4 )
+        {
+          SDL_RenderDrawPoint( gRenderer, SCREEN_WIDTH / 2, i );
+        }
 
         // Update screen
         SDL_RenderPresent( gRenderer );

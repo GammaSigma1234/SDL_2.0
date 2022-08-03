@@ -59,10 +59,14 @@
  *
  * Sunto:
  *
- * - main chiama init
- * - init fa le stesse cose degli ultimi esempi
+ * - main chiama init.
+ * - init fa le stesse cose degli ultimi esempi.
  * - la classe privata LTexture racchiude tutte le comuni operazioni che negli esempi precedenti
- *   venivano svolte da funzioni autonome
+ *   venivano svolte da funzioni autonome.
+ * - in particolare, il metodo "render" di LTexture invoca "SDL_RenderCopy". Quest'ultima copia
+ *   una texture nel rendering target. Due parametri facoltativi sono il rettangolo sorgente e
+ *   il rettangolo destinazione. Se entrambi sono NULL, l'intera texture sorgente viene copiata
+ *   nella destinazione, con eventuale stretching.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
  * redistributed without written permission.
@@ -143,8 +147,8 @@ static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 // Scene textures
-static LTexture      gFooTexture;
-static LTexture      gBackgroundTexture;
+static LTexture gFooTexture;
+static LTexture gBackgroundTexture;
 
 // Paths to files
 static std::string Texture("foo.png");
@@ -222,6 +226,7 @@ bool LTexture::loadFromFile( const std::string& path )
 
   // Return success
   mTexture = newTexture;
+
   return mTexture != NULL;
 }
 
@@ -245,6 +250,13 @@ void LTexture::free()
 }
 
 
+/**
+ * @brief When rendering a texture in a certain place, you need to specify a destination rectangle
+ * that sets the (x, y) position and (width, height).
+ *
+ * @param x x position of the texture
+ * @param y y position of the texture
+ **/
 void LTexture::render( int x, int y )
 {
   // Set rendering space and render to screen
@@ -463,10 +475,10 @@ int main( int argc, char* args[] )
         SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
         SDL_RenderClear( gRenderer );
 
-        // Render background texture to screen
+        // Render background texture to screen (order matters!)
         gBackgroundTexture.render( 0, 0 );
 
-        // Render Foo' to the screen
+        // Render Foo' to the screen (order matters!)
         gFooTexture.render( 240, 190 );
 
         // Update screen

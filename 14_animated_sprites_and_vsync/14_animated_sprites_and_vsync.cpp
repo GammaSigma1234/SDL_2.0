@@ -1,29 +1,14 @@
 /**
- * @file 13_alpha_blending.cpp
+ * @file 14_animated_sprites_and_vsync.cpp
  *
- * @brief setAlpha is similar to setColor in the color modulation tutorial.
- * setBlendMode controls how the texture is blended. In order to get blending to work properly, you
- * must set the blend mode on the texture.
+ * @brief Animation in a nutshell is just showing one image after another to create the illusion of
+ * motion. Here we'll be showing different sprites to animate a stick figure.
  *
- * In the texture loading function we're loading the front texture we're going to alpha blend, and a
- * background texture. As the front texture gets more transparent, we'll be able to see more of the
- * back texture. After we load the front texture successfully we set the SDL BlendMode to blend, so
- * blending is enabled. Since the background isn't going to be transparent, we don't have to set the
- * blending on it.
- *
- * Alpha is opacity, and the lower the opacity the more we can see through it. Like red, green, or
- * blue color components, it goes from 0 to 255 when modulating it. 100% opacity (255) = completely
- * visible. 0% opacity (0) = completely invisible.
- *
- * SDL_SetTextureBlendMode in setBlendMode allows us to enable blending and SDL_SetTextureAlphaMod
- * allows us to set the amount of alpha for the whole texture.
- *
- * Right before entering the main loop, we declare a variable to control how much alpha the texture
- * has. It is initialized to 255 so the front texture starts out completely opaque.
- *
- * At the end of the main loop we do our rendering. After clearing the screen we render the
- * background first and then we render the front modulated texture over it. Right before rendering
- * the front texture, we set its alpha value.
+ * For this (and future tutorials), we want to use Vertical Sync. VSync allows the rendering to
+ * update at the same time as when your monitor updates during vertical refresh. For this tutorial
+ * it will make sure the animation doesn't run too fast. Most monitors run at about 60 frames per
+ * second and that's the assumption we're making here. If you have a different monitor refresh rate,
+ * that would explain why the animation is running too fast or slow.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -45,6 +30,8 @@
 ***************************************************************************************************/
 
 static constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
+static constexpr int WALKING_ANIMATION_FRAMES       = 4;
+static constexpr int SLOWING_FACTOR                 = 5; // Fattore di rallentamento dell'animazione. Cambia sprite ogni SLOWING_FACTOR aggiornamenti dello schermo.
 
 static constexpr int SCREEN_WIDTH       = 640;
 static constexpr int SCREEN_HEIGHT      = 480;
@@ -60,8 +47,7 @@ static constexpr int CYAN_RED_COMPONENT = 0x00;
 static constexpr int CYAN_GRN_COMPONENT = 0xFF;
 static constexpr int CYAN_BLU_COMPONENT = 0xFF;
 
-static const std::string FrontTexture("fadeout.png");
-static const std::string BackTexture("fadein.png");
+static const std::string SpriteSheetPath("foo.png");
 
 
 /***************************************************************************************************
@@ -126,8 +112,10 @@ static void PressEnter(void);
 
 static SDL_Window*   gWindow   = NULL;   // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL;   // The window renderer
-static LTexture      gModulatedTexture;  // Scene texture
-static LTexture      gBackgroundTexture; // Scene texture
+
+// Walking animation
+static SDL_Rect gSpriteClips[ WALKING_ANIMATION_FRAMES ]; // Ogni sprite è largo 64 px e alto 205 px
+static LTexture gSpriteSheetTexture;
 
 
 /***************************************************************************************************
@@ -171,7 +159,7 @@ bool LTexture::loadFromFile( const std::string& path )
 		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_RED_COMPONENT, CYAN_GRN_COMPONENT, CYAN_BLU_COMPONENT ) );
 
 		// Create texture from surface pixels
-		newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
 		if( newTexture == NULL )
 		{
@@ -311,10 +299,10 @@ static bool init(void)
 		{
       printf( "\nWindow created" );
 
-			// Create renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INITIALISE_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED );
+			// Create accelerated and vsynced renderer for window
+			gRenderer = SDL_CreateRenderer( gWindow, INITIALISE_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 
-			if( gRenderer == NULL )
+      if( gRenderer == NULL )
 			{
         printf( "\nRenderer could not be created! SDL Error: %s", SDL_GetError() );
 				success = false;
@@ -359,29 +347,36 @@ static bool loadMedia(void)
 	// Loading success flag
 	bool success = true;
 
-	// Load front alpha texture
-	if( !gModulatedTexture.loadFromFile( FrontTexture ) )
+	// Load sprite sheet texture
+	if( !gSpriteSheetTexture.loadFromFile( SpriteSheetPath ) )
 	{
-		printf( "\nFailed to load front texture!" );
+		printf( "\nFailed to load walking animation texture!" );
 		success = false;
 	}
 	else
 	{
-		printf( "\nFront texture loaded" );
+    printf( "\nWalking animation texture loaded" );
 
-		// Set standard alpha blending
-		gModulatedTexture.setBlendMode( SDL_BLENDMODE_BLEND );
-	}
+		// Set sprite clips
+		gSpriteClips[ 0 ].x =   0;
+		gSpriteClips[ 0 ].y =   0;
+		gSpriteClips[ 0 ].w =  64;
+		gSpriteClips[ 0 ].h = 205;
 
-	// Load background texture
-	if( !gBackgroundTexture.loadFromFile( BackTexture ) )
-	{
-		printf( "Failed to load background texture!\n" );
-		success = false;
-	}
-	else
-	{
-		printf( "\nBack texture loaded" );
+		gSpriteClips[ 1 ].x =  64;
+		gSpriteClips[ 1 ].y =   0;
+		gSpriteClips[ 1 ].w =  64;
+		gSpriteClips[ 1 ].h = 205;
+
+		gSpriteClips[ 2 ].x = 128;
+		gSpriteClips[ 2 ].y =   0;
+		gSpriteClips[ 2 ].w =  64;
+		gSpriteClips[ 2 ].h = 205;
+
+		gSpriteClips[ 3 ].x = 192;
+		gSpriteClips[ 3 ].y =   0;
+		gSpriteClips[ 3 ].w =  64;
+		gSpriteClips[ 3 ].h = 205;
 	}
 
 	return success;
@@ -391,8 +386,7 @@ static bool loadMedia(void)
 static void close(void)
 {
 	// Free loaded images
-	gModulatedTexture.free();
-	gBackgroundTexture.free();
+	gSpriteSheetTexture.free();
 
 	// Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -447,8 +441,8 @@ int main( int argc, char* args[] )
 			// Event handler
 			SDL_Event e;
 
-			// Alpha modulation component
-			Uint8 a = 255;
+			// Current animation frame
+			int CurrentFrame = 0;
 
 			// While application is running
 			while( !quit )
@@ -461,55 +455,33 @@ int main( int argc, char* args[] )
 					{
 						quit = true;
 					}
-					// Handle key presses
-					else if( e.type == SDL_KEYDOWN )
-					{
-						// Increase alpha on w
-						if( e.key.keysym.sym == SDLK_w )
-						{
-							// Cap if over 255
-							if( a + 16 > 255 )
-							{
-								a = (Uint8)255;
-							}
-							// Increment otherwise
-							else
-							{
-								a += (Uint8)16;
-							}
-						}
-						// Decrease alpha on s
-						else if( e.key.keysym.sym == SDLK_s )
-						{
-							// Cap if below 0
-							if( a - 16 < 0 )
-							{
-								a = (Uint8)0;
-							}
-							// Decrement otherwise
-							else
-							{
-								a -= (Uint8)16;
-							}
-						}
-					}
-					else
-					{;}
+          else
+          {;}
 				}
 
 				// Clear screen
 				SDL_SetRenderDrawColor( gRenderer, WHITE_RED_COMPONENT, WHITE_GRN_COMPONENT, WHITE_BLU_COMPONENT, WHITE_LFA_COMPONENT );
 				SDL_RenderClear( gRenderer );
 
-				// Render background
-				gBackgroundTexture.render( 0, 0 );
-
-				// Render front blended
-				gModulatedTexture.setAlpha( a );
-				gModulatedTexture.render( 0, 0 );
+				// Render current frame
+				SDL_Rect* currentClip     = &gSpriteClips[ CurrentFrame / SLOWING_FACTOR ];
+        int CENTERED_HORIZONTALLY = ( SCREEN_WIDTH  - currentClip->w ) / 2;
+        int CENTERED_VERTICALLY   = ( SCREEN_HEIGHT - currentClip->h ) / 2;
+				gSpriteSheetTexture.render( CENTERED_HORIZONTALLY, CENTERED_VERTICALLY, currentClip );
 
 				// Update screen
 				SDL_RenderPresent( gRenderer );
+
+				// Go to next frame
+				++CurrentFrame;
+
+				// Cycle animation
+				if( CurrentFrame / SLOWING_FACTOR >= WALKING_ANIMATION_FRAMES )
+				{
+					CurrentFrame = 0;
+				}
+        else
+        {;}
 			}
 		}
 	}

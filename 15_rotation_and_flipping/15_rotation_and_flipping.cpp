@@ -1,29 +1,8 @@
 /**
- * @file 13_alpha_blending.cpp
+ * @file 15_rotation_and_flipping.cpp
  *
- * @brief setAlpha is similar to setColor in the color modulation tutorial.
- * setBlendMode controls how the texture is blended. In order to get blending to work properly, you
- * must set the blend mode on the texture.
- *
- * In the texture loading function we're loading the front texture we're going to alpha blend, and a
- * background texture. As the front texture gets more transparent, we'll be able to see more of the
- * back texture. After we load the front texture successfully we set the SDL BlendMode to blend, so
- * blending is enabled. Since the background isn't going to be transparent, we don't have to set the
- * blending on it.
- *
- * Alpha is opacity, and the lower the opacity the more we can see through it. Like red, green, or
- * blue color components, it goes from 0 to 255 when modulating it. 100% opacity (255) = completely
- * visible. 0% opacity (0) = completely invisible.
- *
- * SDL_SetTextureBlendMode in setBlendMode allows us to enable blending and SDL_SetTextureAlphaMod
- * allows us to set the amount of alpha for the whole texture.
- *
- * Right before entering the main loop, we declare a variable to control how much alpha the texture
- * has. It is initialized to 255 so the front texture starts out completely opaque.
- *
- * At the end of the main loop we do our rendering. After clearing the screen we render the
- * background first and then we render the front modulated texture over it. Right before rendering
- * the front texture, we set its alpha value.
+ * @brief SDL 2's hardware accelerated texture rendering also gives us the ability to to do fast
+ * image flipping and rotation.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -33,11 +12,12 @@
 * Includes
 ****************************************************************************************************/
 
-// Using SDL, SDL_image, standard I/O, and strings
+// Using SDL, SDL_image, standard I/O, math, and strings
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
 #include <string>
+#include <cmath>
 
 
 /**************************************************************************************************
@@ -45,6 +25,8 @@
 ***************************************************************************************************/
 
 static constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
+static constexpr int WALKING_ANIMATION_FRAMES       = 4;
+static constexpr int SLOWING_FACTOR                 = 5; // Fattore di rallentamento dell'animazione. Cambia sprite ogni SLOWING_FACTOR aggiornamenti dello schermo.
 
 static constexpr int SCREEN_WIDTH       = 640;
 static constexpr int SCREEN_HEIGHT      = 480;
@@ -60,8 +42,7 @@ static constexpr int CYAN_RED_COMPONENT = 0x00;
 static constexpr int CYAN_GRN_COMPONENT = 0xFF;
 static constexpr int CYAN_BLU_COMPONENT = 0xFF;
 
-static const std::string FrontTexture("fadeout.png");
-static const std::string BackTexture("fadein.png");
+static const std::string FilePath("arrow.png");
 
 
 /***************************************************************************************************
@@ -94,7 +75,7 @@ class LTexture
 		void setAlpha( Uint8 alpha );
 
 		// Renders texture at given point
-		void render( int x, int y, SDL_Rect* clip = NULL );
+		void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
 
 		// Gets image dimensions
     int getWidth(void) const;
@@ -119,15 +100,15 @@ static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
 
-
 /***************************************************************************************************
 * Private global variables
 ****************************************************************************************************/
 
 static SDL_Window*   gWindow   = NULL;   // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL;   // The window renderer
-static LTexture      gModulatedTexture;  // Scene texture
-static LTexture      gBackgroundTexture; // Scene texture
+
+// Scene texture
+LTexture gArrowTexture;
 
 
 /***************************************************************************************************
@@ -171,7 +152,7 @@ bool LTexture::loadFromFile( const std::string& path )
 		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_RED_COMPONENT, CYAN_GRN_COMPONENT, CYAN_BLU_COMPONENT ) );
 
 		// Create texture from surface pixels
-		newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
 		if( newTexture == NULL )
 		{
@@ -241,7 +222,7 @@ void LTexture::setAlpha( Uint8 alpha )
  * @param clip Rectangle defining which portion of the texture we want to render. NULL to render the
  * whole texture.
  **/
-void LTexture::render( int x, int y, SDL_Rect* clip )
+void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
 {
 	// Set rendering space and render to screen
 	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
@@ -256,7 +237,7 @@ void LTexture::render( int x, int y, SDL_Rect* clip )
   {;}
 
 	// Render to screen
-	SDL_RenderCopy( gRenderer, mTexture, clip, &renderQuad );
+	SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
 }
 
 int LTexture::getWidth(void) const
@@ -311,8 +292,8 @@ static bool init(void)
 		{
       printf( "\nWindow created" );
 
-			// Create renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INITIALISE_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED );
+			// Create accelerated and vsynced renderer for window
+			gRenderer = SDL_CreateRenderer( gWindow, INITIALISE_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 
 			if( gRenderer == NULL )
 			{
@@ -359,29 +340,11 @@ static bool loadMedia(void)
 	// Loading success flag
 	bool success = true;
 
-	// Load front alpha texture
-	if( !gModulatedTexture.loadFromFile( FrontTexture ) )
+	// Load arrow
+	if( !gArrowTexture.loadFromFile( FilePath ) )
 	{
-		printf( "\nFailed to load front texture!" );
+		printf( "Failed to load arrow texture!\n" );
 		success = false;
-	}
-	else
-	{
-		printf( "\nFront texture loaded" );
-
-		// Set standard alpha blending
-		gModulatedTexture.setBlendMode( SDL_BLENDMODE_BLEND );
-	}
-
-	// Load background texture
-	if( !gBackgroundTexture.loadFromFile( BackTexture ) )
-	{
-		printf( "Failed to load background texture!\n" );
-		success = false;
-	}
-	else
-	{
-		printf( "\nBack texture loaded" );
 	}
 
 	return success;
@@ -391,8 +354,7 @@ static bool loadMedia(void)
 static void close(void)
 {
 	// Free loaded images
-	gModulatedTexture.free();
-	gBackgroundTexture.free();
+	gArrowTexture.free();
 
 	// Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -447,8 +409,11 @@ int main( int argc, char* args[] )
 			// Event handler
 			SDL_Event e;
 
-			// Alpha modulation component
-			Uint8 a = 255;
+			// Angle of rotation
+			double degrees = 0;
+
+			// Flip type
+			SDL_RendererFlip flipType = SDL_FLIP_NONE;
 
 			// While application is running
 			while( !quit )
@@ -461,52 +426,39 @@ int main( int argc, char* args[] )
 					{
 						quit = true;
 					}
-					// Handle key presses
 					else if( e.type == SDL_KEYDOWN )
 					{
-						// Increase alpha on w
-						if( e.key.keysym.sym == SDLK_w )
+						switch( e.key.keysym.sym )
 						{
-							// Cap if over 255
-							if( a + 16 > 255 )
-							{
-								a = (Uint8)255;
-							}
-							// Increment otherwise
-							else
-							{
-								a += (Uint8)16;
-							}
-						}
-						// Decrease alpha on s
-						else if( e.key.keysym.sym == SDLK_s )
-						{
-							// Cap if below 0
-							if( a - 16 < 0 )
-							{
-								a = (Uint8)0;
-							}
-							// Decrement otherwise
-							else
-							{
-								a -= (Uint8)16;
-							}
+							case SDLK_a:
+							degrees -= 15;
+							break;
+
+							case SDLK_d:
+							degrees += 15;
+							break;
+
+							case SDLK_q:
+							flipType = SDL_FLIP_HORIZONTAL;
+							break;
+
+							case SDLK_w:
+							flipType = SDL_FLIP_NONE;
+							break;
+
+							case SDLK_e:
+							flipType = SDL_FLIP_VERTICAL;
+							break;
 						}
 					}
-					else
-					{;}
 				}
 
 				// Clear screen
 				SDL_SetRenderDrawColor( gRenderer, WHITE_RED_COMPONENT, WHITE_GRN_COMPONENT, WHITE_BLU_COMPONENT, WHITE_LFA_COMPONENT );
 				SDL_RenderClear( gRenderer );
 
-				// Render background
-				gBackgroundTexture.render( 0, 0 );
-
-				// Render front blended
-				gModulatedTexture.setAlpha( a );
-				gModulatedTexture.render( 0, 0 );
+				// Render arrow
+				gArrowTexture.render( ( SCREEN_WIDTH - gArrowTexture.getWidth() ) / 2, ( SCREEN_HEIGHT - gArrowTexture.getHeight() ) / 2, NULL, degrees, NULL, flipType );
 
 				// Update screen
 				SDL_RenderPresent( gRenderer );

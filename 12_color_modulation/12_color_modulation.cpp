@@ -1,55 +1,24 @@
 /**
- * @file 11_clip_rendering_and_sprite_sheets.cpp
+ * @file 12_color_modulation.cpp
  *
- * @brief Sometimes you only want to render part of a texture. A lot of times games like to keep
- * multiple images on the same sprite sheet as opposed to having a bunch of textures. Using clip
- * rendering, we can define a portion of the texture to render as opposed to rendering the whole
- * thing.
+ * @brief Come funziona la modulazione RGB?
  *
- * Here we're making a small tweak to the rendering function in the texture class. The render
- * function now accepts a rectangle defining which portion of the texture we want to render. We give
- * it a default argument of NULL in case we want to render the whole texture.
+ * SDL_SetTextureColorMod accepts Uint8 as arguments for the color components. An Uint8 is just an
+ * integer that is Unsigned and 8bit. This means it goes from 0 to 255. 128 is about halfway between
+ * 0 and 255, so when you modulate green to 128 it halves the green component for any pixel on the
+ * texture. The red and blue squares don't get affected because they have no green in them, but the
+ * green becomes half as bright and the white turns a light magenta (magenta is red 255, green 0,
+ * blue 255). Color modulation is just a way to multiply a color throughout the whole texture.
  *
- * For this tutorial, we're going to take a sprite sheet (dots.png) and render each sprite in a
- * different corner of the window. So, we're going to need a texture image (LTexture
- * gSpriteSheetTexture) and 4 rectangles to define the sprites (SDL_Rect gSpriteClips[ 4 ]).
- *
- * The new rendering function for the texture class that supports clip rendering is mostly
- * the same as the previous texture rendering function but with two changes.
- * First, when you're clipping and you're using the dimensions of the clip rectangle instead of the
- * texture, we're going to set the width/height of the destination rectangle (here called
- * renderQuad) to the size of the clip rectangle.
- * Secondly, we're going to pass in the clip rectangle to SDL_RenderCopy as the source rectangle.
- * The source rectangle defines what part of the texture you want to render. When the source
- * rectangle is NULL, the whole texture is rendered.
- *
- * The media loading function loads the texture and then defines the clip rectangles for the circle
- * sprites if the texture loaded successfully.
- *
- * Finally, in the main loop we render the same texture 4 times, but we're rendering a different
- * portion of the sprite sheet in different places each call.
- *
- * Sunto:
- *  - Carichiamo l'immagine principale (4 cerchi) in gSpriteSheetTexture.
- *  - Vogliamo imparare a renderizzare solo una porzione dell'immagine principale, in una posizione
- *    a piacere della finestra.
- *  - Vogliamo renderizzare solo un cerchio alla volta. Poiché l'immagine principale ha sfondo
- *    ciano, usiamo SDL_SetColorKey per impostare il ciano come colore di trasparenza.
- *  - Modifichiamo il metodo di renderizzazione (::render) dell'immagine principale
- *    gSpriteSheetTexture, in modo che accetti le coordinate della posizione della finestra su cui
- *    renderizzare, e un rettangolo che indichi quale porzione di gSpriteSheetTexture vada
- *    renderizzata (NULL in caso di renderizzazione completa). L'idea è di renderizzare un cerchio
- *    per ciascuno dei quattro angoli della finestra.
- *
- * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
+ * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
+ * redistributed without written permission.
  **/
 
 /***************************************************************************************************
 * Includes
 ****************************************************************************************************/
 
-// Using SDL, SDL_image, standard math, and strings
+// Using SDL, SDL_image, standard I/O, and strings
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
@@ -60,10 +29,17 @@
 * Private constants
 ***************************************************************************************************/
 
-// Screen dimension constants
-static constexpr int SCREEN_WIDTH  = 640;
-static constexpr int SCREEN_HEIGHT = 480;
-static const std::string FilePath("dots.png");
+static constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
+
+static constexpr int SCREEN_WIDTH       = 640;
+static constexpr int SCREEN_HEIGHT      = 480;
+
+static constexpr int INIT_RED_COMPONENT = 0xFF;
+static constexpr int INIT_GRN_COMPONENT = 0xFF;
+static constexpr int INIT_BLU_COMPONENT = 0xFF;
+static constexpr int INIT_LFA_COMPONENT = 0xFF;
+
+static const std::string FilePath("colors.png");
 
 
 /***************************************************************************************************
@@ -86,6 +62,10 @@ class LTexture
     // Deallocates texture
     void free(void);
 
+    // Set color modulation
+    void setColor( Uint8 red, Uint8 green, Uint8 blue );
+
+    // Renders texture at given point
     void render( int x, int y, SDL_Rect* clip = NULL );
 
     // Gets image dimensions
@@ -116,12 +96,9 @@ static void PressEnter(void);
 * Private global variables
 ****************************************************************************************************/
 
-static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
-static SDL_Renderer* gRenderer = NULL; // The window renderer
-
-// Scene sprites
-static SDL_Rect gSpriteClips[ 4 ];   // Singoli clip, riuniti in un array per comodità. Sono degli SDL_Rect perché servono solo a definire la posizione e la dimensione dei clip
-static LTexture gSpriteSheetTexture; // Immagine completa, da clippare
+static SDL_Window*   gWindow   = NULL;  // The window we'll be rendering to
+static SDL_Renderer* gRenderer = NULL;  // The window renderer
+static LTexture      gModulatedTexture; // Scene texture
 
 
 /***************************************************************************************************
@@ -199,6 +176,19 @@ void LTexture::free(void)
     mWidth = 0;
     mHeight = 0;
   }
+}
+
+/**
+ * @brief Set texture's colour modulation
+ *
+ * @param red
+ * @param green
+ * @param blue
+ **/
+void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
+{
+  // Modulate texture
+  SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
 
 /**
@@ -281,7 +271,7 @@ static bool init(void)
       printf( "\nWindow created" );
 
       // Create renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED );
+      gRenderer = SDL_CreateRenderer( gWindow, INITIALISE_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED );
 
       if( gRenderer == NULL )
       {
@@ -293,7 +283,7 @@ static bool init(void)
         printf( "\nRenderer created" );
 
         // Initialize renderer color
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, INIT_RED_COMPONENT, INIT_GRN_COMPONENT, INIT_BLU_COMPONENT, INIT_LFA_COMPONENT );
 
         // Initialize PNG loading
         int imgFlags = IMG_INIT_PNG;
@@ -319,8 +309,7 @@ static bool init(void)
 
 
 /**
- * @brief Loads all necessary media for this project. Loads the texture and then defines the clip
- * rectangles for the circle sprites if the texture loaded successfully.
+ * @brief Loads all necessary media for this project.
  *
  * @return true if loading was successful; false otherwise
  **/
@@ -329,8 +318,8 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Load sprite sheet texture
-  if( !gSpriteSheetTexture.loadFromFile( FilePath ) )
+  // Load texture
+  if( !gModulatedTexture.loadFromFile( FilePath ) )
   {
     printf( "\nFailed to load sprite sheet texture \"%s\"!", FilePath.c_str() );
     success = false;
@@ -339,30 +328,6 @@ static bool loadMedia(void)
   {
     printf( "\nSprite sheet texture \"%s\" loaded", FilePath.c_str() );
     printf( "\nSetting sprite sheet clips" );
-
-    // Set top left sprite
-    gSpriteClips[ 0 ].x =   0;
-    gSpriteClips[ 0 ].y =   0;
-    gSpriteClips[ 0 ].w = 100;
-    gSpriteClips[ 0 ].h = 100;
-
-    // Set top right sprite
-    gSpriteClips[ 1 ].x = 100;
-    gSpriteClips[ 1 ].y =   0;
-    gSpriteClips[ 1 ].w = 100;
-    gSpriteClips[ 1 ].h = 100;
-
-    // Set bottom left sprite
-    gSpriteClips[ 2 ].x =   0;
-    gSpriteClips[ 2 ].y = 100;
-    gSpriteClips[ 2 ].w = 100;
-    gSpriteClips[ 2 ].h = 100;
-
-    // Set bottom right sprite
-    gSpriteClips[ 3 ].x = 100;
-    gSpriteClips[ 3 ].y = 100;
-    gSpriteClips[ 3 ].w = 100;
-    gSpriteClips[ 3 ].h = 100;
   }
 
   return success;
@@ -372,7 +337,7 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Free loaded images
-  gSpriteSheetTexture.free();
+  gModulatedTexture.free();
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -427,6 +392,11 @@ int main( int argc, char* args[] )
       // Event handler
       SDL_Event e;
 
+      // Modulation components
+      Uint8 r = 255;
+      Uint8 g = 255;
+      Uint8 b = 255;
+
       // While application is running
       while( !quit )
       {
@@ -438,25 +408,70 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
+          // On keypress change rgb values
+          else if( e.type == SDL_KEYDOWN )
+          {
+            switch( e.key.keysym.sym )
+            {
+              // Increase red
+              case SDLK_q:
+                r += static_cast<Uint8>(32);
+                printf("\nRed increased by 32");
+                break;
+
+              // Increase green
+              case SDLK_w:
+                g += static_cast<Uint8>(32);
+                printf("\nGreen increased by 32");
+                break;
+
+              // Increase blue
+              case SDLK_e:
+                b += static_cast<Uint8>(32);
+                printf("\nBlue increased by 32");
+                break;
+
+              // Decrease red
+              case SDLK_a:
+                r -= static_cast<Uint8>(32);
+                printf("\nRed decreased by 32");
+                break;
+
+              // Decrease green
+              case SDLK_s:
+                g -= static_cast<Uint8>(32);
+                printf("\nGreen decreased by 32");
+                break;
+
+              // Decrease blue
+              case SDLK_d:
+                b -= static_cast<Uint8>(32);
+                printf("\nBlue decreased by 32");
+                break;
+
+              // Reset values
+              case SDLK_z:
+                r = static_cast<Uint8>(255);
+                g = static_cast<Uint8>(255);
+                b = static_cast<Uint8>(255);
+                printf("\nColours restored");
+                break;
+
+              default:
+                break;
+            }
+          }
           else
           {;} // Continue main loop
         }
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, INIT_RED_COMPONENT, INIT_GRN_COMPONENT, INIT_BLU_COMPONENT, INIT_LFA_COMPONENT );
         SDL_RenderClear( gRenderer );
 
-        // Render top left sprite
-        gSpriteSheetTexture.render( 0                                 , 0                                  , &gSpriteClips[ 0 ] );
-
-        // Render top right sprite
-        gSpriteSheetTexture.render( SCREEN_WIDTH - gSpriteClips[ 1 ].w, 0                                  , &gSpriteClips[ 1 ] );
-
-        // Render bottom left sprite
-        gSpriteSheetTexture.render( 0                                 , SCREEN_HEIGHT - gSpriteClips[ 2 ].h, &gSpriteClips[ 2 ] );
-
-        // Render bottom right sprite
-        gSpriteSheetTexture.render( SCREEN_WIDTH - gSpriteClips[ 3 ].w, SCREEN_HEIGHT - gSpriteClips[ 3 ].h, &gSpriteClips[ 3 ] );
+        // Modulate and render texture
+        gModulatedTexture.setColor( r, g, b );
+        gModulatedTexture.render( 0, 0 );
 
         // Update screen
         SDL_RenderPresent( gRenderer );

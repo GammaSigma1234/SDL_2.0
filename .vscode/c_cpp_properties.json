@@ -2,7 +2,7 @@
   "configurations":
   [
     {
-      "name": "SDL2 2.0.16 + MSYS2",
+      "name": "SDL2 2.0.16 + MinGW-w64",
       "includePath":
       [
         "${workspaceFolder}\\**",
@@ -17,7 +17,7 @@
     },
 
     {
-      "name": "SDL2 2.0.22 + MSYS2",
+      "name": "SDL2 2.0.22 + MinGW-w64",
       "includePath":
       [
         "${workspaceFolder}\\**",

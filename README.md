@@ -10,6 +10,8 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
     - [`Build.bat`](#buildbat)
     - [`Run.bat`](#runbat)
   - [Make Files](#make-files)
+- [Particolarità](#particolarità)
+  - [SDL_RenderCopyEx](#sdl_rendercopyex)
 
 
 ## Getting Started
@@ -53,3 +55,36 @@ Una volta eseguito il *build*, lanciare l'eseguibile con `Run.bat`. Questo *scri
 ### Make Files
 
 Mediante il tutorial, Lazy Foo spiega come impostare un minimo `makefile` per compilare un singolo esempio. L'unico elemento diverso tra il `makefile` di Lazy Foo e i miei *batch script* è la rimozione dell'istruzione `-Wl,-subsystem,windows`, la quale sopprime la *console* di Windows durante l'esecuzione di un esempio. La *console* è invece utile in fase di apprendimento e *debugging*.
+
+
+## Particolarità
+
+
+### SDL_RenderCopyEx
+
+```c
+void LTexture::render( int x, int y, SDL_Rect* SourceClip, double angle, SDL_Point* center, SDL_RendererFlip flip )
+```
+
+Il metodo `render` della classe `LTexture` creata da Lazy Foo, riceve:
+  - le coordinate `x` e `y` da assegnare alla destinazione
+  - `SourceClip`, cioè la porzione di *texture* da utilizzare (`NULL` in caso si voglia utilizzare tutta la *texture*)
+
+All'interno di questo metodo, viene chiamata la funzione di SDL `SDL_RenderCopyEx`, cioè la funzione che esegue il vero e proprio *rendering*:
+
+```c
+int SDL_RenderCopyEx(      SDL_Renderer*    renderer,
+                           SDL_Texture*     texture,
+                     const SDL_Rect*        srcrect,
+                     const SDL_Rect*        dstrect,
+                     const double           angle,
+                     const SDL_Point*       center,
+                     const SDL_RendererFlip flip);
+```
+
+Questa funzione renderizza una porzione di *texture* in una porzione della finestra di destinazione, gestita dal renderer `renderer`.
+`srcrect` e `dstrect` sono entrambi degli `SDL_Rect`, cioè delle strutture che rappresentano dei rettangoli, composte dai campi `x`, `y`, `w` e `h`. I campi `x` e `y` rappresentano la posizione rispetto all'angolo in alto a destra, mentre `w` e `h` sono le dimensioni in larghezza e altezza, rispettivamente nel caso della *texture* e nel caso della finestra su cui renderizzare.
+
+Gli argomenti passati ai parametri `x` e `y` di `LTexture::render` vengono poi passati a `dstrect`. Larghezza e altezza di `dstrect` vengono copiati da `SourceClip.x` e `SourceClip.y`. In caso `SourceClip` sia `NULL`, cioè vogliamo usare l'intera *texture*, larghezza e altezza passate a `dstrect` sono `mWidth` e `mHeight`, cioè le dimensioni originali della *texture* intera.
+
+![](Docs/SDL_RenderCopyEx.svg)

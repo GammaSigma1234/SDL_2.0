@@ -1,47 +1,8 @@
 /**
- * @file 16_true_type_fonts.cpp
+ * @file 20_force_feedback.cpp
  *
- * @brief One way to render text with SDL is with the extension library SDL_ttf. SDL_ttf allows you
- * to create images from TrueType fonts which we'll use here to create textures from font text.
+ * @brief
  *
- * We're adding another function to the texture class, called loadFromRenderedText. The way SDL_ttf
- * works is that you create a new image from a font and color. For our texture class all that means
- * is that we're going to be loading our image from text rendered by SDL_ttf instead of a file.
- *
- * For this and future tutorials, we'll be using a global font for our text rendering. In SDL_ttf,
- * the data type for fonts is TTF_Font. We also have a texture which will be generated from the
- * font.
- *
- * Just like SDL_image, we have to initialize SDL_ttf, or the font loading and rendering functions
- * won't work properly. We start up SDL_ttf using TTF_init. We can check for errors using
- * TTF_GetError().
- *
- * loadFromRenderedText is where we actually create the text texture we're going to render from the
- * font. This function takes in the string of text we want to render and the color we want to use to
- * render it. After that, this function pretty much works like loading from a file does, only this
- * time we're using a SDL_Surface created by SDL_ttf instead of a file.
- *
- * After freeing any preexisting textures, we load a surface using TTF_RenderText_Solid. This
- * creates a solid color surface from the font, text, and color given. If the surface was created
- * successfully, we create a texture out of it just like we did before when loading a surface from a
- * file. After the text texture is created, we can render with it just like any other texture.
- *
- * There are other ways to render text that are smoother or blended. Experiment with the different
- * types of rendering outlined in the SDL_ttf documentation. Shaded/Blended rendering might work
- * better for different text sizes.
- *
- * In our loading function, we load our font using TTF_OpenFont. This takes in the path to the font
- * file and the point size we want to render at.
- *
- * If the font loaded successfully, we want to load a text texture using our loading method. As a
- * general rule, you want to minimize the number of times you render text. Only re-render it when
- * you need to and since we're using the same text surface for this whole program, we only want to
- * render once.
- *
- * After we create the text texture, we can render it just like any other texture.
- *
- * In our clean up function, we want to free the font using TTF_CloseFont. We also want to quit the
- * SDL_ttf library with TTF_Quit to complete the clean up.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -51,14 +12,12 @@
 * Includes
 ****************************************************************************************************/
 
-// Using SDL, SDL_image, SDL_ttf, standard I/O, math, and strings
+// Using SDL, SDL_image, SDL_ttf, standard IO, math, and strings
 #include <SDL.h>
 #include <SDL_image.h>
-#include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
 #include <cmath>
-
 
 /**************************************************************************************************
 * Private constants
@@ -69,7 +28,7 @@ static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
 static constexpr int SCREEN_W = 640; // Screen's width
 static constexpr int SCREEN_H = 480; // Screen's heigth
 
-// Colore bianco (Inizializzazione renderer)
+// Colore bianco
 static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
 static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
 static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
@@ -80,12 +39,7 @@ static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 
-static const std::string FontPath("lazy.ttf");
-
-
-/***************************************************************************************************
-* Classes
-****************************************************************************************************/
+static const std::string FilePath("splash.png");
 
 // Texture wrapper class
 class LTexture
@@ -100,8 +54,10 @@ class LTexture
     // Loads image at specified path
     bool loadFromFile( const std::string& );
 
+    #if defined(SDL_TTF_MAJOR_VERSION)
     // Creates image from font string
-    bool loadFromRenderedText( const std::string&, SDL_Color );
+    bool loadFromRenderedText( std::string textureText, SDL_Color textColor );
+    #endif
 
     // Deallocates texture
     void free(void);
@@ -131,7 +87,6 @@ class LTexture
     int mHeight;
 };
 
-
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -141,20 +96,21 @@ static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
 
-
 /***************************************************************************************************
 * Private global variables
 ****************************************************************************************************/
 
-static SDL_Window*   gWindow        = NULL; // The window we'll be rendering to
-static SDL_Renderer* gRenderer      = NULL; // The window renderer
-static TTF_Font*     gFont          = NULL; // Globally used font
-static LTexture      gTextTexture;          // Rendered texture
+static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
+static SDL_Renderer* gRenderer = NULL; // The window renderer
 
+static LTexture gSplashTexture; // Scene texture
 
-/***************************************************************************************************
-* Methods definitions
-****************************************************************************************************/
+static SDL_GameController* gGameController = NULL; // Game controller handler with force feedback
+
+// Joystick handler with haptic
+static SDL_Joystick* gJoystick  = NULL;
+static SDL_Haptic*   gJoyHaptic = NULL;
+
 
 LTexture::LTexture(void)
 {
@@ -218,20 +174,7 @@ bool LTexture::loadFromFile( const std::string& path )
   return mTexture != NULL;
 }
 
-void LTexture::free(void)
-{
-  // Free texture if it exists
-  if( mTexture != NULL )
-  {
-    SDL_DestroyTexture( mTexture );
-    mTexture = NULL;
-    mWidth   = 0;
-    mHeight  = 0;
-  }
-  else
-  {;}
-}
-
+#if defined(SDL_TTF_MAJOR_VERSION)
 bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color textColor )
 {
   // Get rid of preexisting texture
@@ -239,44 +182,50 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 
   // Render text surface
   SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
-
-  if( textSurface == NULL )
+  if( textSurface != NULL )
   {
-    printf( "\nUnable to render text surface! SDL_ttf Error: %s", TTF_GetError() );
-  }
-  else
-  {
-    printf( "\nText surface \"%s\" loaded", textureText.c_str() );
-
     // Create texture from surface pixels
     mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
-
     if( mTexture == NULL )
     {
-      printf( "\nUnable to create texture from rendered text! SDL Error: %s", SDL_GetError() );
+      printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
     }
     else
     {
-      printf( "\nTexture created from \"%s\"", textureText.c_str() );
-
       // Get image dimensions
-      mWidth  = textSurface->w;
+      mWidth = textSurface->w;
       mHeight = textSurface->h;
     }
 
     // Get rid of old surface
     SDL_FreeSurface( textSurface );
   }
+  else
+  {
+    printf( "Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError() );
+  }
+
 
   // Return success
   return mTexture != NULL;
 }
+#endif
 
-
+void LTexture::free(void)
+{
+  // Free texture if it exists
+  if( mTexture != NULL )
+  {
+    SDL_DestroyTexture( mTexture );
+    mTexture = NULL;
+    mWidth = 0;
+    mHeight = 0;
+  }
+}
 
 void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
 {
-  // Modulate texture's RGB
+  // Modulate texture rgb
   SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
 
@@ -292,32 +241,20 @@ void LTexture::setAlpha( Uint8 alpha )
   SDL_SetTextureAlphaMod( mTexture, alpha );
 }
 
-/**
- * @brief Renders texture at given (x, y) point of the target window. Accepts a rectangle defining
- * which portion of the texture we want to render. Default argument of NULL to render the whole
- * texture.
- *
- * @param x x coordinate of the destination rendering point.
- * @param y y coordinate of the destination rendering point.
- * @param SourceClip Rectangle defining which portion of the texture we want to render. Defaults to
- * NULL (to render the whole texture).
- **/
-void LTexture::render( int x, int y, SDL_Rect* SourceClip, double angle, SDL_Point* center, SDL_RendererFlip flip )
+void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
 {
-  // Set rendering space and render texture to screen
-  SDL_Rect Destination = { x, y, mWidth, mHeight };
+  // Set rendering space and render to screen
+  SDL_Rect renderQuad = { x, y, mWidth, mHeight };
 
-  // Set source clip's rendering dimensions
-  if( SourceClip != NULL )
+  // Set clip rendering dimensions
+  if( clip != NULL )
   {
-    Destination.w = SourceClip->w;
-    Destination.h = SourceClip->h;
+    renderQuad.w = clip->w;
+    renderQuad.h = clip->h;
   }
-  else
-  {;}
 
   // Render to screen
-  SDL_RenderCopyEx( gRenderer, mTexture, SourceClip, &Destination, angle, center, flip );
+  SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
 }
 
 int LTexture::getWidth(void) const
@@ -330,18 +267,13 @@ int LTexture::getHeight(void) const
   return mHeight;
 }
 
-
-/***************************************************************************************************
-* Private functions definitions
-****************************************************************************************************/
-
 static bool init(void)
 {
   // Initialization flag
   bool success = true;
 
   // Initialize SDL
-  if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER ) < 0 )
   {
     printf( "\nSDL could not initialize! SDL Error: %s", SDL_GetError() );
     success = false;
@@ -353,15 +285,74 @@ static bool init(void)
     // Set texture filtering to linear
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
     {
-      printf( "\nWarning: Linear texture filtering not enabled!" );
+			printf( "\nWarning: Linear texture filtering not enabled!" );
+    }
+		else
+		{
+			printf( "\nLinear texture filtering enabled" );
+		}
+
+    // Check for joysticks
+    if( SDL_NumJoysticks() < 1 )
+    {
+			printf( "\nWarning: No joysticks connected!" );
     }
     else
     {
-      printf( "\nLinear texture filtering enabled" );
+      // Check if first joystick is game controller interface compatible
+      if( !SDL_IsGameController( 0 ) )
+      {
+        printf( "Warning: Joystick is not game controller interface compatible! SDL Error: %s\n", SDL_GetError() );
+      }
+      else
+      {
+        // Open game controller and check if it supports rumble
+        gGameController = SDL_GameControllerOpen( 0 );
+        if( !SDL_GameControllerHasRumble( gGameController ) )
+        {
+          printf( "Warning: Game controller does not have rumble! SDL Error: %s\n", SDL_GetError() );
+        }
+      }
+
+      // Load joystick if game controller could not be loaded
+      if( gGameController == NULL )
+      {
+        // Open first joystick
+        gJoystick = SDL_JoystickOpen( 0 );
+        if( gJoystick == NULL )
+        {
+          printf( "Warning: Unable to open joystick! SDL Error: %s\n", SDL_GetError() );
+        }
+        else
+        {
+          // Check if joystick supports haptic
+          if( !SDL_JoystickIsHaptic( gJoystick ) )
+          {
+            printf( "Warning: Controller does not support haptics! SDL Error: %s\n", SDL_GetError() );
+          }
+          else
+          {
+            // Get joystick haptic device
+            gJoyHaptic = SDL_HapticOpenFromJoystick( gJoystick );
+            if( gJoyHaptic == NULL )
+            {
+              printf( "Warning: Unable to get joystick haptics! SDL Error: %s\n", SDL_GetError() );
+            }
+            else
+            {
+              // Initialize rumble
+              if( SDL_HapticRumbleInit( gJoyHaptic ) < 0 )
+              {
+                printf( "Warning: Unable to initialize haptic rumble! SDL Error: %s\n", SDL_GetError() );
+              }
+            }
+          }
+        }
+      }
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
+		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -392,23 +383,12 @@ static bool init(void)
 
         if( !( IMG_Init( imgFlags ) & imgFlags ) )
         {
-          printf( "\nSDL_image could not initialize! SDL_mage Error: %s", IMG_GetError() );
+          printf( "\nSDL_image could not initialize! SDL_image Error: %s", IMG_GetError() );
           success = false;
         }
         else
         {
           printf( "\nSDL_image initialised" );
-        }
-
-         // Initialize SDL_ttf
-        if( TTF_Init() == -1 )
-        {
-          printf( "\nSDL_ttf could not initialize! SDL_ttf Error: %s", TTF_GetError() );
-          success = false;
-        }
-        else
-        {
-          printf( "\nSDL_ttf initialised" );
         }
 
       } // Renderer created
@@ -431,44 +411,37 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Open the font
-  gFont = TTF_OpenFont( FontPath.c_str(), 28 );
-
-  if( gFont == NULL )
+  // Load press texture
+  if( !gSplashTexture.loadFromFile( FilePath ) )
   {
-    printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
+    printf( "Failed to load splash texture!\n" );
     success = false;
-  }
-  else
-  {
-    printf( "Lazy font loaded" );
-
-    // Render text
-    SDL_Color textColor = { 0, 0, 0 };
-
-    if( !gTextTexture.loadFromRenderedText( "The quick brown fox jumps over the lazy dog", textColor ) )
-    {
-      printf( "\nFailed to render text texture!" );
-      success = false;
-    }
-    else
-    {
-      printf( "\nText texture loaded" );
-    }
   }
 
   return success;
 }
 
-
 static void close(void)
 {
   // Free loaded images
-  gTextTexture.free();
+  gSplashTexture.free();
 
-  // Free global font
-  TTF_CloseFont( gFont );
-  gFont = NULL;
+  // Close game controller or joystick with haptics
+  if( gGameController != NULL )
+  {
+    SDL_GameControllerClose( gGameController );
+  }
+  if( gJoyHaptic != NULL )
+  {
+    SDL_HapticClose( gJoyHaptic );
+  }
+  if( gJoystick != NULL )
+  {
+    SDL_JoystickClose( gJoystick );
+  }
+  gGameController = NULL;
+  gJoystick = NULL;
+  gJoyHaptic = NULL;
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -477,7 +450,6 @@ static void close(void)
   gWindow   = NULL;
 
   // Quit SDL subsystems
-  TTF_Quit();
   IMG_Quit();
   SDL_Quit();
 }
@@ -507,14 +479,14 @@ int main( int argc, char* args[] )
   // Start up SDL and create window
   if( !init() )
   {
-    printf( "\nFailed to initialize!" );
+    printf( "Failed to initialize!\n" );
   }
   else
   {
     // Load media
     if( !loadMedia() )
     {
-      printf( "\nFailed to load media!" );
+      printf( "Failed to load media!\n" );
     }
     else
     {
@@ -535,16 +507,36 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
+          // Joystick button press
+          else if( e.type == SDL_JOYBUTTONDOWN )
+          {
+            // Use game controller
+            if( gGameController != NULL )
+            {
+              // Play rumble at 75% strength for 500 milliseconds
+              if( SDL_GameControllerRumble( gGameController, 0xFFFF * 3 / 4, 0xFFFF * 3 / 4, 500 ) != 0 )
+              {
+                printf( "Warning: Unable to play game contoller rumble! %s\n", SDL_GetError() );
+              }
+            }
+            // Use haptics
+            else if( gJoyHaptic != NULL )
+            {
+              // Play rumble at 75% strength for 500 milliseconds
+              if( SDL_HapticRumblePlay( gJoyHaptic, 0.75, 500 ) != 0 )
+              {
+                printf( "Warning: Unable to play haptic rumble! %s\n", SDL_GetError() );
+              }
+            }
+          }
         }
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
+        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
         SDL_RenderClear( gRenderer );
 
-        // Render current frame
-        int CENTERED_HORIZONTALLY = ( SCREEN_W - gTextTexture.getWidth()  ) / 2;
-        int CENTERED_VERTICALLY   = ( SCREEN_H - gTextTexture.getHeight() ) / 2;
-        gTextTexture.render( CENTERED_HORIZONTALLY, CENTERED_VERTICALLY );
+        // Render splash image
+        gSplashTexture.render( 0, 0 );
 
         // Update screen
         SDL_RenderPresent( gRenderer );

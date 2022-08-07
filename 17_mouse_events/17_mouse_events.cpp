@@ -1,47 +1,54 @@
 /**
- * @file 16_true_type_fonts.cpp
+ * @file 17_mouse_events.cpp
  *
- * @brief One way to render text with SDL is with the extension library SDL_ttf. SDL_ttf allows you
- * to create images from TrueType fonts which we'll use here to create textures from font text.
+ * @brief As with key presses, SDL has event structures to handle mouse events such as mouse
+ * motion, mouse button presses, and mouse button releasing. In this tutorial we'll make a bunch of
+ * buttons we can interact with.
  *
- * We're adding another function to the texture class, called loadFromRenderedText. The way SDL_ttf
- * works is that you create a new image from a font and color. For our texture class all that means
- * is that we're going to be loading our image from text rendered by SDL_ttf instead of a file.
+ * For this tutorial we'll have 4 buttons on the screen. Depending on whether the mouse moved over,
+ * clicked on, released on, or moved out of the button we'll display a different sprite. The
+ * constants and enumeratives are there to define all this.
  *
- * For this and future tutorials, we'll be using a global font for our text rendering. In SDL_ttf,
- * the data type for fonts is TTF_Font. We also have a texture which will be generated from the
- * font.
+ * We're making a slight modification to the texture class. For this tutorial we won't be using
+ * SDL_ttf to render text. This means we don't need the loadFromRenderedText function. Rather than
+ * deleting code we may need in the future, we're going to wrap it in "#if defined" statements, so
+ * the compiler will ignore it if we do not include SDL_ttf. It checks if the SDL_TTF_MAJOR_VERSION
+ * macro is defined. Like #include, #if is a macro which is used to talk to the compiler. In this
+ * case it says if SDL_ttf is not defined, ignore this piece of code.
  *
- * Just like SDL_image, we have to initialize SDL_ttf, or the font loading and rendering functions
- * won't work properly. We start up SDL_ttf using TTF_init. We can check for errors using
- * TTF_GetError().
+ * To make sure our source compiles without SDL_ttf, we sandwich the loading from font function
+ * "loadFromRenderedText" in another "#if defined" condition.
+ * 
+ * "LButton::handleEvent" is where we handle the mouse events. This function will be called in
+ * the event loop and will handle an event taken from the event queue for an individual button.
+ * 
+ * First we check if the event coming in is a mouse event specifically, a mouse motion event (when
+ * the mouse moves), a mouse button down event (when you click a mouse button), or a mouse button up
+ * event (when you release a mouse click).
+ * 
+ * If one of these mouse events do occur, we check the mouse position using SDL_GetMouseState.
+ * Depending on whether the mouse is over the button or not, we'll want to display different
+ * sprites.
+ * 
+ * Then, we want to check if the mouse is inside the button or not. Since we use a different
+ * coordinate system with SDL, the origin of the button is at the top left. This means every x
+ * coordinate less than the x position is outside of the button and every y coordinate less than the
+ * y position is too. Everything right of the button is the x position + the width and everything
+ * below the button is the y position + the height. If the mouse position is in any way outside the
+ * button, it marks the inside marker as false. Otherwise it remains the initial true value.
+ * 
+ * Finally, we set the button sprite depending on whether the mouse is inside the button and the
+ * mouse event. If the mouse isn't inside the button, we set the mouse out sprite. If the mouse is
+ * inside we set the sprite to mouse over on a mouse motion, mouse down on a mouse button press, and
+ * mouse up on a mouse button release.
+ * 
+ * In the rendering function, we just render the current button sprite at the button position.
+ * 
+ * In the event loop (in the main loop), we handle the quit event and the events for all the
+ * buttons. In the rendering section, all the buttons are rendered to the screen.
  *
- * loadFromRenderedText is where we actually create the text texture we're going to render from the
- * font. This function takes in the string of text we want to render and the color we want to use to
- * render it. After that, this function pretty much works like loading from a file does, only this
- * time we're using a SDL_Surface created by SDL_ttf instead of a file.
- *
- * After freeing any preexisting textures, we load a surface using TTF_RenderText_Solid. This
- * creates a solid color surface from the font, text, and color given. If the surface was created
- * successfully, we create a texture out of it just like we did before when loading a surface from a
- * file. After the text texture is created, we can render with it just like any other texture.
- *
- * There are other ways to render text that are smoother or blended. Experiment with the different
- * types of rendering outlined in the SDL_ttf documentation. Shaded/Blended rendering might work
- * better for different text sizes.
- *
- * In our loading function, we load our font using TTF_OpenFont. This takes in the path to the font
- * file and the point size we want to render at.
- *
- * If the font loaded successfully, we want to load a text texture using our loading method. As a
- * general rule, you want to minimize the number of times you render text. Only re-render it when
- * you need to and since we're using the same text surface for this whole program, we only want to
- * render once.
- *
- * After we create the text texture, we can render it just like any other texture.
- *
- * In our clean up function, we want to free the font using TTF_CloseFont. We also want to quit the
- * SDL_ttf library with TTF_Quit to complete the clean up.
+ * There are also mouse wheel events which weren't covered here, but if you look at the
+ * documentation and play around with it it shouldn't be too hard to figure out.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -51,14 +58,11 @@
 * Includes
 ****************************************************************************************************/
 
-// Using SDL, SDL_image, SDL_ttf, standard I/O, math, and strings
+// Using SDL, SDL_image, standard IO, and strings
 #include <SDL.h>
 #include <SDL_image.h>
-#include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
-#include <cmath>
-
 
 /**************************************************************************************************
 * Private constants
@@ -69,7 +73,12 @@ static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
 static constexpr int SCREEN_W = 640; // Screen's width
 static constexpr int SCREEN_H = 480; // Screen's heigth
 
-// Colore bianco (Inizializzazione renderer)
+// Button constants
+static constexpr int BUTTON_W      = 300;
+static constexpr int BUTTON_H      = 200;
+static constexpr int TOTAL_BUTTONS = 4;
+
+// Colore bianco
 static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
 static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
 static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
@@ -80,12 +89,16 @@ static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 
-static const std::string FontPath("lazy.ttf");
+static const std::string FilePath("button.png");
 
-
-/***************************************************************************************************
-* Classes
-****************************************************************************************************/
+enum LButtonSprite
+{
+  BUTTON_SPRITE_MOUSE_OUT         = 0,
+  BUTTON_SPRITE_MOUSE_OVER_MOTION = 1,
+  BUTTON_SPRITE_MOUSE_DOWN        = 2,
+  BUTTON_SPRITE_MOUSE_UP          = 3,
+  BUTTON_SPRITE_TOTAL             = 4
+};
 
 // Texture wrapper class
 class LTexture
@@ -100,8 +113,10 @@ class LTexture
     // Loads image at specified path
     bool loadFromFile( const std::string& );
 
+    #if defined(SDL_TTF_MAJOR_VERSION)
     // Creates image from font string
-    bool loadFromRenderedText( const std::string&, SDL_Color );
+    bool loadFromRenderedText( std::string textureText, SDL_Color textColor );
+    #endif
 
     // Deallocates texture
     void free(void);
@@ -131,6 +146,33 @@ class LTexture
     int mHeight;
 };
 
+/**
+ * @brief This class represents a button. It has a constructor to initialize, a position setter, an
+ * event handler for the event loop, and a rendering function. It also has a position and a sprite
+ * enumeration, so we know which sprite to render for the button.
+ **/
+class LButton
+{
+  public:
+    // Initializes internal variables
+    LButton(void);
+
+    // Sets top left position
+    void setPosition( int, int );
+
+    // Handles mouse event
+    void handleEvent( SDL_Event* );
+
+    // Shows button sprite
+    void render(void);
+
+  private:
+    // Top left position
+    SDL_Point mPosition;
+
+    // Currently used global sprite
+    LButtonSprite mCurrentSprite;
+};
 
 /***************************************************************************************************
 * Private prototypes
@@ -148,9 +190,13 @@ static void PressEnter(void);
 
 static SDL_Window*   gWindow        = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer      = NULL; // The window renderer
-static TTF_Font*     gFont          = NULL; // Globally used font
-static LTexture      gTextTexture;          // Rendered texture
 
+// Mouse button sprites
+static SDL_Rect gSpriteClips[ BUTTON_SPRITE_TOTAL ];
+static LTexture gButtonSpriteSheetTexture;
+
+// Buttons objects
+static LButton gButtons[ TOTAL_BUTTONS ];
 
 /***************************************************************************************************
 * Methods definitions
@@ -193,7 +239,7 @@ bool LTexture::loadFromFile( const std::string& path )
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
     // Create texture from surface pixels
-    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
     if( newTexture == NULL )
     {
@@ -218,20 +264,7 @@ bool LTexture::loadFromFile( const std::string& path )
   return mTexture != NULL;
 }
 
-void LTexture::free(void)
-{
-  // Free texture if it exists
-  if( mTexture != NULL )
-  {
-    SDL_DestroyTexture( mTexture );
-    mTexture = NULL;
-    mWidth   = 0;
-    mHeight  = 0;
-  }
-  else
-  {;}
-}
-
+#if defined(SDL_TTF_MAJOR_VERSION)
 bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color textColor )
 {
   // Get rid of preexisting texture
@@ -249,7 +282,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
     printf( "\nText surface \"%s\" loaded", textureText.c_str() );
 
     // Create texture from surface pixels
-    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
 
     if( mTexture == NULL )
     {
@@ -271,8 +304,21 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   // Return success
   return mTexture != NULL;
 }
+#endif
 
-
+void LTexture::free(void)
+{
+  // Free texture if it exists
+  if( mTexture != NULL )
+  {
+    SDL_DestroyTexture( mTexture );
+    mTexture = NULL;
+    mWidth = 0;
+    mHeight = 0;
+  }
+  else
+  {;}
+}
 
 void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
 {
@@ -328,6 +374,91 @@ int LTexture::getWidth(void) const
 int LTexture::getHeight(void) const
 {
   return mHeight;
+}
+
+
+LButton::LButton(void)
+{
+  mPosition.x = 0;
+  mPosition.y = 0;
+
+  mCurrentSprite = BUTTON_SPRITE_MOUSE_OUT;
+}
+
+void LButton::setPosition( int x, int y )
+{
+  mPosition.x = x;
+  mPosition.y = y;
+}
+
+void LButton::handleEvent( SDL_Event* e )
+{
+  // If mouse event happened
+  if( e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP )
+  {
+    // Get mouse position
+    int x, y;
+    SDL_GetMouseState( &x, &y );
+
+    // Check if mouse is inside button
+    bool inside = true;
+
+    // Mouse is left of the button
+    if( x < mPosition.x )
+    {
+      inside = false;
+    }
+    // Mouse is right of the button
+    else if( x > mPosition.x + BUTTON_W )
+    {
+      inside = false;
+    }
+    // Mouse above the button
+    else if( y < mPosition.y )
+    {
+      inside = false;
+    }
+    // Mouse below the button
+    else if( y > mPosition.y + BUTTON_H )
+    {
+      inside = false;
+    }
+    else
+    {;} // Mouse is inside the button
+
+    // Mouse is outside button
+    if( !inside )
+    {
+      mCurrentSprite = BUTTON_SPRITE_MOUSE_OUT;
+    }
+    // Mouse is inside button
+    else
+    {
+      // Set mouse over sprite
+      switch( e->type )
+      {
+        case SDL_MOUSEMOTION:
+        mCurrentSprite = BUTTON_SPRITE_MOUSE_OVER_MOTION;
+        break;
+
+        case SDL_MOUSEBUTTONDOWN:
+        mCurrentSprite = BUTTON_SPRITE_MOUSE_DOWN;
+        break;
+
+        case SDL_MOUSEBUTTONUP:
+        mCurrentSprite = BUTTON_SPRITE_MOUSE_UP;
+        break;
+      }
+    }
+  }
+  else
+  {;} // No mouse event happened
+}
+
+void LButton::render()
+{
+  // Show current button sprite
+  gButtonSpriteSheetTexture.render( mPosition.x, mPosition.y, &gSpriteClips[ mCurrentSprite ] );
 }
 
 
@@ -400,17 +531,6 @@ static bool init(void)
           printf( "\nSDL_image initialised" );
         }
 
-         // Initialize SDL_ttf
-        if( TTF_Init() == -1 )
-        {
-          printf( "\nSDL_ttf could not initialize! SDL_ttf Error: %s", TTF_GetError() );
-          success = false;
-        }
-        else
-        {
-          printf( "\nSDL_ttf initialised" );
-        }
-
       } // Renderer created
 
     } // Window created
@@ -431,30 +551,28 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Open the font
-  gFont = TTF_OpenFont( FontPath.c_str(), 28 );
-
-  if( gFont == NULL )
+  // Load sprites
+  if( !gButtonSpriteSheetTexture.loadFromFile( FilePath ) )
   {
-    printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
+    printf( "Failed to load button sprite texture!\n" );
     success = false;
   }
   else
   {
-    printf( "Lazy font loaded" );
-
-    // Render text
-    SDL_Color textColor = { 0, 0, 0 };
-
-    if( !gTextTexture.loadFromRenderedText( "The quick brown fox jumps over the lazy dog", textColor ) )
+    // Set sprites (by clipping the full sprite sheet - GS)
+    for( int i = 0; i < BUTTON_SPRITE_TOTAL; ++i )
     {
-      printf( "\nFailed to render text texture!" );
-      success = false;
+      gSpriteClips[ i ].x = 0;
+      gSpriteClips[ i ].y = i * BUTTON_H;
+      gSpriteClips[ i ].w = BUTTON_W;
+      gSpriteClips[ i ].h = BUTTON_H;
     }
-    else
-    {
-      printf( "\nText texture loaded" );
-    }
+
+    // Set buttons in corners
+    gButtons[ 0 ].setPosition( 0                  , 0                   );
+    gButtons[ 1 ].setPosition( SCREEN_W - BUTTON_W, 0                   );
+    gButtons[ 2 ].setPosition( 0                  , SCREEN_H - BUTTON_H );
+    gButtons[ 3 ].setPosition( SCREEN_W - BUTTON_W, SCREEN_H - BUTTON_H );
   }
 
   return success;
@@ -464,11 +582,7 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Free loaded images
-  gTextTexture.free();
-
-  // Free global font
-  TTF_CloseFont( gFont );
-  gFont = NULL;
+  gButtonSpriteSheetTexture.free();
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -477,7 +591,6 @@ static void close(void)
   gWindow   = NULL;
 
   // Quit SDL subsystems
-  TTF_Quit();
   IMG_Quit();
   SDL_Quit();
 }
@@ -535,16 +648,25 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
+          else
+          {;}
+
+          // Handle button events
+          for( int i = 0; i < TOTAL_BUTTONS; ++i )
+          {
+            gButtons[ i ].handleEvent( &e );
+          }
         }
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render current frame
-        int CENTERED_HORIZONTALLY = ( SCREEN_W - gTextTexture.getWidth()  ) / 2;
-        int CENTERED_VERTICALLY   = ( SCREEN_H - gTextTexture.getHeight() ) / 2;
-        gTextTexture.render( CENTERED_HORIZONTALLY, CENTERED_VERTICALLY );
+        // Render buttons
+        for( int i = 0; i < TOTAL_BUTTONS; ++i )
+        {
+          gButtons[ i ].render();
+        }
 
         // Update screen
         SDL_RenderPresent( gRenderer );

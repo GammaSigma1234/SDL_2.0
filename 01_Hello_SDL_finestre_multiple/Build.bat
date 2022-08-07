@@ -4,8 +4,8 @@
 
 @REM Assign project's name
 set SDL2_PROJECT_NAME=01_Hello_SDL_finestre_multiple
-set SDL2_INCLUDE_PATH=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32\include\SDL2
-set SDL2_LIB_PATH=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32\lib
+set SDL2_INCLUDE_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\include\SDL2
+set SDL2_LIB_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\lib
 set SDL2_LIBRARIES=-lmingw32 -lSDL2main -lSDL2
 
 @REM Assign global variables from TXT file (not used any more)

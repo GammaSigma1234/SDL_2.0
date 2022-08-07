@@ -7,9 +7,9 @@ echo.
 
 @REM Set temporary environment variables
 set SDL2_PROJECT_NAME=09_the_viewport
-set SDL2_DLL_LATEST_VER_PATH=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32\bin
+set SDL2_DLL_LATEST_VER_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\bin
 
-set SDL2_IMAGE_DLL_LATEST_VER_PATH=D:\Dati\SDL2_image-2.6.0\x86_64-w64-mingw32\bin
+set SDL2_IMAGE_DLL_LATEST_VER_PATH=D:\Dati\SDL2\SDL2_image-2.6.0\x86_64-w64-mingw32\bin
 
 
 @REM Check whether path to SDL2.dll dynamic library is already present

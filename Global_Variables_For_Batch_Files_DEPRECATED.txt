@@ -1,7 +1,7 @@
 Originariamente questo file serviva per impostare le variabili d'ambiente per la compilazione e l'esecuzione degli esempi, ma si è preferito (30/07/2022) rendere tutti gli esempi indipendenti, ciascuno con il proprio Build.bat e Run.bat. ***** Do not modify this line! This file is a repository for all the environment variables used by the batch files. If you need to change some of the following variables, all batch files will be automatically updated.
 
-SDL2_LATEST_VER_ROOT=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32
-SDL2_DLL_LATEST_VER_DIR=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32\bin
+SDL2_LATEST_VER_ROOT=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32
+SDL2_DLL_LATEST_VER_DIR=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\bin
 SDL2_INCLUDE_PATH=include\SDL2
 SDL2_LIB_PATH=lib
 SDL2_LIBRARIES=-lmingw32 -lSDL2main -lSDL2

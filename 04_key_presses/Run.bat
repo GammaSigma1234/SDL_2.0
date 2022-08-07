@@ -4,7 +4,7 @@
 
 @REM Assign project's name
 set SDL2_PROJECT_NAME=04_key_presses
-set SDL2_DLL_LATEST_VER_DIR=D:\Dati\SDL2-2.0.22\x86_64-w64-mingw32\bin
+set SDL2_DLL_LATEST_VER_DIR=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\bin
 
 @REM Assign global variables from TXT file
 @REM for /f "delims== tokens=1,2 skip=2" %%G in (..\Global_Variables_For_Batch_Files.txt) do set %%G=%%H

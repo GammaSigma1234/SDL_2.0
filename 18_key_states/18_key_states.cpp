@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string>
 
+
 /**************************************************************************************************
 * Private constants
 ***************************************************************************************************/
@@ -64,6 +65,11 @@ static const std::string UpPath("Up.png");
 static const std::string DownPath("Down.png");
 static const std::string LeftPath("Left.png");
 static const std::string RightPath("Right.png");
+
+
+/***************************************************************************************************
+* Classes
+****************************************************************************************************/
 
 // Texture wrapper class
 class LTexture
@@ -111,6 +117,7 @@ class LTexture
     int mHeight;
 };
 
+
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -120,6 +127,7 @@ static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
 
+
 /***************************************************************************************************
 * Private global variables
 ****************************************************************************************************/
@@ -127,15 +135,17 @@ static void PressEnter(void);
 static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
-
-
-
 // Scene textures
 LTexture gPressTexture;
 LTexture gUpTexture;
 LTexture gDownTexture;
 LTexture gLeftTexture;
 LTexture gRightTexture;
+
+
+/***************************************************************************************************
+* Methods definitions
+****************************************************************************************************/
 
 LTexture::LTexture(void)
 {

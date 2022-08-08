@@ -19,6 +19,7 @@
 #include <string>
 #include <cmath>
 
+
 /**************************************************************************************************
 * Private constants
 ***************************************************************************************************/
@@ -43,6 +44,11 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 
 static const std::string FilePath("arrow.png");
+
+
+/***************************************************************************************************
+* Classes
+****************************************************************************************************/
 
 // Texture wrapper class
 class LTexture
@@ -90,6 +96,7 @@ class LTexture
 		int mHeight;
 };
 
+
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -98,6 +105,7 @@ static bool init(void);
 static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
+
 
 /***************************************************************************************************
 * Private global variables
@@ -111,6 +119,9 @@ static LTexture gArrowTexture; // Scene textures
 static SDL_Joystick* gGameController = NULL; // Game Controller 1 handler
 
 
+/***************************************************************************************************
+* Methods definitions
+****************************************************************************************************/
 
 LTexture::LTexture(void)
 {

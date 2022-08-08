@@ -1,8 +1,54 @@
 /**
  * @file 21_sound_effects_and_music.cpp
  *
- * @brief
+ * @brief Up until now we've only been dealing with video and input. Most games made require some
+ * sort of sound and here we'll be using SDL_mixer to play audio for us.
  *
+ * SDL_mixer is a library we use to make audio playing easier (because it can get complicated). We
+ * have to set it up just like we set up SDL_image. As before, it's just a matter of having the
+ * header files, library files, and binary files in the right place with your compiler configured
+ * to use them.
+ *
+ * The SDL_mixer data type for music is "Mix_Music", and one for short sounds is "Mix_Chunk". Here
+ * we declare pointers for the music and sound effects we'll be using.
+ *
+ * Since we're using music and sound effects, we need to initialize audio along with video for this
+ * demo when calling "SDL_Init".
+ *
+ * To initialize SDL_mixer we need to call "Mix_OpenAudio". The first argument sets the sound
+ * frequency, and 44100 is a standard frequency that works on most systems. The second argument
+ * determines the sample format, which again here we're using the default. The third argument is the
+ * number of hardware channels, and here we're using 2 channels for stereo. The last argument is the
+ * sample size, which determines the size of the chunks we use when playing sound. 2048 bytes (AKA 2
+ * kilobyes) worked fine for me, but you may have to experiment with this value to minimize lag when
+ * playing sounds. If there's any errors with SDL_mixer, they're reported with Mix_GetError.
+ *
+ * In "loadMedia" we load our splash texture and sound. To load music, we call "Mix_LoadMUS" and to
+ * load sound effect we call "Mix_LoadWAV".
+ * 
+ * In "close", when we're done with audio and want to free it, we call "Mix_FreeMusic" to free music
+ * and "Mix_FreeChunk" to free a sound effect. We call "Mix_Quit" to close down SDL_mixer.
+ * 
+ * In the event loop, we play a sound effect when the 1, 2, 3, or 4 keys are pressed. The way to
+ * play a Mix_Chunk is by calling Mix_PlayChannel. The first argument is the channel you want to use
+ * to play it. Since we don't care which channel it comes out of, we set the channel to negative 1
+ * which will use the nearest available channel. The second argument is the sound effect and last
+ * argument is the number of times to repeat the effect. We only want it to play once per button
+ * press, so we have it repeat 0 times.
+ * 
+ * WARNING: in this case, a channel is NOT the same as a hardware channel that can represent the
+ * left and right channel of a stereo system! Every sound effect that's played has a channel
+ * associated with it. When you want to pause or stop an effect that is playing, you can halt its
+ * channel.
+ * 
+ * For this demo, we want to play/pause the music on a 9 keypress and stop the music on a 0
+ * keypress. When the 9 key pressed, we first check if the music is not playing with
+ * Mix_PlayingMusic. If it isn't, we start the music with Mix_PlayMusic. The first argument is the
+ * music we want to play and the last argument is the number of times to repeat it. Negative 1 is a
+ * special value saying we want to loop it until it is stopped. If there is music playing, we check
+ * if the music is paused using Mix_PausedMusic. If the music is paused, we resume it using
+ * Mix_ResumeMusic. If the music is not paused we pause it using Mix_PauseMusic. When 0 is pressed,
+ * we stop music if it's playing using Mix_HaltMusic.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -39,13 +85,21 @@ static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 
-static const std::string PromptPath("prompt.png");
-static const std::string BeatPath("beat.wav");
-static const std::string ScratchPath("scratch.wav");
-static const std::string HighPath("high.wav");
-static const std::string MediumPath("medium.wav");
-static const std::string LowPath("low.wav");
+static constexpr int SAMPLING_FREQ   = 44100;
+static constexpr int NUM_OF_CHANNELS = 2;
+static constexpr int CHUNK_SIZE      = 2048;
 
+static const std::string PromptPath ("prompt.png");
+static const std::string BeatPath   ("beat.wav");
+static const std::string ScratchPath("scratch.wav");
+static const std::string HighPath   ("high.wav");
+static const std::string MediumPath ("medium.wav");
+static const std::string LowPath    ("low.wav");
+
+
+/***************************************************************************************************
+* Classes
+****************************************************************************************************/
 
 // Texture wrapper class
 class LTexture
@@ -93,6 +147,7 @@ class LTexture
     int mHeight;
 };
 
+
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -101,6 +156,7 @@ static bool init(void);
 static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
+
 
 /***************************************************************************************************
 * Private global variables
@@ -111,14 +167,18 @@ static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 static LTexture gPromptTexture; // Scene texture
 
-
 static Mix_Music *gMusic = NULL; // The music that will be played
 
 // The sound effects that will be used
 static Mix_Chunk *gScratch = NULL;
-static Mix_Chunk *gHigh = NULL;
-static Mix_Chunk *gMedium = NULL;
-static Mix_Chunk *gLow = NULL;
+static Mix_Chunk *gHigh    = NULL;
+static Mix_Chunk *gMedium  = NULL;
+static Mix_Chunk *gLow     = NULL;
+
+
+/***************************************************************************************************
+* Methods definitions
+****************************************************************************************************/
 
 LTexture::LTexture(void)
 {
@@ -339,7 +399,7 @@ static bool init(void)
         }
 
          // Initialize SDL_mixer
-        if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+        if( Mix_OpenAudio( SAMPLING_FREQ, MIX_DEFAULT_FORMAT, NUM_OF_CHANNELS, CHUNK_SIZE ) < 0 )
         {
           printf( "\nSDL_mixer could not initialize! SDL_mixer Error: %s", Mix_GetError() );
           success = false;
@@ -372,45 +432,71 @@ static bool loadMedia(void)
   // Load prompt texture
   if( !gPromptTexture.loadFromFile( PromptPath ) )
   {
-    printf( "Failed to load prompt texture!\n" );
+    printf( "\nFailed to load prompt texture!" );
     success = false;
+  }
+  else
+  {
+    printf( "\nPrompt texture loaded" );;
   }
 
   // Load music
   gMusic = Mix_LoadMUS( BeatPath.c_str() );
+
   if( gMusic == NULL )
   {
-    printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
+    printf( "\nFailed to load beat music! SDL_mixer Error: %s", Mix_GetError() );
     success = false;
+  }
+  else
+  {
+    printf( "\nBeat music loaded" );
   }
 
   // Load sound effects
   gScratch = Mix_LoadWAV( ScratchPath.c_str() );
+
   if( gScratch == NULL )
   {
-    printf( "Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+    printf( "\nFailed to load scratch sound effect! SDL_mixer Error: %s", Mix_GetError() );
     success = false;
+  }
+  else
+  {
+    printf( "\nScratch sound effect loaded" );
   }
 
   gHigh = Mix_LoadWAV( HighPath.c_str() );
   if( gHigh == NULL )
   {
-    printf( "Failed to load high sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+    printf( "\nFailed to load high sound effect! SDL_mixer Error: %s", Mix_GetError() );
     success = false;
+  }
+  else
+  {
+    printf( "High sound effect loaded" );
   }
 
   gMedium = Mix_LoadWAV( MediumPath.c_str() );
   if( gMedium == NULL )
   {
-    printf( "Failed to load medium sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+    printf( "\nFailed to load medium sound effect! SDL_mixer Error: %s", Mix_GetError() );
     success = false;
+  }
+  else
+  {
+    printf( "Medium sound effect loaded" );
   }
 
   gLow = Mix_LoadWAV( LowPath.c_str() );
   if( gLow == NULL )
   {
-    printf( "Failed to load low sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+    printf( "\nFailed to load low sound effect! SDL_mixer Error: %s", Mix_GetError() );
     success = false;
+  }
+  else
+  {
+    printf( "Low sound effect loaded" );
   }
 
   return success;
@@ -507,7 +593,7 @@ int main( int argc, char* args[] )
             {
               // Play high sound effect
               case SDLK_1:
-              Mix_PlayChannel( -1, gHigh, 0 );
+              Mix_PlayChannel( -1, gHigh, 0 ); // ATTENZIONE: in questo caso, il "canale" non è il canale fisico (sinistro / destro)!, bensì un concetto software!
               break;
 
               // Play medium sound effect

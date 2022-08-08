@@ -19,6 +19,7 @@
 #include <string>
 #include <cmath>
 
+
 /**************************************************************************************************
 * Private constants
 ***************************************************************************************************/
@@ -40,6 +41,11 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 
 static const std::string FilePath("splash.png");
+
+
+/***************************************************************************************************
+* Classes
+****************************************************************************************************/
 
 // Texture wrapper class
 class LTexture
@@ -87,6 +93,7 @@ class LTexture
     int mHeight;
 };
 
+
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -95,6 +102,7 @@ static bool init(void);
 static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
+
 
 /***************************************************************************************************
 * Private global variables
@@ -111,6 +119,10 @@ static SDL_GameController* gGameController = NULL; // Game controller handler wi
 static SDL_Joystick* gJoystick  = NULL;
 static SDL_Haptic*   gJoyHaptic = NULL;
 
+
+/***************************************************************************************************
+* Methods definitions
+****************************************************************************************************/
 
 LTexture::LTexture(void)
 {

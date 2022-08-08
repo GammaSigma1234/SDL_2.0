@@ -64,6 +64,7 @@
 #include <stdio.h>
 #include <string>
 
+
 /**************************************************************************************************
 * Private constants
 ***************************************************************************************************/
@@ -91,6 +92,11 @@ static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 
 static const std::string FilePath("button.png");
 
+
+/***************************************************************************************************
+* Private Types
+****************************************************************************************************/
+
 enum LButtonSprite
 {
   BUTTON_SPRITE_MOUSE_OUT         = 0,
@@ -99,6 +105,11 @@ enum LButtonSprite
   BUTTON_SPRITE_MOUSE_UP          = 3,
   BUTTON_SPRITE_TOTAL             = 4
 };
+
+
+/***************************************************************************************************
+* Classes
+****************************************************************************************************/
 
 // Texture wrapper class
 class LTexture
@@ -146,6 +157,7 @@ class LTexture
     int mHeight;
 };
 
+
 /**
  * @brief This class represents a button. It has a constructor to initialize, a position setter, an
  * event handler for the event loop, and a rendering function. It also has a position and a sprite
@@ -174,6 +186,7 @@ class LButton
     LButtonSprite mCurrentSprite;
 };
 
+
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -197,6 +210,7 @@ static LTexture gButtonSpriteSheetTexture;
 
 // Buttons objects
 static LButton gButtons[ TOTAL_BUTTONS ];
+
 
 /***************************************************************************************************
 * Methods definitions

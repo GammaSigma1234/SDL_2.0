@@ -18,32 +18,32 @@
  *
  * To make sure our source compiles without SDL_ttf, we sandwich the loading from font function
  * "loadFromRenderedText" in another "#if defined" condition.
- * 
+ *
  * "LButton::handleEvent" is where we handle the mouse events. This function will be called in
  * the event loop and will handle an event taken from the event queue for an individual button.
- * 
+ *
  * First we check if the event coming in is a mouse event specifically, a mouse motion event (when
  * the mouse moves), a mouse button down event (when you click a mouse button), or a mouse button up
  * event (when you release a mouse click).
- * 
+ *
  * If one of these mouse events do occur, we check the mouse position using SDL_GetMouseState.
  * Depending on whether the mouse is over the button or not, we'll want to display different
  * sprites.
- * 
+ *
  * Then, we want to check if the mouse is inside the button or not. Since we use a different
  * coordinate system with SDL, the origin of the button is at the top left. This means every x
  * coordinate less than the x position is outside of the button and every y coordinate less than the
  * y position is too. Everything right of the button is the x position + the width and everything
  * below the button is the y position + the height. If the mouse position is in any way outside the
  * button, it marks the inside marker as false. Otherwise it remains the initial true value.
- * 
+ *
  * Finally, we set the button sprite depending on whether the mouse is inside the button and the
  * mouse event. If the mouse isn't inside the button, we set the mouse out sprite. If the mouse is
  * inside we set the sprite to mouse over on a mouse motion, mouse down on a mouse button press, and
  * mouse up on a mouse button release.
- * 
+ *
  * In the rendering function, we just render the current button sprite at the button position.
- * 
+ *
  * In the event loop (in the main loop), we handle the quit event and the events for all the
  * buttons. In the rendering section, all the buttons are rendered to the screen.
  *

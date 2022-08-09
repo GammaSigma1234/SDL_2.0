@@ -1,44 +1,11 @@
 /**
- * @file 22_timing.cpp
+ * @file 23_advanced_timers.cpp
  *
- * @brief Another important part of any sort of gaming API is the ability to handle time. In this
- * tutorial we'll make a timer we can restart.
+ * @brief
  *
- * For this tutorial we'll be using string streams, and have to include the "sstream" header, which
- * should come standard with your C++ compiler.
  *
- * As mentioned in the font rendering tutorial, you want to minimize the amount of times you render
- * text. We'll have a texture to prompt input and a texture to display the current time in
- * milliseconds. The time texture changes every frame so we have to render that every frame, but the
- * prompt texture doesn't change so we can render it once in the file loading function.
- *
- * Before we enter the main loop, we want to declare some variables. The two we want to pay
- * attention to are the "startTime" variable (which is an unsigned 32-bits integer) and the
- * "timeText" variable, which is a string stream.
- *
- * For those of you who have never used string streams, just know that they function like iostreams,
- * only instead of reading or writing to the console, they allow you to read and write to a string
- * in memory. It'll be easier to see when we see them used further on in the program.
- *
- * There's a function called SDL_GetTicks which returns the time since the program started in
- * milliseconds. For this demo, we'll be having a timer that restarts every time we press the return
- * key.
- *
- * Remember how we initialized the start time to 0 at the start of the program? This means the
- * timer's time is just the current time since the program started returned by SDL_GetTicks. If we
- * were to restart the timer when SDL_GetTicks was at 5000 milliseconds (5 seconds), then at 10,000
- * milliseconds the current time - the start time would be 10000 minus 5000 would be 5000
- * milliseconds. So, even though the timer contained by SDL_GetTicks hasn't restarted, we can have a
- * timer keep track of a relative start time and reset its start time.
- *
- * string stream: First we call "str" with an empty string to initialize it to be empty. Then we
- * treat it like cout and print to it "Milliseconds since start", and the current time minus the
- * relative start time, so it will print the time since we last started the timer. Now that we have
- * the time in a string stream, we can get a string from it and use it to render the current time to
- * a texture. Finally we render the prompt texture and the time texture to the screen.
- *
- * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
- * redistributed without written permission.
+ * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
+ * and may not be redistributed without written permission.
  **/
 
 /***************************************************************************************************
@@ -78,9 +45,9 @@ static constexpr int BLACK_A = 0xFF; // Alpha component
 static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
+static constexpr int CYAN_A = 0xFF; // Alpha component
 
-// static const std::string FontPath("lazy.ttf");
-static const std::string FontPath("RachelBrown.ttf");
+static const std::string FontPath("lazy.ttf");
 
 
 /***************************************************************************************************
@@ -100,10 +67,10 @@ class LTexture
     // Loads image at specified path
     bool loadFromFile( const std::string& );
 
-    #if defined(SDL_TTF_MAJOR_VERSION)
+  #if defined(SDL_TTF_MAJOR_VERSION)
     // Creates image from font string
     bool loadFromRenderedText( const std::string& textureText, SDL_Color textColor );
-    #endif
+  #endif
 
     // Deallocates texture
     void free(void);
@@ -134,6 +101,39 @@ class LTexture
 };
 
 
+// The application time based timer
+class LTimer
+{
+    public:
+    // Initializes variables
+    LTimer(void);
+
+    // The various clock actions
+    void start(void);
+    void stop(void);
+    void pause(void);
+    void unpause(void);
+
+    // Gets the timer's time
+    Uint32 getTicks(void);
+
+    // Checks the status of the timer
+    bool isStarted(void);
+    bool isPaused(void);
+
+    private:
+    // The clock time when the timer started
+    Uint32 mStartTicks;
+
+    // The ticks stored when the timer was paused
+    Uint32 mPausedTicks;
+
+    // The timer status
+    bool mPaused;
+    bool mStarted;
+};
+
+
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -155,7 +155,8 @@ static TTF_Font *gFont = NULL; // Globally used font
 
 // Scene textures
 static LTexture gTimeTextTexture;
-static LTexture gPromptTextTexture;
+static LTexture gPausePromptTexture;
+static LTexture gStartPromptTexture;
 
 
 /***************************************************************************************************
@@ -239,7 +240,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   if( textSurface != NULL )
   {
     // Create texture from surface pixels
-    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
 
     if( mTexture == NULL )
     {
@@ -259,7 +260,6 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   {
     printf( "\nUnable to render text surface! SDL_ttf Error: %s", TTF_GetError() );
   }
-
 
   // Return success
   return mTexture != NULL;
@@ -327,6 +327,116 @@ int LTexture::getWidth(void) const
 int LTexture::getHeight(void) const
 {
   return mHeight;
+}
+
+
+LTimer::LTimer(void)
+{
+    // Initialize the variables
+    mStartTicks = 0;
+    mPausedTicks = 0;
+
+    mPaused = false;
+    mStarted = false;
+}
+
+
+void LTimer::start(void)
+{
+    // Start the timer
+    mStarted = true;
+
+    // Unpause the timer
+    mPaused = false;
+
+    // Get the current clock time
+    mStartTicks = SDL_GetTicks();
+  mPausedTicks = 0;
+}
+
+
+void LTimer::stop(void)
+{
+    // Stop the timer
+    mStarted = false;
+
+    // Unpause the timer
+    mPaused = false;
+
+  // Clear tick variables
+  mStartTicks = 0;
+  mPausedTicks = 0;
+}
+
+
+void LTimer::pause(void)
+{
+    // If the timer is running and isn't already paused
+    if( mStarted && !mPaused )
+    {
+        // Pause the timer
+        mPaused = true;
+
+        // Calculate the paused ticks
+        mPausedTicks = SDL_GetTicks() - mStartTicks;
+    mStartTicks = 0;
+    }
+}
+
+
+void LTimer::unpause(void)
+{
+    // If the timer is running and paused
+    if( mStarted && mPaused )
+    {
+        // Unpause the timer
+        mPaused = false;
+
+        // Reset the starting ticks
+        mStartTicks = SDL_GetTicks() - mPausedTicks;
+
+        // Reset the paused ticks
+        mPausedTicks = 0;
+    }
+}
+
+
+Uint32 LTimer::getTicks(void)
+{
+  // The actual timer time
+  Uint32 time = 0;
+
+    // If the timer is running
+    if( mStarted )
+    {
+        // If the timer is paused
+        if( mPaused )
+        {
+            // Return the number of ticks when the timer was paused
+            time = mPausedTicks;
+        }
+        else
+        {
+            // Return the current time minus the start time
+            time = SDL_GetTicks() - mStartTicks;
+        }
+    }
+
+    return time;
+}
+
+
+bool LTimer::isStarted(void)
+{
+  // Timer is running and paused or unpaused
+    return mStarted;
+}
+
+
+bool LTimer::isPaused(void)
+{
+  // Timer is running and paused
+    return mPaused && mStarted;
 }
 
 
@@ -408,7 +518,7 @@ static bool init(void)
         else
         {
           printf( "\nSDL_ttf initialised" );
-        }
+      }
 
       } // Renderer created
 
@@ -445,15 +555,26 @@ static bool loadMedia(void)
     // Set text color as black
     SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
 
-    // Load prompt texture
-    if( !gPromptTextTexture.loadFromRenderedText( "Press Enter to Reset Start Time.", textColor ) )
+    // Load stop prompt texture
+    if( !gStartPromptTexture.loadFromRenderedText( "Press S to Start or Stop the Timer", textColor ) )
     {
-      printf( "\nUnable to render prompt texture!" );
+      printf( "\nUnable to render start/stop prompt texture!" );
       success = false;
     }
     else
     {
-      printf( "\nPrompt texture rendered" );
+      printf( "\nStart/stop prompt texture rendered" );
+    }
+
+    // Load pause prompt texture
+    if( !gPausePromptTexture.loadFromRenderedText( "Press P to Pause or Unpause the Timer", textColor ) )
+    {
+      printf( "\nUnable to render pause/unpause prompt texture!\n" );
+      success = false;
+    }
+    else
+    {
+      printf( "\nPause/unpause prompt texture rendered" );
     }
   }
 
@@ -465,7 +586,8 @@ static void close(void)
 {
   // Free loaded images
   gTimeTextTexture.free();
-  gPromptTextTexture.free();
+  gStartPromptTexture.free();
+  gPausePromptTexture.free();
 
   // Free global font
   TTF_CloseFont( gFont );
@@ -526,10 +648,10 @@ int main( int argc, char* args[] )
       SDL_Event e;
 
       // Set text color as black
-      SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
+      SDL_Color textColor = { 0, 0, 0, 255 };
 
-      // Current time start time
-      Uint32 startTime = 0;
+      // The application timer
+      LTimer timer;
 
       // In memory text stream
       std::stringstream timeText;
@@ -546,35 +668,54 @@ int main( int argc, char* args[] )
             quit = true;
           }
           // Reset start time on return keypress
-          else if( e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN )
+          else if( e.type == SDL_KEYDOWN )
           {
-            startTime = SDL_GetTicks();
+            // Start/stop
+            if( e.key.keysym.sym == SDLK_s )
+            {
+              if( timer.isStarted() )
+              {
+                timer.stop();
+              }
+              else
+              {
+                timer.start();
+              }
+            }
+            // Pause/unpause
+            else if( e.key.keysym.sym == SDLK_p )
+            {
+              if( timer.isPaused() )
+              {
+                timer.unpause();
+              }
+              else
+              {
+                timer.pause();
+              }
+            }
           }
-          else
-          {;} // Unrecognised event
         }
 
         // Set text to be rendered
-        timeText.str( "" ); // Svuota lo stringstream prima di riempirlo con la nuova stringa da renderizzare
-        timeText << "Milliseconds since start: " << SDL_GetTicks64() - startTime;
+        timeText.str( "" );
+        timeText << "Seconds since start time " << ( static_cast<double>(timer.getTicks()) / 1000.0 );
+        // timeText << "Seconds since start time " << ( timer.getTicks() / 1000.f ); // Istruzione originale
 
         // Render text
         if( !gTimeTextTexture.loadFromRenderedText( timeText.str().c_str(), textColor ) )
         {
-          printf( "\nUnable to render time texture!" );
+          printf( "Unable to render time texture!\n" );
         }
-        else
-        {;} // Time texture rendered
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
+        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
         SDL_RenderClear( gRenderer );
 
         // Render textures
-        int CENTERED_HORIZONTALLY = ( SCREEN_W - gPromptTextTexture.getWidth()  ) / 2;
-        int CENTERED_VERTICALLY   = ( SCREEN_H - gPromptTextTexture.getHeight() ) / 2;
-        gPromptTextTexture.render( CENTERED_HORIZONTALLY, 0 );
-        gTimeTextTexture.render  ( CENTERED_HORIZONTALLY, CENTERED_VERTICALLY );
+        gStartPromptTexture.render( ( SCREEN_W - gStartPromptTexture.getWidth() ) / 2, 0                                               );
+        gPausePromptTexture.render( ( SCREEN_W - gPausePromptTexture.getWidth() ) / 2, gStartPromptTexture.getHeight()                 );
+        gTimeTextTexture.render   ( ( SCREEN_W - gTimeTextTexture.getWidth() )    / 2, ( SCREEN_H - gTimeTextTexture.getHeight() ) / 2 );
 
         // Update screen
         SDL_RenderPresent( gRenderer );

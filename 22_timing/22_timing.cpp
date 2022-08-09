@@ -1,69 +1,57 @@
 /**
- * @file 21_sound_effects_and_music.cpp
+ * @file 22_timing.cpp
  *
- * @brief Up until now we've only been dealing with video and input. Most games made require some
- * sort of sound and here we'll be using SDL_mixer to play audio for us.
+ * @brief Another important part of any sort of gaming API is the ability to handle time. In this
+ * tutorial we'll make a timer we can restart.
  *
- * SDL_mixer is a library we use to make audio playing easier (because it can get complicated). We
- * have to set it up just like we set up SDL_image. As before, it's just a matter of having the
- * header files, library files, and binary files in the right place with your compiler configured
- * to use them.
+ * For this tutorial we'll be using string streams, and have to include the "sstream" header, which
+ * should come standard with your C++ compiler.
  *
- * The SDL_mixer data type for music is "Mix_Music", and one for short sounds is "Mix_Chunk". Here
- * we declare pointers for the music and sound effects we'll be using.
+ * As mentioned in the font rendering tutorial, you want to minimize the amount of times you render
+ * text. We'll have a texture to prompt input and a texture to display the current time in
+ * milliseconds. The time texture changes every frame so we have to render that every frame, but the
+ * prompt texture doesn't change so we can render it once in the file loading function.
  *
- * Since we're using music and sound effects, we need to initialize audio along with video for this
- * demo when calling "SDL_Init".
+ * Before we enter the main loop, we want to declare some variables. The two we want to pay
+ * attention to are the "startTime" variable (which is an unsigned 32-bits integer) and the
+ * "timeText" variable, which is a string stream.
  *
- * To initialize SDL_mixer we need to call "Mix_OpenAudio". The first argument sets the sound
- * frequency, and 44100 is a standard frequency that works on most systems. The second argument
- * determines the sample format, which again here we're using the default. The third argument is the
- * number of hardware channels, and here we're using 2 channels for stereo. The last argument is the
- * sample size, which determines the size of the chunks we use when playing sound. 2048 bytes (AKA 2
- * kilobyes) worked fine for me, but you may have to experiment with this value to minimize lag when
- * playing sounds. If there's any errors with SDL_mixer, they're reported with Mix_GetError.
+ * For those of you who have never used string streams, just know that they function like iostreams,
+ * only instead of reading or writing to the console, they allow you to read and write to a string
+ * in memory. It'll be easier to see when we see them used further on in the program.
  *
- * In "loadMedia" we load our splash texture and sound. To load music, we call "Mix_LoadMUS" and to
- * load sound effect we call "Mix_LoadWAV".
- * 
- * In "close", when we're done with audio and want to free it, we call "Mix_FreeMusic" to free music
- * and "Mix_FreeChunk" to free a sound effect. We call "Mix_Quit" to close down SDL_mixer.
- * 
- * In the event loop, we play a sound effect when the 1, 2, 3, or 4 keys are pressed. The way to
- * play a Mix_Chunk is by calling Mix_PlayChannel. The first argument is the channel you want to use
- * to play it. Since we don't care which channel it comes out of, we set the channel to negative 1
- * which will use the nearest available channel. The second argument is the sound effect and last
- * argument is the number of times to repeat the effect. We only want it to play once per button
- * press, so we have it repeat 0 times.
- * 
- * WARNING: in this case, a channel is NOT the same as a hardware channel that can represent the
- * left and right channel of a stereo system! Every sound effect that's played has a channel
- * associated with it. When you want to pause or stop an effect that is playing, you can halt its
- * channel.
- * 
- * For this demo, we want to play/pause the music on a 9 keypress and stop the music on a 0
- * keypress. When the 9 key pressed, we first check if the music is not playing with
- * Mix_PlayingMusic. If it isn't, we start the music with Mix_PlayMusic. The first argument is the
- * music we want to play and the last argument is the number of times to repeat it. Negative 1 is a
- * special value saying we want to loop it until it is stopped. If there is music playing, we check
- * if the music is paused using Mix_PausedMusic. If the music is paused, we resume it using
- * Mix_ResumeMusic. If the music is not paused we pause it using Mix_PauseMusic. When 0 is pressed,
- * we stop music if it's playing using Mix_HaltMusic.
+ * There's a function called SDL_GetTicks which returns the time since the program started in
+ * milliseconds. For this demo, we'll be having a timer that restarts every time we press the return
+ * key.
  *
- * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
+ * Remember how we initialized the start time to 0 at the start of the program? This means the
+ * timer's time is just the current time since the program started returned by SDL_GetTicks. If we
+ * were to restart the timer when SDL_GetTicks was at 5000 milliseconds (5 seconds), then at 10,000
+ * milliseconds the current time - the start time would be 10000 minus 5000 would be 5000
+ * milliseconds. So, even though the timer contained by SDL_GetTicks hasn't restarted, we can have a
+ * timer keep track of a relative start time and reset its start time.
+ *
+ * string stream: First we call "str" with an empty string to initialize it to be empty. Then we
+ * treat it like cout and print to it "Milliseconds since start", and the current time minus the
+ * relative start time, so it will print the time since we last started the timer. Now that we have
+ * the time in a string stream, we can get a string from it and use it to render the current time to
+ * a texture. Finally we render the prompt texture and the time texture to the screen.
+ *
+ * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
+ * redistributed without written permission.
  **/
 
 /***************************************************************************************************
 * Includes
 ****************************************************************************************************/
 
-//  Using SDL, SDL_image, SDL_ttf, SDL_mixer, standard IO, math, and strings
+// Using SDL, SDL_image, SDL_ttf, standard IO, strings, and string streams
 #include <SDL.h>
 #include <SDL_image.h>
-#include <SDL_mixer.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
 
 /**************************************************************************************************
 * Private constants
@@ -80,21 +68,19 @@ static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
 static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
 static constexpr int WHITE_A = 0xFF; // Alpha component
 
+// Colore nero
+static constexpr int BLACK_R = 0x00; // Amount of red   needed to compose black
+static constexpr int BLACK_G = 0x00; // Amount of green needed to compose black
+static constexpr int BLACK_B = 0x00; // Amount of blue  needed to compose black
+static constexpr int BLACK_A = 0xFF; // Alpha component
+
 // Colore ciano
 static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 
-static constexpr int SAMPLING_FREQ   = 44100;
-static constexpr int NUM_OF_CHANNELS = 2;
-static constexpr int CHUNK_SIZE      = 2048;
-
-static const std::string PromptPath ("prompt.png");
-static const std::string BeatPath   ("beat.wav");
-static const std::string ScratchPath("scratch.wav");
-static const std::string HighPath   ("high.wav");
-static const std::string MediumPath ("medium.wav");
-static const std::string LowPath    ("low.wav");
+// static const std::string FontPath("lazy.ttf");
+static const std::string FontPath("RachelBrown.ttf");
 
 
 /***************************************************************************************************
@@ -116,7 +102,7 @@ class LTexture
 
     #if defined(SDL_TTF_MAJOR_VERSION)
     // Creates image from font string
-    bool loadFromRenderedText( std::string textureText, SDL_Color textColor );
+    bool loadFromRenderedText( const std::string& textureText, SDL_Color textColor );
     #endif
 
     // Deallocates texture
@@ -165,15 +151,11 @@ static void PressEnter(void);
 static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
-static LTexture gPromptTexture; // Scene texture
+static TTF_Font *gFont = NULL; // Globally used font
 
-static Mix_Music *gMusic = NULL; // The music that will be played
-
-// The sound effects that will be used
-static Mix_Chunk *gScratch = NULL;
-static Mix_Chunk *gHigh    = NULL;
-static Mix_Chunk *gMedium  = NULL;
-static Mix_Chunk *gLow     = NULL;
+// Scene textures
+static LTexture gTimeTextTexture;
+static LTexture gPromptTextTexture;
 
 
 /***************************************************************************************************
@@ -219,7 +201,7 @@ bool LTexture::loadFromFile( const std::string& path )
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
     // Create texture from surface pixels
-        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
     if( newTexture == NULL )
     {
@@ -253,18 +235,20 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 
   // Render text surface
   SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
+
   if( textSurface != NULL )
   {
     // Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+
     if( mTexture == NULL )
     {
-      printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
+      printf( "\nUnable to create texture from rendered text! SDL Error: %s", SDL_GetError() );
     }
     else
     {
       // Get image dimensions
-      mWidth = textSurface->w;
+      mWidth  = textSurface->w;
       mHeight = textSurface->h;
     }
 
@@ -273,7 +257,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   }
   else
   {
-    printf( "Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError() );
+    printf( "\nUnable to render text surface! SDL_ttf Error: %s", TTF_GetError() );
   }
 
 
@@ -346,17 +330,13 @@ int LTexture::getHeight(void) const
 }
 
 
-/***************************************************************************************************
-* Private functions definitions
-****************************************************************************************************/
-
 static bool init(void)
 {
   // Initialization flag
   bool success = true;
 
   // Initialize SDL
-  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+  if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
     printf( "\nSDL could not initialize! SDL Error: %s", SDL_GetError() );
     success = false;
@@ -368,17 +348,15 @@ static bool init(void)
     // Set texture filtering to linear
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
     {
-			printf( "\nWarning: Linear texture filtering not enabled!" );
+      printf( "\nWarning: Linear texture filtering not enabled!" );
     }
-		else
-		{
-			printf( "\nLinear texture filtering enabled" );
+    else
+    {
+      printf( "\nLinear texture filtering enabled" );
     }
-
-
 
     // Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -413,15 +391,15 @@ static bool init(void)
           success = false;
         }
 
-         // Initialize SDL_mixer
-        if( Mix_OpenAudio( SAMPLING_FREQ, MIX_DEFAULT_FORMAT, NUM_OF_CHANNELS, CHUNK_SIZE ) < 0 )
+         // Initialize SDL_ttf
+        if( TTF_Init() == -1 )
         {
-          printf( "\nSDL_mixer could not initialize! SDL_mixer Error: %s", Mix_GetError() );
+          printf( "\nSDL_ttf could not initialize! SDL_ttf Error: %s", TTF_GetError() );
           success = false;
         }
         else
         {
-          printf( "\nSDL_mixer initialised" );
+          printf( "\nSDL_ttf initialised" );
         }
 
       } // Renderer created
@@ -444,74 +422,31 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Load prompt texture
-  if( !gPromptTexture.loadFromFile( PromptPath ) )
+  // Open the font
+  gFont = TTF_OpenFont( FontPath.c_str(), 28 );
+
+  if( gFont == NULL )
   {
-    printf( "\nFailed to load prompt texture!" );
+    printf( "\nFailed to load font! SDL_ttf Error: %s", TTF_GetError() );
     success = false;
   }
   else
   {
-    printf( "\nPrompt texture loaded" );;
-  }
+    printf( "\nFont loaded" );
 
-  // Load music
-  gMusic = Mix_LoadMUS( BeatPath.c_str() );
+    // Set text color as black
+    SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
 
-  if( gMusic == NULL )
-  {
-    printf( "\nFailed to load beat music! SDL_mixer Error: %s", Mix_GetError() );
-    success = false;
-  }
-  else
-  {
-    printf( "\nBeat music loaded" );
-  }
-
-  // Load sound effects
-  gScratch = Mix_LoadWAV( ScratchPath.c_str() );
-
-  if( gScratch == NULL )
-  {
-    printf( "\nFailed to load scratch sound effect! SDL_mixer Error: %s", Mix_GetError() );
-    success = false;
-  }
-  else
-  {
-    printf( "\nScratch sound effect loaded" );
-  }
-
-  gHigh = Mix_LoadWAV( HighPath.c_str() );
-  if( gHigh == NULL )
-  {
-    printf( "\nFailed to load high sound effect! SDL_mixer Error: %s", Mix_GetError() );
-    success = false;
-  }
-  else
-  {
-    printf( "High sound effect loaded" );
-  }
-
-  gMedium = Mix_LoadWAV( MediumPath.c_str() );
-  if( gMedium == NULL )
-  {
-    printf( "\nFailed to load medium sound effect! SDL_mixer Error: %s", Mix_GetError() );
-    success = false;
-  }
-  else
-  {
-    printf( "Medium sound effect loaded" );
-  }
-
-  gLow = Mix_LoadWAV( LowPath.c_str() );
-  if( gLow == NULL )
-  {
-    printf( "\nFailed to load low sound effect! SDL_mixer Error: %s", Mix_GetError() );
-    success = false;
-  }
-  else
-  {
-    printf( "Low sound effect loaded" );
+    // Load prompt texture
+    if( !gPromptTextTexture.loadFromRenderedText( "Press Enter to Reset Start Time.", textColor ) )
+    {
+      printf( "\nUnable to render prompt texture!" );
+      success = false;
+    }
+    else
+    {
+      printf( "\nPrompt texture rendered" );
+    }
   }
 
   return success;
@@ -521,21 +456,12 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Free loaded images
-  gPromptTexture.free();
+  gTimeTextTexture.free();
+  gPromptTextTexture.free();
 
-  // Free the sound effects
-  Mix_FreeChunk( gScratch );
-  Mix_FreeChunk( gHigh );
-  Mix_FreeChunk( gMedium );
-  Mix_FreeChunk( gLow );
-  gScratch = NULL;
-  gHigh = NULL;
-  gMedium = NULL;
-  gLow = NULL;
-
-  // Free the music
-  Mix_FreeMusic( gMusic );
-  gMusic = NULL;
+  // Free global font
+  TTF_CloseFont( gFont );
+  gFont = NULL;
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -544,7 +470,7 @@ static void close(void)
   gWindow   = NULL;
 
   // Quit SDL subsystems
-  Mix_Quit();
+  TTF_Quit();
   IMG_Quit();
   SDL_Quit();
 }
@@ -591,6 +517,15 @@ int main( int argc, char* args[] )
       // Event handler
       SDL_Event e;
 
+      // Set text color as black
+      SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
+
+      // Current time start time
+      Uint32 startTime = 0;
+
+      // In memory text stream
+      std::stringstream timeText;
+
       // While application is running
       while( !quit )
       {
@@ -602,70 +537,36 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
-          // Handle key press
-          else if( e.type == SDL_KEYDOWN )
+          // Reset start time on return keypress
+          else if( e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN )
           {
-            switch( e.key.keysym.sym )
-            {
-              // Play high sound effect
-              case SDLK_1:
-              Mix_PlayChannel( -1, gHigh, 0 ); // ATTENZIONE: in questo caso, il "canale" non è il canale fisico (sinistro / destro)!, bensì un concetto software!
-              break;
-
-              // Play medium sound effect
-              case SDLK_2:
-              Mix_PlayChannel( -1, gMedium, 0 );
-              break;
-
-              // Play low sound effect
-              case SDLK_3:
-              Mix_PlayChannel( -1, gLow, 0 );
-              break;
-
-              // Play scratch sound effect
-              case SDLK_4:
-              Mix_PlayChannel( -1, gScratch, 0 );
-              break;
-
-              case SDLK_9:
-              // If there is no music playing
-              if( Mix_PlayingMusic() == 0 )
-              {
-                // Play the music
-                Mix_PlayMusic( gMusic, -1 );
-              }
-              // If music is being played
-              else
-              {
-                // If the music is paused
-                if( Mix_PausedMusic() == 1 )
-                {
-                  // Resume the music
-                  Mix_ResumeMusic();
-                }
-                // If the music is playing
-                else
-                {
-                  // Pause the music
-                  Mix_PauseMusic();
-                }
-              }
-              break;
-
-              case SDLK_0:
-              // Stop the music
-              Mix_HaltMusic();
-              break;
-            }
+            startTime = SDL_GetTicks();
           }
+          else
+          {;} // Unrecognised event
         }
 
+        // Set text to be rendered
+        timeText.str( "" ); // Svuota lo stringstream prima di riempirlo con la nuova stringa da renderizzare
+        timeText << "Milliseconds since start: " << SDL_GetTicks64() - startTime;
+
+        // Render text
+        if( !gTimeTextTexture.loadFromRenderedText( timeText.str().c_str(), textColor ) )
+        {
+          printf( "\nUnable to render time texture!" );
+        }
+        else
+        {;} // Time texture rendered
+
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render prompt
-        gPromptTexture.render( 0, 0 );
+        // Render textures
+        int CENTERED_HORIZONTALLY = ( SCREEN_W - gPromptTextTexture.getWidth()  ) / 2;
+        int CENTERED_VERTICALLY   = ( SCREEN_H - gPromptTextTexture.getHeight() ) / 2;
+        gPromptTextTexture.render( CENTERED_HORIZONTALLY, 0 );
+        gTimeTextTexture.render  ( CENTERED_HORIZONTALLY, CENTERED_VERTICALLY );
 
         // Update screen
         SDL_RenderPresent( gRenderer );

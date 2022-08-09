@@ -155,11 +155,13 @@ LTexture::LTexture(void)
   mHeight  = 0;
 }
 
+
 LTexture::~LTexture(void)
 {
   // Deallocate
   free();
 }
+
 
 bool LTexture::loadFromFile( const std::string& path )
 {
@@ -209,6 +211,7 @@ bool LTexture::loadFromFile( const std::string& path )
   return mTexture != NULL;
 }
 
+
 #if defined(SDL_TTF_MAJOR_VERSION)
 bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color textColor )
 {
@@ -246,6 +249,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 }
 #endif
 
+
 void LTexture::free(void)
 {
   // Free texture if it exists
@@ -260,11 +264,13 @@ void LTexture::free(void)
   {;}
 }
 
+
 void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
 {
   // Modulate texture's RGB
   SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
+
 
 void LTexture::setBlendMode( SDL_BlendMode blending )
 {
@@ -272,11 +278,13 @@ void LTexture::setBlendMode( SDL_BlendMode blending )
   SDL_SetTextureBlendMode( mTexture, blending );
 }
 
+
 void LTexture::setAlpha( Uint8 alpha )
 {
   // Modulate texture alpha
   SDL_SetTextureAlphaMod( mTexture, alpha );
 }
+
 
 /**
  * @brief Renders texture at given (x, y) point of the target window. Accepts a rectangle defining
@@ -306,15 +314,22 @@ void LTexture::render( int x, int y, SDL_Rect* SourceClip, double angle, SDL_Poi
   SDL_RenderCopyEx( gRenderer, mTexture, SourceClip, &Destination, angle, center, flip );
 }
 
+
 int LTexture::getWidth(void) const
 {
   return mWidth;
 }
 
+
 int LTexture::getHeight(void) const
 {
   return mHeight;
 }
+
+
+/***************************************************************************************************
+* Private functions definitions
+****************************************************************************************************/
 
 static bool init(void)
 {

@@ -1,8 +1,43 @@
 /**
  * @file 23_advanced_timers.cpp
  *
- * @brief
+ * @brief Now that we've made a basic timer with SDL, it's time to make one that can
+ * start/stop/pause.
  *
+ * For these new features, we're going to make a timer class. It has all the basic function to
+ * start/stop/pause/unpause the timer and check its status. In terms of data members, we have the
+ * start time like before, a variable to store the time when paused, and status flags to keep track
+ * of whether the timer is running or paused.
+ * - The constructor initializes the internal data members.
+ * - The "start" method sets the "mIsStarted" and "mIsPaused" flags, gets the timer's start time and
+ *   initializes the pause time to 0. For this timer, if we want to restart it we just call start
+ *   again. Since we can start the timer if it is paused and/or running, we should make sure to
+ *   clear out the paused data.
+ * - The stop function basically reinitializes all the variables.
+ * - When pausing, we want to check if the timer is running because it doesn't make sense to pause a
+ *   timer that hasn't started. If the timer is running, we set the pause flag, store the time when
+ *   the timer was paused in mPausedTicks, and reset the start time.
+ * - When we unpause the timer, we want to make sure the timer is running and paused because we
+ *   can't unpause a timer that's stopped or running. We set the paused flag to false and set the
+ *   new start time. Say if you start the timer when SDL_GetTicks() reports 5000 ms and then you
+ *   pause it at 10000ms. This means the relative time at the time of pausing is 5000ms. If we were
+ *   to unpause it when SDL_GetTicks was at 20000, the new start time would be 20000 - 5000ms or
+ *   15000ms. This way the relative time will still be 5000ms away from the current SDL_GetTicks
+ *   time.
+ * - Getting the time is a bit tricky, since our timer can be running, paused, or stopped. If the
+ *   timer is stopped, we just return the initial 0 value. If the timer is paused, we return the
+ *   time stored when paused. If the timer is running and not paused, we return the time relative to
+ *   when it started.
+ *
+ * Before we enter the main loop, we declare a timer object and a string stream to turn the time
+ * value into text. When we press s key, we check if the timer is started. If it is, we stop it. If
+ * it isn't, we start it. When we press p, we check if the timer is paused. If it is, we unpause it.
+ * Otherwise we pause it.
+ *
+ * Before we render, we write the current time to a string stream. The reason we divide it by 1000
+ * is because we want seconds and there are 1000 milliseconds per second.
+ *
+ * After that, we render the text to a texture and then finally draw all the textures to the screen.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -19,6 +54,7 @@
 #include <stdio.h>
 #include <string>
 #include <sstream>
+
 
 /**************************************************************************************************
 * Private constants
@@ -58,79 +94,79 @@ static const std::string FontPath("lazy.ttf");
 class LTexture
 {
   public:
-    // Initializes variables
-    LTexture(void);
+  // Initializes variables
+  LTexture(void);
 
-    // Deallocates memory
-    ~LTexture(void);
+  // Deallocates memory
+  ~LTexture(void);
 
-    // Loads image at specified path
-    bool loadFromFile( const std::string& );
+  // Loads image at specified path
+  bool loadFromFile( const std::string& );
 
   #if defined(SDL_TTF_MAJOR_VERSION)
-    // Creates image from font string
-    bool loadFromRenderedText( const std::string& textureText, SDL_Color textColor );
+  // Creates image from font string
+  bool loadFromRenderedText( const std::string&, SDL_Color );
   #endif
 
-    // Deallocates texture
-    void free(void);
+  // Deallocates texture
+  void free(void);
 
-    // Set color modulation
-    void setColor( Uint8, Uint8, Uint8 );
+  // Set color modulation
+  void setColor( Uint8, Uint8, Uint8 );
 
-    // Set blending
-    void setBlendMode( SDL_BlendMode );
+  // Set blending
+  void setBlendMode( SDL_BlendMode );
 
-    // Set alpha modulation
-    void setAlpha( Uint8 );
+  // Set alpha modulation
+  void setAlpha( Uint8 );
 
-    // Renders texture at given point
-    void render( int, int, SDL_Rect* = NULL, double = 0.0, SDL_Point* = NULL, SDL_RendererFlip = SDL_FLIP_NONE );
+  // Renders texture at given point
+  void render( int, int, SDL_Rect* = NULL, double = 0.0, SDL_Point* = NULL, SDL_RendererFlip = SDL_FLIP_NONE );
 
-    // Gets image dimensions
-    int getWidth (void) const;
-    int getHeight(void) const;
+  // Gets image dimensions
+  int getWidth (void) const;
+  int getHeight(void) const;
 
   private:
-    // The actual hardware texture
-    SDL_Texture* mTexture;
+  // The actual hardware texture
+  SDL_Texture* mTexture;
 
-    // Image dimensions
-    int mWidth;
-    int mHeight;
+  // Image dimensions
+  int mWidth;
+  int mHeight;
 };
 
 
 // The application time based timer
 class LTimer
 {
-    public:
-    // Initializes variables
-    LTimer(void);
+  public:
+  // Initializes variables
+  LTimer(void);
 
-    // The various clock actions
-    void start(void);
-    void stop(void);
-    void pause(void);
-    void unpause(void);
+  // The various clock actions
+  void start(void);
+  void stop(void);
+  void pause(void);
+  void unpause(void);
 
-    // Gets the timer's time
-    Uint32 getTicks(void);
+  // Gets the timer's time
+  Uint32 getTicks(void);
 
-    // Checks the status of the timer
-    bool isStarted(void);
-    bool isPaused(void);
+  // Checks the status of the timer
+  bool isStarted(void);
+  bool isPaused(void);
 
-    private:
-    // The clock time when the timer started
-    Uint32 mStartTicks;
+  private:
+  // The clock time when the timer started
+  Uint32 mStartTicks;
 
-    // The ticks stored when the timer was paused
-    Uint32 mPausedTicks;
+  // The ticks stored when the timer was paused
+  Uint32 mPausedTicks;
 
-    // The timer status
-    bool mPaused;
-    bool mStarted;
+  // The timer status
+  bool mIsPaused;
+  bool mIsStarted;
 };
 
 
@@ -192,33 +228,33 @@ bool LTexture::loadFromFile( const std::string& path )
 
   if( loadedSurface == NULL )
   {
-    printf( "\nUnable to load image \"%s\"! SDL_image Error: %s", path.c_str(), IMG_GetError() );
+  printf( "\nUnable to load image \"%s\"! SDL_image Error: %s", path.c_str(), IMG_GetError() );
   }
   else
   {
-    printf( "\nImage \"%s\" loaded", path.c_str() );
+  printf( "\nImage \"%s\" loaded", path.c_str() );
 
-    // Color key image
-    SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
+  // Color key image
+  SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
-    // Create texture from surface pixels
-    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+  // Create texture from surface pixels
+  newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
-    if( newTexture == NULL )
-    {
-      printf( "\nUnable to create texture from \"%s\"! SDL Error: %s", path.c_str(), SDL_GetError() );
-    }
-    else
-    {
-      printf( "\nTexture created from \"%s\"", path.c_str() );
+  if( newTexture == NULL )
+  {
+    printf( "\nUnable to create texture from \"%s\"! SDL Error: %s", path.c_str(), SDL_GetError() );
+  }
+  else
+  {
+    printf( "\nTexture created from \"%s\"", path.c_str() );
 
-      // Get image dimensions
-      mWidth  = loadedSurface->w;
-      mHeight = loadedSurface->h;
-    }
+    // Get image dimensions
+    mWidth  = loadedSurface->w;
+    mHeight = loadedSurface->h;
+  }
 
-    // Get rid of old loaded surface
-    SDL_FreeSurface( loadedSurface );
+  // Get rid of old loaded surface
+  SDL_FreeSurface( loadedSurface );
   }
 
   // Return success
@@ -240,7 +276,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   if( textSurface != NULL )
   {
     // Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
 
     if( mTexture == NULL )
     {
@@ -277,6 +313,8 @@ void LTexture::free(void)
     mWidth = 0;
     mHeight = 0;
   }
+  else
+  {;} // Nothing to destroy
 }
 
 
@@ -312,6 +350,8 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
     renderQuad.w = clip->w;
     renderQuad.h = clip->h;
   }
+  else
+  {;}
 
   // Render to screen
   SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
@@ -332,111 +372,119 @@ int LTexture::getHeight(void) const
 
 LTimer::LTimer(void)
 {
-    // Initialize the variables
-    mStartTicks = 0;
-    mPausedTicks = 0;
+  // Initialize the variables
+  mStartTicks  = (Uint32)0;
+  mPausedTicks = (Uint32)0;
 
-    mPaused = false;
-    mStarted = false;
+  mIsPaused  = false;
+  mIsStarted = false;
 }
 
 
+/**
+ * @brief Sets the "mIsStarted" and "mIsPaused" flags, gets the timer's start time and initializes
+ * the pause time to 0. For this timer, if we want to restart it we just call start again. Since we
+ * can start the timer if it is paused and/or running, we should make sure to clear out the paused
+ * data.
+ **/
 void LTimer::start(void)
 {
-    // Start the timer
-    mStarted = true;
+  // Start the timer
+  mIsStarted = true;
 
-    // Unpause the timer
-    mPaused = false;
+  // Unpause the timer
+  mIsPaused = false;
 
-    // Get the current clock time
-    mStartTicks = SDL_GetTicks();
-  mPausedTicks = 0;
+  // Get the current clock time
+  mStartTicks  = static_cast<Uint32>(SDL_GetTicks64());
+  mPausedTicks = (Uint32)0;
 }
 
 
 void LTimer::stop(void)
 {
-    // Stop the timer
-    mStarted = false;
+  // Stop the timer
+  mIsStarted = false;
 
-    // Unpause the timer
-    mPaused = false;
+  // Unpause the timer
+  mIsPaused = false;
 
   // Clear tick variables
-  mStartTicks = 0;
-  mPausedTicks = 0;
+  mStartTicks  = (Uint32)0;
+  mPausedTicks = (Uint32)0;
 }
 
 
 void LTimer::pause(void)
 {
-    // If the timer is running and isn't already paused
-    if( mStarted && !mPaused )
-    {
-        // Pause the timer
-        mPaused = true;
+  // If the timer is running and isn't already paused
+  if( mIsStarted && !mIsPaused )
+  {
+    // Pause the timer
+    mIsPaused = true;
 
-        // Calculate the paused ticks
-        mPausedTicks = SDL_GetTicks() - mStartTicks;
-    mStartTicks = 0;
-    }
+    // Calculate the paused ticks
+    mPausedTicks = static_cast<Uint32>(SDL_GetTicks64()) - mStartTicks;
+    mStartTicks  = (Uint32)0;
+  }
+  else
+  {;}
 }
 
 
 void LTimer::unpause(void)
 {
-    // If the timer is running and paused
-    if( mStarted && mPaused )
-    {
-        // Unpause the timer
-        mPaused = false;
+  // If the timer is running and paused
+  if( mIsStarted && mIsPaused )
+  {
+    // Unpause the timer
+    mIsPaused = false;
 
-        // Reset the starting ticks
-        mStartTicks = SDL_GetTicks() - mPausedTicks;
+    // Reset the starting ticks
+    mStartTicks = static_cast<Uint32>(SDL_GetTicks64()) - mPausedTicks;
 
-        // Reset the paused ticks
-        mPausedTicks = 0;
-    }
+    // Reset the paused ticks
+    mPausedTicks = (Uint32)0;
+  }
 }
 
 
 Uint32 LTimer::getTicks(void)
 {
   // The actual timer time
-  Uint32 time = 0;
+  Uint32 time = (Uint32)0;
 
-    // If the timer is running
-    if( mStarted )
+  // If the timer is running
+  if( mIsStarted )
+  {
+    // If the timer is paused
+    if( mIsPaused )
     {
-        // If the timer is paused
-        if( mPaused )
-        {
-            // Return the number of ticks when the timer was paused
-            time = mPausedTicks;
-        }
-        else
-        {
-            // Return the current time minus the start time
-            time = SDL_GetTicks() - mStartTicks;
-        }
+      // Return the number of ticks when the timer was paused
+      time = mPausedTicks;
     }
+    else
+    {
+      // Return the current time minus the start time
+      time = static_cast<Uint32>(SDL_GetTicks64()) - mStartTicks;
+    }
+  }
 
-    return time;
+  return time;
 }
 
 
 bool LTimer::isStarted(void)
 {
   // Timer is running and paused or unpaused
-    return mStarted;
+  return mIsStarted;
 }
 
 
 bool LTimer::isPaused(void)
 {
   // Timer is running and paused
-    return mPaused && mStarted;
+  return mIsPaused && mIsStarted;
 }
 
 
@@ -509,7 +557,7 @@ static bool init(void)
           printf( "\nSDL_image initialised" );
         }
 
-         // Initialize SDL_ttf
+        // Initialize SDL_ttf
         if( TTF_Init() == -1 )
         {
           printf( "\nSDL_ttf could not initialize! SDL_ttf Error: %s", TTF_GetError() );
@@ -518,7 +566,7 @@ static bool init(void)
         else
         {
           printf( "\nSDL_ttf initialised" );
-      }
+        }
 
       } // Renderer created
 
@@ -626,21 +674,31 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
+  printf("\nProgram started with %d additional arguments.", argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
 
   // Start up SDL and create window
   if( !init() )
   {
-    printf( "Failed to initialize!\n" );
+    printf( "\nFailed to initialize!" );
   }
   else
   {
+    printf( "\nAll systems initialised" );
+
     // Load media
     if( !loadMedia() )
     {
-      printf( "Failed to load media!\n" );
+      printf( "\nFailed to load media!" );
     }
     else
     {
+      printf( "\nAll media loaded" );
+
       // Main loop flag
       bool quit = false;
 
@@ -699,7 +757,7 @@ int main( int argc, char* args[] )
 
         // Set text to be rendered
         timeText.str( "" );
-        timeText << "Seconds since start time " << ( static_cast<double>(timer.getTicks()) / 1000.0 );
+        timeText << "Seconds since start: " << ( static_cast<double>(timer.getTicks()) / 1000.0 );
         // timeText << "Seconds since start time " << ( timer.getTicks() / 1000.f ); // Istruzione originale
 
         // Render text
@@ -707,9 +765,11 @@ int main( int argc, char* args[] )
         {
           printf( "Unable to render time texture!\n" );
         }
+        else
+        {;} // All OK
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
         // Render textures
@@ -720,8 +780,10 @@ int main( int argc, char* args[] )
         // Update screen
         SDL_RenderPresent( gRenderer );
       }
-    }
-  }
+
+    } // Media loaded
+
+  } // Systems initialised
 
   // Free resources and close SDL
   close();

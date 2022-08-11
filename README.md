@@ -12,6 +12,8 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
   - [Make Files](#make-files)
 - [Particolarità](#particolarità)
   - [SDL_RenderCopyEx](#sdl_rendercopyex)
+- [Errori da Segnalare](#errori-da-segnalare)
+  - [Tutorial 23](#tutorial-23)
 
 
 ## Getting Started
@@ -88,3 +90,9 @@ Questa funzione renderizza una porzione di *texture* in una porzione della fines
 Gli argomenti passati ai parametri `x` e `y` di `LTexture::render` vengono poi passati a `dstrect`. Larghezza e altezza di `dstrect` vengono copiati da `SourceClip.x` e `SourceClip.y`. In caso `SourceClip` sia `NULL`, cioè vogliamo usare l'intera *texture*, larghezza e altezza passate a `dstrect` sono `mWidth` e `mHeight`, cioè le dimensioni originali della *texture* intera.
 
 ![](Docs/SDL_RenderCopyEx.svg)
+
+## Errori da Segnalare
+
+### Tutorial 23
+
+- "acccessor"

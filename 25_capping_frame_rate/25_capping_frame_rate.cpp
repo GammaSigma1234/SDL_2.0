@@ -1,31 +1,34 @@
 /**
- * @file 24_calculating_frame_rate.cpp
+ * @file 25_capping_frame_rate.cpp
  *
- * @brief Now that we know how to make a timer with SDL, it's time to put it to use. We're going to
- * use the timer to measure FPS.
+ * @brief Another thing we can do with SDL timers is manually cap the frame rate. Here we'll disable
+ * VSync and maintain a maximum frame rate. we're disabling VSync for this demo because we'll be
+ * manually capping the frame rate.
  *
- * In order to calculate the frames per second, we need to keep track of the number of frames
- * rendered and the number of seconds passed. Before we enter the main loop, we start a timer used
- * to calculate FPS and declare a variable to keep track of the number of frames rendered.
+ * For this demo, we're going render our frame normally, but at the end of the frame we're going to
+ * wait until the frame time is completed. For example here, when you want to render at 60 FPS, you
+ * have to spend 16 and 2/3rd milliseconds per frame ( 1000 ms / 60 frames ). This is why here we
+ * calculate the number of ticks per frame in milliseconds.
  *
- * To calculate frames per second, you just take the number of rendered frames and divide it by the
- * seconds passed. It is possible for there to be a very small amount of time passed for the first
- * frame and have it give us a really high FPS. This is why we correct the value if it is really
- * high.
+ * For this program, we'll not only need a timer to calculate the frame rate, but also a timer to
+ * cap the frames per second. before we enter the main loop, we declare some variables and start the
+ * FPS calculator timer. To cap the FPS we need to know how long the frame has taken to render,
+ * which is why we start a timer at the beginning of each frame. The frame rendering and FPS
+ * calculation code is identical as before.
  *
- * After calculating the FPS, we render the value as a texture to the screen. After we're done
- * rendering the scene, we increment the frame counter.
+ * At the end, we have the code to cap the frame rate. First we get how many ticks the frame took
+ * to complete. If the number of ticks the frame took to execute is less than the ticks needed per
+ * frame, we then delay for the remaining time to prevent the application from running too fast.
  *
- * Since this program is vsynced, it is probably going to report aroung 60 FPS. If you want to find
- * out how much your hardware can do, just create a renderer without vsync.
+ * There's a reason we'll be using VSync for these tutorials as opposed to manually capping the
+ * frame rate. When running this application, you'll notice that it runs slightly fast. Since we're
+ * using integers (because floating point numbers are not precise), the ticks per frame will be 16ms
+ * as opposed to the exact 16 2/3ms. This solution is more of a stop gap in case you have to deal
+ * with hardware that does not support VSync.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
  **/
-
-/***************************************************************************************************
-* Includes
-****************************************************************************************************/
 
 // Using SDL, SDL_image, SDL_ttf, standard IO, strings, and string streams
 #include <SDL.h>
@@ -41,6 +44,10 @@
 ***************************************************************************************************/
 
 static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
+static constexpr int MS_IN_A_S = 1000;
+
+static constexpr int SCREEN_FPS 					 = 60;
+static constexpr int SCREEN_TICK_PER_FRAME = MS_IN_A_S / SCREEN_FPS;
 
 static constexpr int SCREEN_W = 640; // Screen's width
 static constexpr int SCREEN_H = 480; // Screen's heigth
@@ -120,33 +127,33 @@ class LTexture
 // The application time based timer
 class LTimer
 {
-  public:
+    public:
 
-  // Initializes variables
+    // Initializes variables
   LTimer(void);
 
-  // The various clock actions
+    // The various clock actions
   void start(void);
   void stop(void);
   void pause(void);
   void unpause(void);
 
-  // Gets the timer's time
+    // Gets the timer's time
   Uint32 getTicks(void) const;
 
-  // Checks the status of the timer
+    // Checks the status of the timer
   bool isStarted(void) const;
   bool isPaused(void)  const;
 
-  private:
+    private:
 
-  // The clock time when the timer started
-  Uint32 mStartTicks;
+    // The clock time when the timer started
+    Uint32 mStartTicks;
 
-  // The ticks stored when the timer was paused
-  Uint32 mPausedTicks;
+    // The ticks stored when the timer was paused
+    Uint32 mPausedTicks;
 
-  // The timer status
+    // The timer status
   bool mIsPaused;
   bool mIsStarted;
 };
@@ -214,11 +221,11 @@ bool LTexture::loadFromFile( const std::string& path )
   {
     printf( "\nImage \"%s\" loaded", path.c_str() );
 
-      // Color key image
+    // Color key image
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
     // Create texture from surface pixels
-    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
     if( newTexture == NULL )
     {
@@ -414,7 +421,7 @@ void LTimer::pause(void)
 
 void LTimer::unpause(void)
 {
-  // If the timer is running and paused
+    // If the timer is running and paused
   if( mIsStarted && mIsPaused )
   {
     // Unpause the timer
@@ -454,7 +461,7 @@ Uint32 LTimer::getTicks(void) const
   else
   {;}
 
-  return time;
+    return time;
 }
 
 
@@ -514,7 +521,7 @@ static bool init(void)
       printf( "\nWindow created" );
 
       // Create accelerated and vsynced renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INIT_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+      gRenderer = SDL_CreateRenderer( gWindow, INIT_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED /* | SDL_RENDERER_PRESENTVSYNC */ );
 
       if( gRenderer == NULL )
       {
@@ -550,7 +557,7 @@ static bool init(void)
         else
         {
           printf( "\nSDL_ttf initialised" );
-        }
+  }
 
       } // Renderer created
 
@@ -668,6 +675,9 @@ int main( int argc, char* args[] )
       // The frames per second timer
       LTimer FPSTimer;
 
+      // The frames per second cap timer
+      LTimer capTimer;
+
       // In memory text stream
       std::stringstream timeText;
 
@@ -678,6 +688,9 @@ int main( int argc, char* args[] )
       // While application is running
       while( !quit )
       {
+        // Start cap timer
+        capTimer.start();
+
         // Handle events on queue
         while( SDL_PollEvent( &e ) != 0 )
         {
@@ -702,13 +715,15 @@ int main( int argc, char* args[] )
 
         // Set text to be rendered
         timeText.str( "" );
-        timeText << "Average Frames Per Second " << avgFPS;
+        timeText << "Average Frames Per Second (With Cap) " << avgFPS;
 
         // Render text
         if( !gFPSTextTexture.loadFromRenderedText( timeText.str().c_str(), textColor ) )
         {
           printf( "Unable to render FPS texture!\n" );
         }
+        else
+        {;}
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
@@ -720,6 +735,17 @@ int main( int argc, char* args[] )
         // Update screen
         SDL_RenderPresent( gRenderer );
         ++countedFrames;
+
+        // If frame finished early
+        int frameTicks = capTimer.getTicks();
+
+        if( frameTicks < SCREEN_TICK_PER_FRAME )
+        {
+          // Wait remaining time
+          SDL_Delay( SCREEN_TICK_PER_FRAME - frameTicks );
+        }
+        else
+        {;}
       }
     }
   }

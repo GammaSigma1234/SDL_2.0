@@ -1,53 +1,66 @@
 /**
- * @file 25_capping_frame_rate.cpp
+ * @file 26_motion.cpp
  *
- * @brief Another thing we can do with SDL timers is manually cap the frame rate. Here we'll disable
- * VSync and maintain a maximum frame rate. we're disabling VSync for this demo because we'll be
- * manually capping the frame rate.
+ * @brief Now that we know how to render, handle input, and deal with time, we know everything we
+ * need to move around things on the screen. Here we will do a basic program with a dot moving
+ * around.
  *
- * For this demo, we're going render our frame normally, but at the end of the frame we're going to
- * wait until the frame time is completed. For example here, when you want to render at 60 FPS, you
- * have to spend 16 and 2/3rd milliseconds per frame ( 1000 ms / 60 frames ). This is why here we
- * calculate the number of ticks per frame in milliseconds.
+ * "Dot" is the class for the dot we're going to be moving around on the screen. It has some
+ * constants to define its dimensions and velocity. It has a constructor, an event handler, a
+ * function to move it every frame, and a function to render it. As for data members, it has
+ * variables for its (x, y) position and (x, y) velocity.
  *
- * For this program, we'll not only need a timer to calculate the frame rate, but also a timer to
- * cap the frames per second. before we enter the main loop, we declare some variables and start the
- * FPS calculator timer. To cap the FPS we need to know how long the frame has taken to render,
- * which is why we start a timer at the beginning of each frame. The frame rendering and FPS
- * calculation code is identical as before.
+ * In our event handler we're going to set the velocity based on the key press.
  *
- * At the end, we have the code to cap the frame rate. First we get how many ticks the frame took
- * to complete. If the number of ticks the frame took to execute is less than the ticks needed per
- * frame, we then delay for the remaining time to prevent the application from running too fast.
+ * You may be wondering why we don't simply just increase the positon when we press the key. If we
+ * were to say add to the x position every time we press the right key, we would have to repeatedly
+ * press the right key to keep it moving. By setting the velocity, we just have to press the key
+ * once.
  *
- * There's a reason we'll be using VSync for these tutorials as opposed to manually capping the
- * frame rate. When running this application, you'll notice that it runs slightly fast. Since we're
- * using integers (because floating point numbers are not precise), the ticks per frame will be 16ms
- * as opposed to the exact 16 2/3ms. This solution is more of a stop gap in case you have to deal
- * with hardware that does not support VSync.
+ * If you're wondering why we're checking if the key repeat is 0, it's because key repeat is enabled
+ * by default and if you press and hold a key it will report multiple key presses. That means we
+ * have to check if the key press is the first one because we only care when the key was first
+ * pressed.
+ *
+ * For those of you who haven't studied physics yet, velocity is the speed/direction of an object.
+ * If an object is moving right at 10 pixels per frame, it has a velocity of 10. If it is moving to
+ * the left at 10 pixel per frame, it has a velocity of -10. If the dot's velocity is 10, this means
+ * after 10 frames it will have moved 100 pixels over.
+ *
+ * When we release a key, we have to undo the velocity change when first pressed it. When we pressed
+ * right key, we added to the x velocity. When we release the right key, we subtract from the x
+ * velocity to return it to 0.
+ *
+ * "move" is the function we call every frame to move the dot. First, we move the dot along the x
+ * axis based on its x velocity. After that, we check if the dot moved off the screen. If it did, we
+ * then undo the movement along the x axis. Same for the y axis.
+ *
+ * In the rendering function ("render"), we render the dot texture at the dot's position.
+ *
+ * Before we enter the main loop we declare a dot object, to use it in the main loop. In the event
+ * loop we handle events for the dot. After that, we update the dot's position and then render it to
+ * the screen.
+ *
+ * In this tutorial we're basing the velocity as amount moved per frame. In most games, the velocity
+ * is done per second. The reason were doing it per frame is that it is easier, but if you know
+ * physics it shouldn't be hard to update the dot's position based on time. If you don't know
+ * physics, just stick with per frame velocity for now.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
  **/
 
-// Using SDL, SDL_image, SDL_ttf, standard IO, strings, and string streams
+// Using SDL, SDL_image, standard IO, and strings
 #include <SDL.h>
 #include <SDL_image.h>
-#include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
-#include <sstream>
-
 
 /**************************************************************************************************
 * Private constants
 ***************************************************************************************************/
 
 static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
-static constexpr int MS_IN_A_S = 1000;
-
-static constexpr int SCREEN_FPS 	= 60;
-static constexpr int MS_PER_FRAME = MS_IN_A_S / SCREEN_FPS;
 
 static constexpr int SCREEN_W = 640; // Screen's width
 static constexpr int SCREEN_H = 480; // Screen's heigth
@@ -70,7 +83,7 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
-static const std::string FontPath("lazy.ttf");
+static const std::string FilePath("dot.bmp");
 
 
 /***************************************************************************************************
@@ -81,46 +94,46 @@ static const std::string FontPath("lazy.ttf");
 class LTexture
 {
   public:
-    // Initializes variables
+  // Initializes variables
   LTexture(void);
 
-    // Deallocates memory
+  // Deallocates memory
   ~LTexture(void);
 
-    // Loads image at specified path
+  // Loads image at specified path
   bool loadFromFile( const std::string& );
 
-#if defined(SDL_TTF_MAJOR_VERSION)
+  #if defined(SDL_TTF_MAJOR_VERSION)
   // Creates image from font string
   bool loadFromRenderedText( const std::string&, SDL_Color );
-#endif
+  #endif
 
-    // Deallocates texture
+  // Deallocates texture
   void free(void);
 
-    // Set color modulation
+  // Set color modulation
   void setColor( Uint8, Uint8, Uint8 );
 
-    // Set blending
+  // Set blending
   void setBlendMode( SDL_BlendMode );
 
-    // Set alpha modulation
+  // Set alpha modulation
   void setAlpha( Uint8 );
 
-    // Renders texture at given point
+  // Renders texture at given point
   void render( int, int, SDL_Rect* = NULL, double = 0.0, SDL_Point* = NULL, SDL_RendererFlip = SDL_FLIP_NONE );
 
-    // Gets image dimensions
+  // Gets image dimensions
   int getWidth (void) const;
   int getHeight(void) const;
 
   private:
-    // The actual hardware texture
-    SDL_Texture* mTexture;
+  // The actual hardware texture
+  SDL_Texture* mTexture;
 
-    // Image dimensions
-    int mWidth;
-    int mHeight;
+  // Image dimensions
+  int mWidth;
+  int mHeight;
 };
 
 
@@ -159,6 +172,40 @@ class LTimer
 };
 
 
+// The dot that will move around on the screen
+class Dot
+{
+  public:
+
+  // Initializes the variables
+  Dot(void);
+
+  // Takes key presses and adjusts the dot's velocity
+  void handleEvent( SDL_Event& );
+
+  // Moves the dot
+  void move(void);
+
+  // Shows the dot on the screen
+  void render(void);
+
+  private:
+
+  // The dimensions of the dot
+  static constexpr int DOT_WIDTH  = 20;
+  static constexpr int DOT_HEIGHT = 20;
+
+  // Maximum axis velocity of the dot
+  static constexpr int DOT_VEL = 5;
+
+  // The X and Y offsets of the dot
+  int mPosX, mPosY;
+
+  // The velocity of the dot
+  int mVelX, mVelY;
+};
+
+
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -176,10 +223,8 @@ static void PressEnter(void);
 static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
-static TTF_Font* gFont = NULL; // Globally used font
-
 // Scene textures
-static LTexture gFPSTextTexture;
+static LTexture gDotTexture;
 
 
 /***************************************************************************************************
@@ -357,140 +402,81 @@ int LTexture::getHeight(void) const
 }
 
 
-LTimer::LTimer(void)
+Dot::Dot()
 {
-    // Initialize the variables
-  mStartTicks  = (Uint32)0;
-  mPausedTicks = (Uint32)0;
+  // Initialize the offsets
+  mPosX = 0;
+  mPosY = 0;
 
-  mIsPaused  = false;
-  mIsStarted = false;
+  // Initialize the velocity
+  mVelX = 0;
+  mVelY = 0;
 }
 
 
-/**
- * @brief Starts the timer. Sets "mIsStarted" to true and "mIsPaused" to false. Initialises
- * the pause time to 0.
- **/
-void LTimer::start(void)
+void Dot::handleEvent( SDL_Event& e )
 {
-  // Start the timer
-  mIsStarted = true;
-
-  // Unpause the timer
-  mIsPaused = false;
-
-  // Get the current clock time
-  mStartTicks  = static_cast<Uint32>(SDL_GetTicks64());
-  mPausedTicks = (Uint32)0;
-}
-
-
-/**
- * @brief Stops the timer. Sets "mIsStarted" and "mIsPaused" to false. Initialises the start and
- * pause times to 0.
- **/
-void LTimer::stop(void)
-{
-  // Stop the timer
-  mIsStarted = false;
-
-  // Unpause the timer
-  mIsPaused = false;
-
-  // Clear tick variables
-  mStartTicks  = (Uint32)0;
-  mPausedTicks = (Uint32)0;
-}
-
-
-/**
- * @brief Pauses the timer, but only if it is currently running. Sets "mIsPaused" to true.
- * Initialises the start time to 0.
- **/
-void LTimer::pause(void)
-{
-  // If the timer is running and isn't already paused
-  if( mIsStarted && !mIsPaused )
+  // If a key was pressed
+  if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
   {
-    // Pause the timer
-    mIsPaused = true;
-
-    // Calculate the paused ticks
-    mPausedTicks = static_cast<Uint32>(SDL_GetTicks64()) - mStartTicks;
-    mStartTicks  = (Uint32)0;
-  }
-  else
-  {;}
-}
-
-
-/**
- * @brief Unpauses the timer, but only if it is currently paused. Sets "mIsPaused" to false.
- * Initialises the pause time to 0.
- **/
-void LTimer::unpause(void)
-{
-    // If the timer is running and paused
-  if( mIsStarted && mIsPaused )
-  {
-    // Unpause the timer
-    mIsPaused = false;
-
-    // Reset the starting ticks
-    mStartTicks = static_cast<Uint32>(SDL_GetTicks64()) - mPausedTicks;
-
-    // Reset the paused ticks
-    mPausedTicks = (Uint32)0;
-  }
-  else
-  {;}
-}
-
-
-/**
- * @brief Returns time in milliseconds since start
- * 
- * @return Uint32 time in milliseconds since start
- **/
-Uint32 LTimer::getTicks(void) const
-{
-  // The actual timer time
-  Uint32 time = (Uint32)0;
-
-  // If the timer is running
-  if( mIsStarted )
-  {
-    // If the timer is paused
-    if( mIsPaused )
+    // Adjust the velocity
+    switch( e.key.keysym.sym )
     {
-      // Return the number of ticks when the timer was paused
-      time = mPausedTicks;
+      case SDLK_UP:    mVelY -= DOT_VEL; break;
+      case SDLK_DOWN:  mVelY += DOT_VEL; break;
+      case SDLK_LEFT:  mVelX -= DOT_VEL; break;
+      case SDLK_RIGHT: mVelX += DOT_VEL; break;
     }
-    else
+  }
+  // If a key was released
+  else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
+  {
+    // Adjust the velocity
+    switch( e.key.keysym.sym )
     {
-      // Return the current time minus the start time
-      time = static_cast<Uint32>(SDL_GetTicks64()) - mStartTicks;
+      case SDLK_UP:    mVelY += DOT_VEL; break;
+      case SDLK_DOWN:  mVelY -= DOT_VEL; break;
+      case SDLK_LEFT:  mVelX += DOT_VEL; break;
+      case SDLK_RIGHT: mVelX -= DOT_VEL; break;
     }
   }
   else
   {;}
-
-  return time;
 }
 
 
-bool LTimer::isStarted(void) const
+void Dot::move(void)
 {
-  // Timer is running and paused or unpaused
-  return mIsStarted;
+  // Move the dot left or right
+  mPosX += mVelX;
+
+  // If the dot went too far to the left or right
+  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) )
+  {
+    // Move back
+    mPosX -= mVelX;
+  }
+  else
+  {;}
+
+  // Move the dot up or down
+  mPosY += mVelY;
+
+  // If the dot went too far up or down
+  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) )
+  {
+    // Move back
+    mPosY -= mVelY;
+  }
+  else
+  {;}
 }
 
 
-bool LTimer::isPaused(void) const
+void Dot::render(void)
 {
-  // Timer is running and paused
-  return mIsPaused && mIsStarted;
+  // Show the dot
+  gDotTexture.render( mPosX, mPosY );
 }
 
 
@@ -507,11 +493,11 @@ static bool init(void)
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
     printf( "\nSDL could not initialize! SDL Error: %s", SDL_GetError() );
-    success = false;
+  success = false;
   }
   else
   {
-    printf( "\nSDL initialised" );
+      printf( "\nSDL initialised" );
 
     // Set texture filtering to linear
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
@@ -528,7 +514,7 @@ static bool init(void)
 
     if( gWindow == NULL )
     {
-      printf( "\nWindow could not be created! SDL Error: %s", SDL_GetError() );
+        printf( "\nWindow could not be created! SDL Error: %s", SDL_GetError() );
       success = false;
     }
     else
@@ -536,12 +522,12 @@ static bool init(void)
       printf( "\nWindow created" );
 
       // Create accelerated and vsynced renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INIT_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED /* | SDL_RENDERER_PRESENTVSYNC */ );
+      gRenderer = SDL_CreateRenderer( gWindow, INIT_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 
       if( gRenderer == NULL )
       {
-        printf( "\nRenderer could not be created! SDL Error: %s", SDL_GetError() );
-        success = false;
+          printf( "\nRenderer could not be created! SDL Error: %s", SDL_GetError() );
+      success = false;
       }
       else
       {
@@ -561,17 +547,6 @@ static bool init(void)
         else
         {
           printf( "\nSDL_image initialised" );
-        }
-
-        // Initialize SDL_ttf
-        if( TTF_Init() == -1 )
-        {
-          printf( "\nSDL_ttf could not initialize! SDL_ttf Error: %s", TTF_GetError() );
-          success = false;
-        }
-        else
-        {
-          printf( "\nSDL_ttf initialised" );
         }
 
       } // Renderer created
@@ -594,18 +569,14 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Open the font
-  gFont = TTF_OpenFont( FontPath.c_str(), 28 );
-
-  if( gFont == NULL )
+  // Load dot texture
+  if( !gDotTexture.loadFromFile( FilePath.c_str() ) )
   {
-    printf( "\nFailed to load lazy font! SDL_ttf Error: %s", TTF_GetError() );
+    printf( "Failed to load dot texture!\n" );
     success = false;
   }
   else
-  {
-    printf( "\nLazy font loaded" );
-  }
+  {;}
 
   return success;
 }
@@ -614,11 +585,7 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Free loaded images
-  gFPSTextTexture.free();
-
-  // Free global font
-  TTF_CloseFont( gFont );
-  gFont = NULL;
+  gDotTexture.free();
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -627,7 +594,6 @@ static void close(void)
   gWindow   = NULL;
 
   // Quit SDL subsystems
-  TTF_Quit();
   IMG_Quit();
   SDL_Quit();
 }
@@ -672,7 +638,7 @@ int main( int argc, char* args[] )
     // Load media
     if( !loadMedia() )
     {
-      printf( "\nFailed to load media!" );
+        printf( "\nFailed to load media!" );
     }
     else
     {
@@ -684,83 +650,37 @@ int main( int argc, char* args[] )
       // Event handler
       SDL_Event e;
 
-      // Set text color as black
-      SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
-
-      // The frames per second timer
-      LTimer FPSTimer;
-
-      // The frames per second cap timer
-      LTimer capTimer;
-
-      // In memory text stream
-      std::stringstream timeText;
-
-      // Start counting frames per second
-      int countedFrames = 0;
-      FPSTimer.start();
+      // The dot that will be moving around on the screen
+      Dot dot;
 
       // While application is running
       while( !quit )
       {
-        // Start cap timer
-        capTimer.start();
-
         // Handle events on queue
         while( SDL_PollEvent( &e ) != 0 )
         {
           // User requests quit
           if( e.type == SDL_QUIT )
           {
-            quit = true;
+          quit = true;
           }
-          else
-          {;}
+
+          // Handle input for the dot
+          dot.handleEvent( e );
         }
 
-        // Calculate and correct FPS
-        double avgFPS = countedFrames / ( static_cast<double>(FPSTimer.getTicks()) / 1000.0 );
-
-        if( avgFPS > 2'000'000 )
-        {
-          avgFPS = 0.0;
-        }
-        else
-        {;}
-
-        // Set text to be rendered
-        timeText.str( "" );
-        timeText << "Average Frames Per Second (With Cap) " << avgFPS;
-
-        // Render text
-        if( !gFPSTextTexture.loadFromRenderedText( timeText.str().c_str(), textColor ) )
-        {
-          printf( "Unable to render FPS texture!\n" );
-        }
-        else
-        {;}
+        // Move the dot
+        dot.move();
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render textures
-        gFPSTextTexture.render( ( SCREEN_W - gFPSTextTexture.getWidth() ) / 2, ( SCREEN_H - gFPSTextTexture.getHeight() ) / 2 );
+        // Render objects
+        dot.render();
 
         // Update screen
         SDL_RenderPresent( gRenderer );
-        ++countedFrames;
-
-        int frameTicks_ms = capTimer.getTicks();
-
-        // If frame finished early
-        if( frameTicks_ms < MS_PER_FRAME )
-        {
-          // Wait remaining time
-          SDL_Delay( MS_PER_FRAME - frameTicks_ms );
-        }
-        else
-        {;}
       }
     }
   }

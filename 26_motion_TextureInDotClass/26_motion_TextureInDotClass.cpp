@@ -1,58 +1,9 @@
 /**
- * @file 26_motion.cpp
+ * @file 26_motion_TextureInDotClass.cpp
  *
- * @brief Now that we know how to render, handle input, and deal with time, we know everything we
- * need to move around things on the screen. Here we will do a basic program with a dot moving
- * around.
- *
- * "Dot" is the class for the dot we're going to be moving around on the screen. It has some
- * constants to define its dimensions and velocity. It has a constructor, an event handler, a
- * function to move it every frame, and a function to render it. As for data members, it has
- * variables for its (x, y) position and (x, y) velocity.
- *
- * In our event handler we're going to set the velocity based on the key press.
- *
- * You may be wondering why we don't simply just increase the positon when we press the key. If we
- * were to say add to the x position every time we press the right key, we would have to repeatedly
- * press the right key to keep it moving. By setting the velocity, we just have to press the key
- * once.
- *
- * If you're wondering why we're checking if the key repeat is 0, it's because key repeat is enabled
- * by default and if you press and hold a key it will report multiple key presses. That means we
- * have to check if the key press is the first one because we only care when the key was first
- * pressed.
- *
- * For those of you who haven't studied physics yet, velocity is the speed/direction of an object.
- * If an object is moving right at 10 pixels per frame, it has a velocity of 10. If it is moving to
- * the left at 10 pixel per frame, it has a velocity of -10. If the dot's velocity is 10, this means
- * after 10 frames it will have moved 100 pixels over.
- *
- * When we release a key, we have to undo the velocity change when first pressed it. When we pressed
- * right key, we added to the x velocity. When we release the right key, we subtract from the x
- * velocity to return it to 0.
- *
- * "move" is the function we call every frame to move the dot. First, we move the dot along the x
- * axis based on its x velocity. After that, we check if the dot moved off the screen. If it did, we
- * then undo the movement along the x axis. Same for the y axis.
- *
- * In the rendering function ("render"), we render the dot texture at the dot's position.
- *
- * Before we enter the main loop we declare a dot object, to use it in the main loop. In the event
- * loop we handle events for the dot. After that, we update the dot's position and then render it to
- * the screen.
- *
- * In this tutorial we're basing the velocity as amount moved per frame. In most games, the velocity
- * is done per second. The reason were doing it per frame is that it is easier, but if you know
- * physics it shouldn't be hard to update the dot's position based on time. If you don't know
- * physics, just stick with per frame velocity for now.
- *
- * ATTENZIONE: l'autore ha preferito creare una texture globale "gDotTexture" anziché renderla un
- * membro privato della classe "Dot". Infatti, il metodo Dot::render chiama a sua volta il metodo
- * LTexture::render sull'oggetto globale "gDotTexture", che idealmente dovrebbe essere un membro
- * della classe Dot, anziché un entità globale.
- *
- * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
+ * @brief Come l'esempio 26, ma rendendo la classe Dot autonoma, cioè eliminando la texture globale
+ * "gDotTexture" e trasformandola in un membro privato di Dot, "m_DotTexture". Il constructor di Dot
+ * alloca la texture; di conseguenza, la funzione privata globale "LoadMedia" diventa superflua.
  **/
 
 // Using SDL, SDL_image, standard IO, and strings
@@ -82,22 +33,20 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
-static const std::string FilePath("dot.bmp");
-
 
 /***************************************************************************************************
 * Classes
 ****************************************************************************************************/
 
 // Texture wrapper class
-class LTexture
+class Texture
 {
   public:
   // Initializes variables
-  LTexture(void);
+  Texture(void);
 
   // Deallocates memory
-  ~LTexture(void);
+  ~Texture(void);
 
   // Loads image at specified path
   bool loadFromFile( const std::string& );
@@ -177,7 +126,8 @@ class Dot
   public:
 
   // Initializes the variables
-  Dot(void);
+   Dot(void);
+  ~Dot(void);
 
   // Takes key presses and adjusts the dot's velocity
   void handleEvent( SDL_Event& );
@@ -198,10 +148,16 @@ class Dot
   static constexpr int DOT_VEL = 5;
 
   // The X and Y offsets of the dot
-  int mPosX, mPosY;
+  int m_PosX, m_PosY;
 
   // The velocity of the dot
-  int mVelX, mVelY;
+  int m_VelX, m_VelY;
+
+  // The texture used for the dot
+  Texture m_DotTexture;
+
+  // The texture's path
+  std::string m_FilePath;
 };
 
 
@@ -210,7 +166,6 @@ class Dot
 ****************************************************************************************************/
 
 static bool init(void);
-static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
 
@@ -222,15 +177,13 @@ static void PressEnter(void);
 static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
-// Scene textures
-static LTexture gDotTexture;
 
 
 /***************************************************************************************************
 * Methods definitions
 ****************************************************************************************************/
 
-LTexture::LTexture(void)
+Texture::Texture(void)
 {
   // Initialize
   mTexture = NULL;
@@ -239,14 +192,14 @@ LTexture::LTexture(void)
 }
 
 
-LTexture::~LTexture(void)
+Texture::~Texture(void)
 {
   // Deallocate
   free();
 }
 
 
-bool LTexture::loadFromFile( const std::string& path )
+bool Texture::loadFromFile( const std::string& path )
 {
   // Get rid of preexisting texture
   free();
@@ -296,7 +249,7 @@ bool LTexture::loadFromFile( const std::string& path )
 
 
 #if defined(SDL_TTF_MAJOR_VERSION)
-bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color textColor )
+bool Texture::loadFromRenderedText( const std::string& textureText, SDL_Color textColor )
 {
   // Get rid of preexisting texture
   free();
@@ -334,7 +287,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 #endif
 
 
-void LTexture::free(void)
+void Texture::free(void)
 {
   // Free texture if it exists
   if( mTexture != NULL )
@@ -349,28 +302,28 @@ void LTexture::free(void)
 }
 
 
-void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
+void Texture::setColor( Uint8 red, Uint8 green, Uint8 blue )
 {
   // Modulate texture rgb
   SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
 
 
-void LTexture::setBlendMode( SDL_BlendMode blending )
+void Texture::setBlendMode( SDL_BlendMode blending )
 {
   // Set blending function
   SDL_SetTextureBlendMode( mTexture, blending );
 }
 
 
-void LTexture::setAlpha( Uint8 alpha )
+void Texture::setAlpha( Uint8 alpha )
 {
   // Modulate texture alpha
   SDL_SetTextureAlphaMod( mTexture, alpha );
 }
 
 
-void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
+void Texture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
 {
   // Set rendering space and render to screen
   SDL_Rect renderQuad = { x, y, mWidth, mHeight };
@@ -389,27 +342,32 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
 }
 
 
-int LTexture::getWidth(void) const
+int Texture::getWidth(void) const
 {
   return mWidth;
 }
 
 
-int LTexture::getHeight(void) const
+int Texture::getHeight(void) const
 {
   return mHeight;
 }
 
 
+/**
+ * @brief Initialises the offsets and the velocity
+ **/
 Dot::Dot(void)
+  : m_PosX(0), m_PosY(0), m_VelX(0), m_VelY(0), m_FilePath("dot.bmp")
 {
-  // Initialize the offsets
-  mPosX = 0;
-  mPosY = 0;
+  m_DotTexture.loadFromFile( m_FilePath.c_str() );
+}
 
-  // Initialize the velocity
-  mVelX = 0;
-  mVelY = 0;
+
+Dot::~Dot(void)
+{
+  // Free loaded images
+  m_DotTexture.free();
 }
 
 
@@ -422,10 +380,10 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : mVelY -= DOT_VEL; break;
-      case SDLK_DOWN : mVelY += DOT_VEL; break;
-      case SDLK_LEFT : mVelX -= DOT_VEL; break;
-      case SDLK_RIGHT: mVelX += DOT_VEL; break;
+      case SDLK_UP   : m_VelY -= DOT_VEL; break;
+      case SDLK_DOWN : m_VelY += DOT_VEL; break;
+      case SDLK_LEFT : m_VelX -= DOT_VEL; break;
+      case SDLK_RIGHT: m_VelX += DOT_VEL; break;
       default        :                   break;
     }
   }
@@ -435,10 +393,10 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : mVelY += DOT_VEL; break;
-      case SDLK_DOWN : mVelY -= DOT_VEL; break;
-      case SDLK_LEFT : mVelX += DOT_VEL; break;
-      case SDLK_RIGHT: mVelX -= DOT_VEL; break;
+      case SDLK_UP   : m_VelY += DOT_VEL; break;
+      case SDLK_DOWN : m_VelY -= DOT_VEL; break;
+      case SDLK_LEFT : m_VelX += DOT_VEL; break;
+      case SDLK_RIGHT: m_VelX -= DOT_VEL; break;
       default        :                   break;
     }
   }
@@ -450,24 +408,24 @@ void Dot::handleEvent( SDL_Event& e )
 void Dot::move(void)
 {
   // Move the dot left or right
-  mPosX += mVelX;
+  m_PosX += m_VelX;
 
   // If the dot went too far to the left or right
-  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) )
+  if( ( m_PosX < 0 ) || ( m_PosX + DOT_WIDTH > SCREEN_W ) )
   {
     // Move back
-    mPosX -= mVelX;
+    m_PosX -= m_VelX;
   }
   else {;}
 
   // Move the dot up or down
-  mPosY += mVelY;
+  m_PosY += m_VelY;
 
   // If the dot went too far up or down
-  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) )
+  if( ( m_PosY < 0 ) || ( m_PosY + DOT_HEIGHT > SCREEN_H ) )
   {
     // Move back
-    mPosY -= mVelY;
+    m_PosY -= m_VelY;
   }
   else {;}
 }
@@ -476,7 +434,7 @@ void Dot::move(void)
 void Dot::render(void)
 {
   // Show the dot
-  gDotTexture.render( mPosX, mPosY );
+  m_DotTexture.render( m_PosX, m_PosY );
 }
 
 
@@ -500,13 +458,13 @@ static bool init(void)
     printf( "\nSDL initialised" );
 
     // Set texture filtering to linear
-    if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
+    if( SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) == SDL_TRUE )
     {
-      printf( "\nWarning: Linear texture filtering not enabled!" );
+      printf( "\nLinear texture filtering enabled" );
     }
     else
     {
-      printf( "\nLinear texture filtering enabled" );
+      printf( "\nWarning: Linear texture filtering not enabled!" );
     }
 
     // Create window
@@ -559,33 +517,8 @@ static bool init(void)
 }
 
 
-/**
- * @brief Loads all necessary media for this project.
- *
- * @return true if loading was successful; false otherwise
- **/
-static bool loadMedia(void)
-{
-  // Loading success flag
-  bool success = true;
-
-  // Load dot texture
-  if( !gDotTexture.loadFromFile( FilePath.c_str() ) )
-  {
-    printf( "Failed to load dot texture!\n" );
-    success = false;
-  }
-  else { /* OK */ }
-
-  return success;
-}
-
-
 static void close(void)
 {
-  // Free loaded images
-  gDotTexture.free();
-
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
   SDL_DestroyWindow( gWindow );
@@ -634,54 +567,44 @@ int main( int argc, char* args[] )
   {
     printf( "\nAll systems initialised" );
 
-    // Load media
-    if( !loadMedia() )
+    // Main loop flag
+    bool quit = false;
+
+    // Event handler
+    SDL_Event e;
+
+    // The dot that will be moving around on the screen
+    Dot dot;
+
+    // While application is running
+    while( !quit )
     {
-      printf( "\nFailed to load media!" );
-    }
-    else
-    {
-      printf( "\nAll media loaded" );
-
-      // Main loop flag
-      bool quit = false;
-
-      // Event handler
-      SDL_Event e;
-
-      // The dot that will be moving around on the screen
-      Dot dot;
-
-      // While application is running
-      while( !quit )
+      // Handle events on queue
+      while( SDL_PollEvent( &e ) != 0 )
       {
-        // Handle events on queue
-        while( SDL_PollEvent( &e ) != 0 )
+        // User requests quit
+        if( e.type == SDL_QUIT )
         {
-          // User requests quit
-          if( e.type == SDL_QUIT )
-          {
-          quit = true;
-          }
-          else { /* Ignore event */ }
-
-          // Handle input for the dot
-          dot.handleEvent( e );
+        quit = true;
         }
+        else { /* Ignore event */ }
 
-        // Move the dot
-        dot.move();
-
-        // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
-        SDL_RenderClear( gRenderer );
-
-        // Render objects
-        dot.render();
-
-        // Update screen
-        SDL_RenderPresent( gRenderer );
+        // Handle input for the dot
+        dot.handleEvent( e );
       }
+
+      // Move the dot
+      dot.move();
+
+      // Clear screen
+      SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
+      SDL_RenderClear( gRenderer );
+
+      // Render objects
+      dot.render();
+
+      // Update screen
+      SDL_RenderPresent( gRenderer );
     }
   }
 

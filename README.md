@@ -140,3 +140,9 @@ Una qualsiasi delle condizioni qui sopra assicura che i due rettangoli siano sep
 ### Tutorial 23
 
 - "acccessor"
+
+$$x=y$$
+
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/x-mathjax-config"> MathJax.Hub.Config({ tex2jax: {inlineMath: [['$', '$']]}, messageStyle: "none" });</script>

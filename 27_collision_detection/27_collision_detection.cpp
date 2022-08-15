@@ -104,11 +104,23 @@ static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
 static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
 static constexpr int WHITE_A = 0xFF; // Alpha component
 
+// Colore nero
+static constexpr int BLACK_R = 0x00; // Amount of red   needed to compose black
+static constexpr int BLACK_G = 0x00; // Amount of green needed to compose black
+static constexpr int BLACK_B = 0x00; // Amount of blue  needed to compose black
+static constexpr int BLACK_A = 0xFF; // Alpha component
+
 // Colore ciano
 static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
+
+// Muro
+static constexpr int WALL_x = 300;
+static constexpr int WALL_y = 40;
+static constexpr int WALL_w = 40;
+static constexpr int WALL_h = 400;
 
 static const std::string FilePath("dot.bmp");
 
@@ -175,7 +187,7 @@ class Dot
   void handleEvent( SDL_Event& );
 
   // Moves the dot and checks collision
-  void move( SDL_Rect& wall );
+  void move( SDL_Rect& Wall );
 
   // Shows the dot on the screen
   void render(void);
@@ -446,14 +458,14 @@ void Dot::handleEvent( SDL_Event& e )
   {;}
 }
 
-void Dot::move( SDL_Rect& wall )
+void Dot::move( SDL_Rect& Wall )
 {
   // Move the dot left or right
   mPosX      += mVelX;
   mCollider.x = mPosX;
 
   // If the dot collided or went too far to the left or right
-  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) || checkCollision( mCollider, wall ) )
+  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) || checkCollision( mCollider, Wall ) )
   {
     // Move back
     mPosX      -= mVelX;
@@ -466,7 +478,7 @@ void Dot::move( SDL_Rect& wall )
   mCollider.y = mPosY;
 
   // If the dot collided or went too far up or down
-  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) || checkCollision( mCollider, wall ) )
+  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) || checkCollision( mCollider, Wall ) )
   {
     // Move back
     mPosY      -= mVelY;
@@ -487,6 +499,11 @@ void Dot::render(void)
 * Private functions definitions
 ****************************************************************************************************/
 
+/**
+ * @brief Starts up SDL and creates window
+ *
+ * @return bool
+ **/
 static bool init(void)
 {
   // Initialization flag
@@ -495,7 +512,7 @@ static bool init(void)
   // Initialize SDL
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
-    printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
+    printf( "\nSDL could not initialize! SDL Error: \"%s\"\n", SDL_GetError() );
     success = false;
   }
   else
@@ -506,6 +523,7 @@ static bool init(void)
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
     {
       printf( "\nWarning: Linear texture filtering not enabled!" );
+      success = false;
     }
     else
     {
@@ -517,7 +535,7 @@ static bool init(void)
 
     if( gWindow == NULL )
     {
-      printf( "\nWindow could not be created! SDL Error: %s", SDL_GetError() );
+      printf( "\nWindow could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
       success = false;
     }
     else
@@ -706,11 +724,11 @@ int main( int argc, char* args[] )
       Dot dot;
 
       // Set the wall
-      SDL_Rect wall;
-      wall.x = 300;
-      wall.y = 40;
-      wall.w = 40;
-      wall.h = 400;
+      SDL_Rect Wall;
+      Wall.x = WALL_x;
+      Wall.y = WALL_y;
+      Wall.w = WALL_w;
+      Wall.h = WALL_h;
 
       // While application is running
       while( !quit )
@@ -730,15 +748,15 @@ int main( int argc, char* args[] )
         }
 
         // Move the dot and check collision
-        dot.move( wall );
+        dot.move( Wall );
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
         // Render wall
-        SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0x00, 0xFF );
-        SDL_RenderDrawRect( gRenderer, &wall );
+        SDL_SetRenderDrawColor( gRenderer, BLACK_R, BLACK_G, BLACK_B, BLACK_A);
+        SDL_RenderDrawRect( gRenderer, &Wall );
 
         // Render dot
         dot.render();

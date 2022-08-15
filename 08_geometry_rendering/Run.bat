@@ -4,15 +4,14 @@ cls
 echo Starting program in %cd%...
 echo.
 
-
 @REM Set temporary environment variables
 set SDL2_PROJECT_NAME=08_geometry_rendering
-set SDL2_DLL_LATEST_VER_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\bin
+set SDL2_DLL=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\bin
+set SDL2_IMAGE_DLL=D:\Dati\SDL2\SDL2_image-2.6.0\x86_64-w64-mingw32\bin
+@REM set SDL2_TTF_DLL=D:\Dati\SDL2\SDL2_ttf-2.20.0\x86_64-w64-mingw32\bin\
+set SDL2_DLL_PATHS=%SDL2_DLL%;%SDL2_IMAGE_DLL%;
 
-set SDL2_IMAGE_DLL_LATEST_VER_PATH=D:\Dati\SDL2\SDL2_image-2.6.0\x86_64-w64-mingw32\bin
-
-
-@REM Check whether path to SDL2.dll dynamic library is already present
+@REM Check whether path to SDL2 dynamic libraries is already present
 if not defined PATH_TO_DLL_IS_PRESENT (
   goto Path_SDL2_Add
 ) else (
@@ -22,7 +21,7 @@ if not defined PATH_TO_DLL_IS_PRESENT (
 :Path_SDL2_Add
   echo Adding path to SDL2.dll and SDL2_Image.dll...
   echo.
-  SET PATH=%PATH%;%SDL2_DLL_LATEST_VER_PATH%;%SDL2_IMAGE_DLL_LATEST_VER_PATH%
+  SET PATH=%PATH%;%SDL2_DLL_PATHS%;
   SET PATH_TO_DLL_IS_PRESENT=1
   goto Path_SDL2_End
 

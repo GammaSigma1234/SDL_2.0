@@ -109,7 +109,7 @@ static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
 
-static SDL_Texture* loadTexture( std::string path );
+// static SDL_Texture* loadTexture( std::string path );
 
 
 /***************************************************************************************************
@@ -243,40 +243,40 @@ static void close(void)
  * @param path The path to the image
  * @return SDL_Surface* Pointer to the loaded image
  **/
-static SDL_Texture* loadTexture( std::string path )
-{
-  // The final texture
-  SDL_Texture* newTexture = NULL;
+// static SDL_Texture* loadTexture( std::string path )
+// {
+//   // The final texture
+//   SDL_Texture* newTexture = NULL;
 
-  // Load image at specified path
-  SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+//   // Load image at specified path
+//   SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
 
-  if( loadedSurface == NULL )
-  {
-    printf( "\nUnable to load image \"%s\"! SDL_image Error: \"%s\"\n", path.c_str(), IMG_GetError() );
-  }
-  else
-  {
-    printf( "\nImage \"%s\" loaded", path.c_str() );
+//   if( loadedSurface == NULL )
+//   {
+//     printf( "\nUnable to load image \"%s\"! SDL_image Error: \"%s\"\n", path.c_str(), IMG_GetError() );
+//   }
+//   else
+//   {
+//     printf( "\nImage \"%s\" loaded", path.c_str() );
 
-    // Create texture from surface pixels
-    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+//     // Create texture from surface pixels
+//     newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
-    if( newTexture == NULL )
-    {
-      printf( "\nUnable to create texture from \"%s\"! SDL Error: \"%s\"\n", path.c_str(), SDL_GetError() );
-    }
-    else
-    {
-      printf( "\nTexture created from \"%s\"", path.c_str() );
-    }
+//     if( newTexture == NULL )
+//     {
+//       printf( "\nUnable to create texture from \"%s\"! SDL Error: \"%s\"\n", path.c_str(), SDL_GetError() );
+//     }
+//     else
+//     {
+//       printf( "\nTexture created from \"%s\"", path.c_str() );
+//     }
 
-    // Get rid of old loaded surface
-    SDL_FreeSurface( loadedSurface );
-  }
+//     // Get rid of old loaded surface
+//     SDL_FreeSurface( loadedSurface );
+//   }
 
-  return newTexture;
-}
+//   return newTexture;
+// }
 
 
 static void PressEnter(void)
@@ -299,6 +299,12 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
+  printf("\nProgram started with %d additional arguments.", argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
 
   // Start up SDL and create window
   if( !init() )
@@ -308,6 +314,8 @@ int main( int argc, char* args[] )
   }
   else
   {
+    printf( "\nAll systems initialised" );
+
     // Load media
     if( !loadMedia() )
     {
@@ -316,6 +324,8 @@ int main( int argc, char* args[] )
     }
     else
     {
+      printf( "\nAll media loaded" );
+
       // Main loop flag
       bool quit = false;
 

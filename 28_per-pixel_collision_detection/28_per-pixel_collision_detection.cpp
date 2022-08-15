@@ -1,93 +1,70 @@
 /**
- * @file 27_collision_detection.cpp
+ * @file 28_per-pixel_collision_detection.cpp
  *
- * https://lazyfoo.net/tutorials/SDL/27_collision_detection/index.php
+ * https://lazyfoo.net/tutorials/SDL/28_per-pixel_collision_detection/index.php
  *
- * @brief In games, you often need to tell if two objects hit each other. For simple games, this is
- * usually done with bounding box collision detection. Collision boxes are a standard way to check
- * collision between two objects. Two polygons are in collision when they are not separated. This
- * form of collision detection is called the separating axis test. If there is no separating axis,
- * then the objects are colliding.
+ * @brief Once you know how to check collision between two rectangles, you can check collision
+ * between any two images since all images are made out of rectangles. Images are made out of
+ * pixels, which are squares, which are rectangles. To do per-pixel collision detection, all we have
+ * to do is have each object have a set of box colliders and check collision of one set of collision
+ * boxes against another like so:
  *
- * We use the dot from the motion tutorial with some new features. The move function takes in a
- * rectangle that is the collision box for the wall and the dot has a data member called mCollider
- * to represent the collision box. We're also declaring a function to check collision between two
- * boxes. In the constructor, we should make sure the collider's dimensions are set.
+ * Our dot now has per-pixel collision detection. Its velocity is reduced to 1 pixel per frame to
+ * make the collision easier to see. The move function now takes in a vector of collision boxes so
+ * we can check two sets against each other. Since we're going to have two dots colliding, we need
+ * to be able to get the colliders, so we have a function for that.
  *
- * The new moving function now checks if we hit the wall. It works much like before, only now it
- * makes the dot move back if we go off the screen or hit the wall.
+ * Instead of having a single collision box, we have a vector of colliders. We also have an internal
+ * function to shift the colliders to match the position of the dot. The new collision detector
+ * checks sets of collision boxes against each other.
  *
- * First we move the dot along the x axis, but we also have to change the position of the collider.
- * Whenever we change the dot's position, the collider's position has to follow. Then we check if
- * the dot has gone off screen or hit the wall. If it does we move the dot back along the x axis.
- * Finally, we do this again for motion on the y axis.
+ * Just as before, we have to set the collider dimensions in the constructor. Only difference here
+ * is that we have multiple collision boxes to set.
  *
- * The collision detection happens in "checkCollision". The code calculates the top/bottom and
- * left/right of each of the collison boxes.
+ * The "move" function is pretty much the same as before. Whenever we move the dot, we move the
+ * collider(s) with it. After we move the dot, we check if it went off screen or hit something. If
+ * it did, we move the dot back and move its colliders with it.
  *
- * Then we do our separating axis test. First we check the top and bottom of the boxes to see
- * whether they are separated along the y axis. Then we check the left/right to see whether they are
- * separated on the x axis. If there is any separation, then there is no collision and we return
- * false. If we cannot find any separation, then there is a collision and we return true.
+ * Don't worry too much about how shiftColliders works. It's a short hand way of doing mColliders[ 0
+ * ].x = ..., mColliders[ 1 ].x = ..., etc., and it works for this specific case. For your own
+ * per-pixel objects, you'll have your own placing functions. And after shiftColliders, have an
+ * accessor function to get the colliders.
  *
- * Note: SDL does have some built in collision detection functions, but for this tutorial set we'll
- * be hand rolling our own. Mainly because it's important to know how these work and secondly
- * because if you can roll your own you can use your collision detection with SDL rendering, OpenGL,
- * Direct3D, Mantle, Metal, or any other rendering API. Also remember that SDL uses a y axis that
- * points down as opposed to the cartesian coordinate which points upward. This means our bottom/top
- * comparisons are also going to be inverted.
+ * In our collision detection function we have a for loop that calculates the top/bottom/left/right
+ * of each collision box in object A. We then calculate the top/bottom/left/right of each collision
+ * box in object B. We then check if there is no separating axis. If there no separating axis, we
+ * return true. If we get through both sets without a collision, we return false.
+ * ATTENZIONE: la logica della verifica della separazione non è banale, e va compresa con degli
+ * esempi visivi.
  *
- * Before we enter the main loop, we declare the dot and define the postion and dimensions of the
- * wall.
+ * Before we go into the main loop, we declare our dot and the other dot we'll be colliding against.
  *
- * Then there is the main loop with the dot handling events, moving while checking for collision
- * against the wall and finally rendering the wall and the dot onto the screen.
+ * Once again, in the main loop we handle events for the dot, move with collision check for the dot,
+ * and then finally we render our objects.
  *
- * These next sections are for future reference. Odds are if you're reading this tutorial, you're a
- * beginner and this stuff is way too advanced. This is more for down the road when you need to use
- * more advanced collision detection.
+ * A questions I get asked a lot is how to make a function that loads an image and auto generates
+ * the set of collision boxes for per pixel collision detection. The answer is simple: don't. In
+ * most games, you don't want 100% accuracy. The more collision boxes you have, the more collision
+ * checks you have and the slower it is. What most games go for is close enough.
  *
- * When you're starting out and just want to make something simple like tetris, this sort of
- * collision detection is fine. For something like a physics simulator things get much more
- * complicated.
- *
- * For something like a rigid body simulator, we have our logic do this every frame:
- *
- * 1) Apply all the forces to all the objects in the scene (gravity, wind, propulsion, etc).
- *
- * 2) Move the objects by applying the acceleration and velocity to the position.
- *
- * 3) Check collisions for all of the objects and create a set of contacts. A contact is a data
- *    structure that typically contains pointers to the two objects that are colliding, a normal
- *    vector from the first to the second object, and the amount the objects are penetrating.
- *
- * 4) Take the set of generated contacts and resolve the collisions. This typically involves
- *    checking for contacts again (within a limit) and resolving them.
- *
- * Now if you're barely learning collision detection, this is out of your league for now. This would
- * take an entire tutorial set (that I currently do not have time to make) to explain it. Not only
- * that it involves vector math and physics which is beyond the scope of these tutorials. Just keep
- * this in mind later on when you need games that have large amounts of colliding objects and are
- * wondering how the over all structure for a physics engine works.
- *
- * Another thing is that the boxes we have here are AABBs or axis aligned bounding boxes. This means
- * they have sides that are aligned with the x and y axis. If you want to have boxes that are
- * rotated, you can still use the separating axis test on OBBs (oriented bounding boxes). Instead of
- * projecting the corners on the x and y axis, you project all of the corners of the boxes on the I
- * and J axis for each of the boxes. You then check if the boxes are separated along each axis. You
- * can extend this further for any type of polygon by projecting all of the corners of each axis
- * along each of the polygon's axis to see if there is any separation. This all involves vector math
- * and this as mentioned before is beyond the scope of this tutorial set.
+ * Also there's one optimization we could have done here. We could have had a bounding box for the
+ * dot that encapsulates all the other collision boxes and then checks that one first before getting
+ * to the per-pixel collison boxes. This does add one more collision detection, but since it is much
+ * more likely that two objects do not collide it will more likely save us additional collision
+ * detection. In games, this is usually done with a tree structure that has different levels of
+ * detail to allow for early outs to prevent unneeded checks at the per-pixel level. Like in
+ * previous tutorials, tree structures are outside the scope of these tutorials.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
  **/
 
-// Using SDL, SDL_image, standard IO, and strings
+// Using SDL, SDL_image, standard IO, vectors, and strings
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 /**************************************************************************************************
 * Private constants
@@ -103,12 +80,6 @@ static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
 static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
 static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
 static constexpr int WHITE_A = 0xFF; // Alpha component
-
-// Colore nero
-static constexpr int BLACK_R = 0x00; // Amount of red   needed to compose black
-static constexpr int BLACK_G = 0x00; // Amount of green needed to compose black
-static constexpr int BLACK_B = 0x00; // Amount of blue  needed to compose black
-static constexpr int BLACK_A = 0xFF; // Alpha component
 
 // Colore ciano
 static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
@@ -147,7 +118,7 @@ class LTexture
   bool loadFromRenderedText( const std::string&, SDL_Color );
   #endif
 
-    // Deallocates texture
+  // Deallocates texture
   void free(void);
 
   // Set color modulation
@@ -182,25 +153,28 @@ class Dot
   public:
 
   // Initializes the variables
-  Dot(void);
+  Dot( int, int );
 
   // Takes key presses and adjusts the dot's velocity
   void handleEvent( SDL_Event& );
 
   // Moves the dot and checks collision
-  void move( SDL_Rect& Wall );
+  void move( const std::vector<SDL_Rect>& otherColliders );
 
   // Shows the dot on the screen
   void render(void);
 
+  // Gets the collision boxes
+  std::vector<SDL_Rect>& getColliders();
+
   private:
 
   // The dimensions of the dot
-  static constexpr int DOT_WIDTH  = 20;
+  static constexpr int DOT_WIDTH = 20;
   static constexpr int DOT_HEIGHT = 20;
 
   // Maximum axis velocity of the dot
-  static constexpr int DOT_VEL = 5;
+  static constexpr int DOT_VEL = 1;
 
   // The X and Y offsets of the dot
   int mPosX, mPosY;
@@ -208,8 +182,11 @@ class Dot
   // The velocity of the dot
   int mVelX, mVelY;
 
-  // Dot's collision box
-  SDL_Rect mCollider;
+  // Dot's collision boxes
+  std::vector<SDL_Rect> mColliders;
+
+  // Moves the collision boxes relative to the dot's offset
+  void shiftColliders();
 };
 
 
@@ -221,7 +198,7 @@ static bool init(void);
 static bool loadMedia(void);
 static void close(void);
 static void PressEnter(void);
-static bool checkCollision( SDL_Rect a, SDL_Rect b ); // Box collision detector
+static bool checkCollision( const std::vector<SDL_Rect>& a, const std::vector<SDL_Rect>& b ); // Box set collision detector
 
 
 /***************************************************************************************************
@@ -278,7 +255,7 @@ bool LTexture::loadFromFile( const std::string& path )
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
     // Create texture from surface pixels
-        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
     if( newTexture == NULL )
     {
@@ -315,26 +292,26 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 
   if( textSurface != NULL )
   {
-    // Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+  // Create texture from surface pixels
+    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
 
-    if( mTexture == NULL )
-    {
-      printf( "\nUnable to create texture from rendered text! SDL Error: %s", SDL_GetError() );
-    }
-    else
-    {
-      // Get image dimensions
-      mWidth  = textSurface->w;
-      mHeight = textSurface->h;
-    }
-
-    // Get rid of old surface
-    SDL_FreeSurface( textSurface );
+  if( mTexture == NULL )
+  {
+    printf( "\nUnable to create texture from rendered text! SDL Error: %s", SDL_GetError() );
   }
   else
   {
-    printf( "\nUnable to render text surface! SDL_ttf Error: %s", TTF_GetError() );
+    // Get image dimensions
+    mWidth  = textSurface->w;
+    mHeight = textSurface->h;
+  }
+
+  // Get rid of old surface
+  SDL_FreeSurface( textSurface );
+  }
+  else
+  {
+  printf( "\nUnable to render text surface! SDL_ttf Error: %s", TTF_GetError() );
   }
 
   // Return success
@@ -353,8 +330,7 @@ void LTexture::free(void)
     mWidth = 0;
     mHeight = 0;
   }
-  else
-  {;} // Nothing to destroy
+  else {;} // Nothing to destroy
 }
 
 
@@ -390,8 +366,7 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
     renderQuad.w = clip->w;
     renderQuad.h = clip->h;
   }
-  else
-  {;}
+  else { /* Render the whole texture */ }
 
   // Render to screen
   SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
@@ -410,19 +385,63 @@ int LTexture::getHeight(void) const
 }
 
 
-Dot::Dot(void)
+/**
+ * @brief Anziché utilizzare "reserve" ed effettuare il push back dei colliders nel vettore,
+ * l'autore preferisce chiamare "resize", che crea degli elementi con valori value-initialised, e
+ * poi modificare a mano gli elementi.
+ *
+ * @param x
+ * @param y
+ **/
+Dot::Dot( int x, int y )
 {
   // Initialize the offsets
-  mPosX = 0;
-  mPosY = 0;
+  mPosX = x;
+  mPosY = y;
 
-  // Set collision box dimension
-  mCollider.w = DOT_WIDTH;
-  mCollider.h = DOT_HEIGHT;
+  // Create the necessary SDL_Rects
+  mColliders.resize( 11 );
 
   // Initialize the velocity
   mVelX = 0;
   mVelY = 0;
+
+  // Initialize the collision boxes' width and height
+  mColliders[ 0 ].w = 6;
+  mColliders[ 0 ].h = 1;
+
+  mColliders[ 1 ].w = 10;
+  mColliders[ 1 ].h = 1;
+
+  mColliders[ 2 ].w = 14;
+  mColliders[ 2 ].h = 1;
+
+  mColliders[ 3 ].w = 16;
+  mColliders[ 3 ].h = 2;
+
+  mColliders[ 4 ].w = 18;
+  mColliders[ 4 ].h = 2;
+
+  mColliders[ 5 ].w = 20;
+  mColliders[ 5 ].h = 6;
+
+  mColliders[ 6 ].w = 18;
+  mColliders[ 6 ].h = 2;
+
+  mColliders[ 7 ].w = 16;
+  mColliders[ 7 ].h = 2;
+
+  mColliders[ 8 ].w = 14;
+  mColliders[ 8 ].h = 1;
+
+  mColliders[ 9 ].w = 10;
+  mColliders[ 9 ].h = 1;
+
+  mColliders[ 10 ].w = 6;
+  mColliders[ 10 ].h = 1;
+
+  // Initialize colliders relative to position
+  shiftColliders();
 }
 
 
@@ -455,50 +474,79 @@ void Dot::handleEvent( SDL_Event& e )
       default        :                   break;
     }
   }
-  else
-  {;}
+  else { /* Ignore this event */ }
 }
 
-void Dot::move( SDL_Rect& Wall )
+
+/**
+ * @brief Calculates new coordinates of the dot based on the current velocity. Whenever we move the
+ * dot, we also move the collider(s) with it. After we move the dot, we check if it went off screen
+ * or hit something. If it did, we move the dot back and move its colliders with it.
+ * 
+ * @param otherColliders 
+ **/
+void Dot::move( const std::vector<SDL_Rect>& otherColliders )
 {
   // Move the dot left or right
-  mPosX      += mVelX;
-  mCollider.x = mPosX;
+  mPosX += mVelX;
+  shiftColliders();
 
   // If the dot collided or went too far to the left or right
-  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) || checkCollision( mCollider, Wall ) )
+  if ( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) || checkCollision( mColliders, otherColliders ) )
   {
     // Move back
-    mPosX      -= mVelX;
-    mCollider.x = mPosX;
+    mPosX -= mVelX;
+    shiftColliders();
   }
-  else { /* OK */ }
+  else { /* No collision detected */ }
 
   // Move the dot up or down
-  mPosY      += mVelY;
-  mCollider.y = mPosY;
+  mPosY += mVelY;
+  shiftColliders();
 
   // If the dot collided or went too far up or down
-  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) || checkCollision( mCollider, Wall ) )
+  if ( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) || checkCollision( mColliders, otherColliders ) )
   {
     // Move back
-    mPosY      -= mVelY;
-    mCollider.y = mPosY;
+    mPosY -= mVelY;
+    shiftColliders();
   }
-  else { /* OK */ }
+  else { /* No collision detected */ }
 }
 
 
 void Dot::render(void)
 {
-    // Show the dot
+  // Show the dot
   gDotTexture.render( mPosX, mPosY );
 }
 
 
-/***************************************************************************************************
-* Private functions definitions
-****************************************************************************************************/
+void Dot::shiftColliders(void)
+{
+  // The row offset
+  int r = 0;
+
+  // Go through the dot's collision boxes
+  for( int set = 0; set != static_cast<int>(mColliders.size()); ++set )
+  {
+    // Center the collision box
+    mColliders[ set ].x = mPosX + ( DOT_WIDTH - mColliders[ set ].w ) / 2;
+
+    // Set the collision box at its row offset
+    mColliders[ set ].y = mPosY + r;
+
+    // Move the row offset down the height of the collision box
+    r += mColliders[ set ].h;
+  }
+}
+
+
+std::vector<SDL_Rect>& Dot::getColliders(void)
+{
+  return mColliders;
+}
+
 
 /**
  * @brief Starts up SDL and creates window
@@ -569,7 +617,7 @@ static bool init(void)
         else
         {
           printf( "\nSDL_image initialised" );
-  }
+        }
 
       } // Renderer created
 
@@ -594,8 +642,12 @@ static bool loadMedia(void)
   // Load dot texture
   if( !gDotTexture.loadFromFile( FilePath.c_str() ) )
   {
-    printf( "Failed to load dot texture!\n" );
+    printf( "\nFailed to load dot texture!" );
     success = false;
+  }
+  else
+  {
+    printf( "\nDot texture loaded" );
   }
 
   return success;
@@ -618,51 +670,53 @@ static void close(void)
   SDL_Quit();
 }
 
-bool checkCollision( SDL_Rect a, SDL_Rect b )
-{
-  bool Result;
 
-  // The sides (vertices) of the rectangles
+/**
+ * @brief A for loop calculates the top/bottom/left/right of each collision box in object a.
+ * 
+ * @param a The oject to check with b.
+ * @param b The oject to check with a.
+ * @return true if a collision has happened; false otherwise
+ **/
+bool checkCollision( const std::vector<SDL_Rect>& a, const std::vector<SDL_Rect>& b )
+{
+  bool Result = false;
+
+  // The sides of the rectangles
   int leftA  , leftB;
   int rightA , rightB;
   int topA   , topB;
   int bottomA, bottomB;
 
-  // Calculate the sides (vertices) of rect A
-  leftA   = a.x;
-  rightA  = a.x + a.w;
-  topA    = a.y;
-  bottomA = a.y + a.h;
+  // Go through the A boxes
+  for( size_t Abox = 0; Abox != a.size(); Abox++ )
+  {
+    // Calculate the sides of rect A
+    leftA   = a[ Abox ].x;
+    rightA  = a[ Abox ].x + a[ Abox ].w;
+    topA    = a[ Abox ].y;
+    bottomA = a[ Abox ].y + a[ Abox ].h;
 
-  // Calculate the sides (vertices) of rect B
-  leftB   = b.x;
-  rightB  = b.x + b.w;
-  topB    = b.y;
-  bottomB = b.y + b.h;
+    // Go through the B boxes
+    for( size_t Bbox = 0; Bbox != b.size(); Bbox++ )
+    {
+      // Calculate the sides of rect B
+      leftB   = b[ Bbox ].x;
+      rightB  = b[ Bbox ].x + b[ Bbox ].w;
+      topB    = b[ Bbox ].y;
+      bottomB = b[ Bbox ].y + b[ Bbox ].h;
 
-  // Separating axis test: check whether any of the sides (vertices) from A are outside of B
-  if( bottomA <= topB )
-  {
-    Result = false;
-  }
-  else if( topA >= bottomB )
-  {
-    Result = false;
-  }
-  else if( rightA <= leftB )
-  {
-    Result = false;
-  }
-  else if( leftA >= rightB )
-  {
-    Result = false;
-  }
-  else
-  {
-    // None of the sides from A are outside B: collision detected!
-    Result = true;
+      // If no sides from A are outside of B
+      if( ( ( bottomA <= topB ) || ( topA >= bottomB ) || ( rightA <= leftB ) || ( leftA >= rightB ) ) == false )
+      {
+        // A collision is detected
+        Result = true;
+      }
+      else { /* No collision detected */ }
+    }
   }
 
+  // If neither set of collision boxes touched
   return Result;
 }
 
@@ -719,14 +773,10 @@ int main( int argc, char* args[] )
       SDL_Event e;
 
       // The dot that will be moving around on the screen
-      Dot dot;
+      Dot dot( 0, 0 );
 
-      // Set the wall
-      SDL_Rect Wall;
-      Wall.x = WALL_x;
-      Wall.y = WALL_y;
-      Wall.w = WALL_w;
-      Wall.h = WALL_h;
+      // The dot that will be collided against
+      Dot otherDot( SCREEN_W / 10, SCREEN_H / 10 );
 
       // While application is running
       while( !quit )
@@ -739,25 +789,22 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
-          else { /* Ignore event */ }
+          else { /* ignore event */ }
 
           // Handle input for the dot
           dot.handleEvent( e );
         }
 
         // Move the dot and check collision
-        dot.move( Wall );
+        dot.move( otherDot.getColliders() );
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render wall
-        SDL_SetRenderDrawColor( gRenderer, BLACK_R, BLACK_G, BLACK_B, BLACK_A);
-        SDL_RenderDrawRect( gRenderer, &Wall );
-
-        // Render dot
+        // Render dots
         dot.render();
+        otherDot.render();
 
         // Update screen
         SDL_RenderPresent( gRenderer );
@@ -771,11 +818,11 @@ int main( int argc, char* args[] )
   // Integrity check
   if ( HasProgramSucceeded == true )
   {
-    printf("\nProgram ended successfully!\n");
+  printf("\nProgram ended successfully!\n");
   }
   else
   {
-    printf("\nThere was a problem during the execution of the program!\n");
+  printf("\nThere was a problem during the execution of the program!\n");
   }
 
   PressEnter();

@@ -12,6 +12,11 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
   - [Make Files](#make-files)
 - [Particolarità](#particolarità)
   - [SDL_RenderCopyEx](#sdl_rendercopyex)
+- [Assi e Collisioni](#assi-e-collisioni)
+  - [A.Bottom < B.Top](#abottom--btop)
+  - [A.Rigth  < B.Left](#arigth---bleft)
+  - [A.Top    > B.Bottom](#atop-----bbottom)
+  - [A.Left   > B.Right](#aleft----bright)
 - [Errori da Segnalare](#errori-da-segnalare)
   - [Tutorial 23](#tutorial-23)
 
@@ -90,6 +95,45 @@ Questa funzione renderizza una porzione di *texture* in una porzione della fines
 Gli argomenti passati ai parametri `x` e `y` di `LTexture::render` vengono poi passati a `dstrect`. Larghezza e altezza di `dstrect` vengono copiati da `SourceClip.x` e `SourceClip.y`. In caso `SourceClip` sia `NULL`, cioè vogliamo usare l'intera *texture*, larghezza e altezza passate a `dstrect` sono `mWidth` e `mHeight`, cioè le dimensioni originali della *texture* intera.
 
 ![](Docs/SDL_RenderCopyEx.svg)
+
+## Assi e Collisioni
+
+In SDL, l'asse $y$ è rovesciato rispetto al consueto piano cartesiano. Tuttavia, continuiamo a mantenere l'orientamento tradizionale quando indichiamo la parte superiore o inferiore di una forma, ad esempio un rettangolo, così come indicato in figura:
+
+![](Docs/SDL_Axes.svg)
+
+In questo esempio, possiamo notare una collisione tra due rettangoli:
+
+![](Docs/SDL_Collisions.svg)
+
+La collisione si verifica quando nessuna delle proiezioni di `Left`, `Right`, `Top` o `Bottom` dei due rettangoli è separata.
+
+![](Docs/SDL_Collisions_Projections.svg)
+
+Affinché ci sia una collisione, è necessario che non ci sia separazione né sull'asse x né sull'asse y, ovvero devono esserci delle intersezioni su entrambi gli assi. Il modo più semplice ed elegante di verificarlo è di partire dall'ipotesi che ci sia stata una collisione, e tentare di confutarla eseguendo in sequenza i quattro test di separazione:
+
+```cpp
+A.Bottom < B.Top
+A.Rigth  < B.Left
+A.Top    > B.Bottom
+A.Left   > B.Right
+```
+
+Una qualsiasi delle condizioni qui sopra assicura che i due rettangoli siano separati almeno su un asse.
+
+### A.Bottom < B.Top
+
+![](Docs/SDL_Collisions_Avoided_ABottomLessBTop.svg)
+
+### A.Rigth  < B.Left
+
+![](Docs/SDL_Collisions_Avoided_ARightLessBLeft.svg)
+
+### A.Top    > B.Bottom
+![](Docs/SDL_Collisions_Avoided_ATopGreaterBBottom.svg)
+
+### A.Left   > B.Right
+![](Docs/SDL_Collisions_Avoided_ALeftGreaterBRight.svg)
 
 ## Errori da Segnalare
 

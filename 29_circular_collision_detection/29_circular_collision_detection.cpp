@@ -69,6 +69,7 @@
 #include <stdio.h>
 #include <string>
 
+
 /**************************************************************************************************
 * Private constants
 ***************************************************************************************************/
@@ -384,8 +385,8 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
   // Set clip rendering dimensions
   if( clip != NULL )
   {
-  renderQuad.w = clip->w;
-  renderQuad.h = clip->h;
+    renderQuad.w = clip->w;
+    renderQuad.h = clip->h;
   }
   else { /* Render the whole texture */ }
 
@@ -412,7 +413,7 @@ Dot::Dot( int x, int y )
   mPosX = x;
   mPosY = y;
 
-  // Set collision circle size
+  // Set collision circle size (radius)
   mCollider.r = DOT_WIDTH / 2;
 
   // Initialize the velocity
@@ -786,10 +787,10 @@ int main( int argc, char* args[] )
 
       // Set the wall
       SDL_Rect wall;
-      wall.x = 300;
-      wall.y = 40;
-      wall.w = 40;
-      wall.h = 400;
+      wall.x = WALL_x;
+      wall.y = WALL_y;
+      wall.w = WALL_w;
+      wall.h = WALL_h;
 
       // While application is running
       while( !quit )
@@ -808,7 +809,7 @@ int main( int argc, char* args[] )
           dot.handleEvent( e );
         }
 
-        // Move the dot and check collision
+        // Move the dot and check collision both with the wall and the other (static) circle
         dot.move( wall, otherDot.getCollider() );
 
         // Clear screen

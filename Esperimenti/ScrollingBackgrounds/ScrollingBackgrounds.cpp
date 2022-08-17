@@ -1,36 +1,22 @@
 /**
- * @file 31_scrolling_backgrounds.cpp
+ * @file ScrollingBackgrounds.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/31_scrolling_backgrounds/index.php
- *
- * Often times in games you may want an infinite or looping background. With scrolling backgrounds,
- * you can cycle a background that goes on forever. If we want to move around a dot on a infinite
- * background, all we have to do is render two iterations of the background next to each other and
- * move them a little every frame. When the background has moved completely over, you can reset the
- * motion.
- *
- * For this tutorial we'll be using a plain version of the dot that just moves on screen. Before we
- * enter the main loop we declare a Dot object and the scrolling offset.
- *
- * Updating the position of the scrolling background is just decrementing the x position. If the x
- * position is less than the width of the background, that means the background has gone completely
- * off screen, and the position needs to be reset.
+ * @brief Ispirato a https://lazyfoo.net/tutorials/SDL/31_scrolling_backgrounds/index.php
  * 
- * NOTA: nulla vieta di renderizzare una texture al di fuori della finestra di visualizzazione. Ad
+ * Nulla vieta di renderizzare una texture al di fuori della finestra di visualizzazione. Ad
  * esempio, se chiediamo al renderer di visualizzare una texture di dimensioni 50 x 80 in posizione
  * (-20, -30), vedremo la texture comparire parzialmente (ne vedremo solo una porzione di dimensione
  * 30 x 50) nell'angolo in alto a sinistra della finestra. Per questo motivo, il modo più semplice
  * per implementare lo scorrimento verso sinistra della background texture è di decrementare la
  * posizione orizzontale di rendering mediante un offset, e resettare l'offset quando la texture è
- * andata completamente fuori dallo schermo.
- *
- * Then, we're rendering the background and the dot. First, we render the scrolling background by
- * rendering two iterations of the texture next to each other, and then we render the dot over it.
- * This will give us the effect of a smooth scrolling infinite background.
- *
- * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
+ * andata completamente fuori dallo schermo. Sarà necessario renderizzare contemporaneamente anche
+ * una copia della texture, affiancata alla destra dell'originale, in modo che l'effetto di
+ * scorrimento sia completo.
  **/
+
+/**************************************************************************************************
+* Includes
+***************************************************************************************************/
 
 // Using SDL, SDL_image, standard IO, vectors, and strings
 #include <SDL.h>
@@ -45,8 +31,8 @@
 
 static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
 
-static constexpr int SCREEN_W = 640; // Screen's width
-static constexpr int SCREEN_H = 480; // Screen's heigth
+static constexpr int WINDOW_W = 640; // Window's width
+static constexpr int WINDOW_H = 480; // Window's heigth
 
 // Colore bianco
 static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
@@ -60,14 +46,12 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
-static const std::string DotPath("dot.bmp");
 static const std::string BackGroundPath("bg.png");
 
 
 /***************************************************************************************************
 * Classes
 ****************************************************************************************************/
-
 
 // Texture wrapper class
 class LTexture
@@ -106,49 +90,13 @@ class LTexture
   int getWidth (void) const;
   int getHeight(void) const;
 
-private:
+// private:
   // The actual hardware texture
   SDL_Texture* mTexture;
 
   // Image dimensions
   int mWidth;
   int mHeight;
-};
-
-
-/**
- * @brief The dot that will move around on the screen.
- **/
-class Dot
-{
-  public:
-
-    // The dimensions of the dot
-  static constexpr int DOT_WIDTH  = 20;
-  static constexpr int DOT_HEIGHT = 20;
-
-  // Initializes the variables
-  Dot(void);
-
-  // Takes key presses and adjusts the dot's velocity
-  void handleEvent( SDL_Event& );
-
-  // Moves the dot
-  void move(void);
-
-  // Shows the dot on the screen
-  void render(void);
-
-  private:
-
-  // Maximum axis velocity of the dot
-  static constexpr int DOT_VEL = 10;
-
-  // The X and Y offsets of the dot
-  int mPosX, mPosY;
-
-  // The velocity of the dot
-  int mVelX, mVelY;
 };
 
 
@@ -168,9 +116,7 @@ static void close     ( void );
 static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
-// Scene textures
-static LTexture gDotTexture;
-static LTexture gBGTexture;
+static LTexture gBGTexture; // Background texture
 
 
 /***************************************************************************************************
@@ -330,6 +276,16 @@ void LTexture::setAlpha( Uint8 alpha )
 }
 
 
+/**
+ * @brief Render a texture.
+ *
+ * @param x Horizontal rendering position relative to the window.
+ * @param y Vertical rendering position relative to the window.
+ * @param clip The portion of the texture to be rendered. Defaults to NULL (i.e. render the whole texture).
+ * @param angle Rotation of the texture around the centre. Defaults to 0.0 (i.e. no rotation).
+ * @param center Centre of rotation. Defaults to NULL (i.e. top left corner).
+ * @param flip Texture flipping. Defaults to SDL_FLIP_NONE (i.e. no flipping).
+ **/
 void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
 {
   // Set rendering space and render to screen
@@ -357,84 +313,6 @@ int LTexture::getWidth(void) const
 int LTexture::getHeight(void) const
 {
   return mHeight;
-}
-
-
-Dot::Dot(void)
-{
-    // Initialize the offsets
-    mPosX = 0;
-    mPosY = 0;
-
-    // Initialize the velocity
-    mVelX = 0;
-    mVelY = 0;
-}
-
-
-void Dot::handleEvent( SDL_Event& e )
-{
-  // If a key was pressed (e.key.repeat == 0 serve per ignorare la ripetizione automatica in caso di
-  // tasto tenuto premuto)
-  if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
-  {
-    // Adjust the velocity
-    switch( e.key.keysym.sym )
-    {
-      case SDLK_UP   : mVelY -= DOT_VEL; break;
-      case SDLK_DOWN : mVelY += DOT_VEL; break;
-      case SDLK_LEFT : mVelX -= DOT_VEL; break;
-      case SDLK_RIGHT: mVelX += DOT_VEL; break;
-      default        :                   break;
-    }
-  }
-  // If a key was released
-  else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
-  {
-    // Adjust the velocity
-    switch( e.key.keysym.sym )
-    {
-      case SDLK_UP   : mVelY += DOT_VEL; break;
-      case SDLK_DOWN : mVelY -= DOT_VEL; break;
-      case SDLK_LEFT : mVelX += DOT_VEL; break;
-      case SDLK_RIGHT: mVelX -= DOT_VEL; break;
-      default        :                   break;
-    }
-  }
-  else { /* Ignore this event */ }
-}
-
-
-void Dot::move(void)
-{
-  // Move the dot left or right
-  mPosX += mVelX;
-
-  // If the dot went too far to the left or right
-  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) )
-  {
-    // Move back
-    mPosX -= mVelX;
-  }
-  else { /* Movement was OK */ }
-
-  // Move the dot up or down
-  mPosY += mVelY;
-
-  // If the dot went too far up or down
-  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) )
-  {
-    // Move back
-    mPosY -= mVelY;
-  }
-  else { /* Movement was OK */ }
-}
-
-
-void Dot::render(void)
-{
-  // Show the dot
-  gDotTexture.render( mPosX, mPosY );
 }
 
 
@@ -470,7 +348,7 @@ static bool init(void)
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -526,19 +404,7 @@ static bool init(void)
  **/
 static bool loadMedia(void)
 {
-  // Loading success flag
-  bool success = true;
-
-  // Load dot texture
-  if ( !gDotTexture.loadFromFile( DotPath.c_str() ) )
-  {
-    printf( "\nFailed to load dot texture!" );
-    success = false;
-  }
-  else
-  {
-    printf( "\nDot texture loaded" );
-  }
+  bool success = true; // Loading success flag
 
   // Load background texture
   if ( !gBGTexture.loadFromFile( BackGroundPath.c_str() ) )
@@ -558,7 +424,6 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Free loaded images
-  gDotTexture.free();
   gBGTexture.free();
 
   // Destroy window
@@ -624,9 +489,6 @@ int main( int argc, char* args[] )
       // Event handler
       SDL_Event e;
 
-      // The dot that will be moving around on the screen
-      Dot dot;
-
       // The background scrolling offset
       int scrollingOffset = 0;
 
@@ -642,22 +504,16 @@ int main( int argc, char* args[] )
             quit = true;
           }
           else { /* ignore event */ }
-
-          // Handle input for the dot
-          dot.handleEvent( e );
         }
 
-        // Move the dot
-        dot.move();
-
-        // Scroll background
+        // Scroll background and reset when completely off screen
         --scrollingOffset;
 
         if( scrollingOffset < -gBGTexture.getWidth() )
         {
           scrollingOffset = 0;
         }
-        else { /*  */ }
+        else { /* Not completely off screen yet */ }
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
@@ -666,9 +522,6 @@ int main( int argc, char* args[] )
         // Render background
         gBGTexture.render( scrollingOffset                        , 0 );
         gBGTexture.render( scrollingOffset + gBGTexture.getWidth(), 0 );
-
-        // Render objects
-        dot.render();
 
         // Update screen
         SDL_RenderPresent( gRenderer );
@@ -684,7 +537,7 @@ int main( int argc, char* args[] )
   if ( HasProgramSucceeded == true )
   {
     printf("\nProgram ended successfully!\n");
-  }
+    }
   else
   {
     printf("\nThere was a problem during the execution of the program!\n");

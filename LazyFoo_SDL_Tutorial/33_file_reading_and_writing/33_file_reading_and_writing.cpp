@@ -179,6 +179,7 @@ static LTexture gDataTextures[ TOTAL_DATA ];
 // Data points
 static Sint32 gData[ TOTAL_DATA ];
 
+
 /***************************************************************************************************
 * Methods definitions
 ****************************************************************************************************/
@@ -466,7 +467,7 @@ static bool init(void)
 static bool loadMedia(void)
 {
   // Text rendering color
-  SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
+  SDL_Color textColor      = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
   SDL_Color highlightColor = { RED_R, RED_G, RED_B, RED_A };
 
   // Loading success flag
@@ -474,6 +475,7 @@ static bool loadMedia(void)
 
   // Open the font
   gFont = TTF_OpenFont( FontPath.c_str(), 28 );
+
   if( gFont == NULL )
   {
     printf( "\nFailed to load lazy font! SDL_ttf Error: \"%s\"\n", TTF_GetError() );

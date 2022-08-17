@@ -1,45 +1,24 @@
 /**
- * @file 30_scrolling.cpp
+ * @file 31_scrolling_backgrounds.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/30_scrolling/index.php
- * 
- * Up until now we've only been dealing with levels the size of the screen. With scrolling you can
- * navigate through levels of any size by rendering everything relative to a camera. The basic
- * principle of scrolling is that you have a rectangle that functions as a camera, and then you only
- * render what's in the camera, which usually involves rendering things relative to the camera or
- * only showing portions of objects inside the camera. Since the level is no longer the size of the
- * screen we have to have a separate set of constants to define the level size. Also, this time the
- * dot has to render relative to the camera, so its rendering function takes in a camera position.
- * 
- * This time, in the moving function we check if the dot moved off the level as opposed to checking
- * if it moved off the screen since the screen is going to move around the level.
- * 
- * Now, when we render objects to the screen in the render method, we render them relative to the
- * camera by subtracting the camera offset.
+ * @brief https://lazyfoo.net/tutorials/SDL/31_scrolling_backgrounds/index.php
  *
- * Before we go into the main loop, we declare the dot and the camera that is going to be following it.
- * 
- * After we move the dot, we want to change the camera position to center over it. We don't want the
- * camera to go outside of the level, so we keep it in bounds after moving it.
- * 
- * After the camera is in place, we render the portion of the background that is inside that camera,
- * and then render the dot relative to the camera position.
+ * Often times in games you may want an infinite or looping background. With scrolling backgrounds,
+ * you can cycle a background that goes on forever. If we want to move around a dot on a infinite
+ * background, all we have to do is render two iterations of the background next to each other and
+ * move them a little every frame. When the background has moved completely over, you can reset the
+ * motion.
  *
- * SUNTO: Il background è tipicamente una texture di dimensioni più grandi rispetto alla finestra di
- * visualizzazione. Ad ogni ciclo di renderizzazione, dobbiamo decidere quale porzione del
- * background visualizzare nella finestra. Tipicamente, quest'area viene selezionata in base alla
- * posizione dell'inquadratura. Tuttavia, indipendentemente da dove sia l'inquadratura, la porzione
- * di background da renderizzare va sempre agganciata all'origine della finestra di visualizzazione.
- * Questo è il motivo per cui il metodo "render" viene chiamato su "gBGTexture" passando sempre 0
- * come primo e secondo argomento, mentre il terzo argomento è la porzione di background texture da
- * visualizzare.
- * 
- * Il punto si muove assieme all'inquadratura, e deve comparire sempre al centro, a parte i casi in
- * cui l'inquadratura è bloccata ai bordi della background texture. Per ottenere questo effetto, la
- * funzione di renderizzazione del punto deve costantemente calcolare la distanza tra la coordinata
- * del punto e la posizione dell'inquadratura (entrambe riferite alla finestra di rendering). In
- * questo modo, se l'inquadratura è bloccata ai lati, vedremo il punto muoversi a sfondo fermo;
- * altrimenti, il punto sarà fisso al centro dello schermo, e vedremo lo sfondo muoversi.
+ * For this tutorial we'll be using a plain version of the dot that just moves on screen. Before we
+ * enter the main loop we declare a Dot object and the scrolling offset.
+ *
+ * Updating the position of the scrolling background is just decrementing the x position. If the x
+ * position is less than the width of the background, that means the background has gone completely
+ * off screen, and the position needs to be reset.
+ *
+ * Then, we're rendering the background and the dot. First, we render the scrolling background by
+ * rendering two iterations of the texture next to each other, and then we render the dot over it.
+ * This will give us the effect of a smooth scrolling infinite background.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -61,10 +40,6 @@ static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
 static constexpr int SCREEN_W = 640; // Screen's width
 static constexpr int SCREEN_H = 480; // Screen's heigth
 
-// The dimensions of the level
-static constexpr int LEVEL_W = 1280;
-static constexpr int LEVEL_H = 960;
-
 // Colore bianco
 static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
 static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
@@ -84,15 +59,6 @@ static const std::string BackGroundPath("bg.png");
 /***************************************************************************************************
 * Classes
 ****************************************************************************************************/
-
-/**
- * @brief A circle stucture. Defines the centre (x, y) and the radius (r) of the circle.
- **/
-struct Circle
-{
-  int x, y;
-  int r;
-};
 
 
 // Texture wrapper class
@@ -132,7 +98,7 @@ class LTexture
   int getWidth (void) const;
   int getHeight(void) const;
 
-  private:
+private:
   // The actual hardware texture
   SDL_Texture* mTexture;
 
@@ -147,38 +113,34 @@ class LTexture
  **/
 class Dot
 {
-  public:
+    public:
 
-  // The dimensions of the dot
+    // The dimensions of the dot
   static constexpr int DOT_WIDTH  = 20;
   static constexpr int DOT_HEIGHT = 20;
 
-  // Initializes the variables
+    // Initializes the variables
   Dot(void);
 
-  // Takes key presses and adjusts the dot's velocity
+    // Takes key presses and adjusts the dot's velocity
   void handleEvent( SDL_Event& );
 
-  // Moves the dot
+    // Moves the dot
   void move(void);
 
-  // Shows the dot on the screen relative to the camera
-  void render( int, int );
+    // Shows the dot on the screen
+    void render(void);
 
-  // Position accessors
-  int getPosX(void) const;
-  int getPosY(void) const;
-
-  private:
+    private:
 
   // Maximum axis velocity of the dot
   static constexpr int DOT_VEL = 10;
 
-  // The X and Y offsets of the dot
-  int mPosX, mPosY;
+    // The X and Y offsets of the dot
+    int mPosX, mPosY;
 
-  // The velocity of the dot
-  int mVelX, mVelY;
+    // The velocity of the dot
+    int mVelX, mVelY;
 };
 
 
@@ -246,7 +208,7 @@ bool LTexture::loadFromFile( const std::string& path )
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
     // Create texture from surface pixels
-    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
     if( newTexture == NULL )
     {
@@ -392,13 +354,13 @@ int LTexture::getHeight(void) const
 
 Dot::Dot(void)
 {
-  // Initialize the offsets
-  mPosX = 0;
-  mPosY = 0;
+    // Initialize the offsets
+    mPosX = 0;
+    mPosY = 0;
 
-  // Initialize the velocity
-  mVelX = 0;
-  mVelY = 0;
+    // Initialize the velocity
+    mVelX = 0;
+    mVelY = 0;
 }
 
 
@@ -441,7 +403,7 @@ void Dot::move(void)
   mPosX += mVelX;
 
   // If the dot went too far to the left or right
-  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > LEVEL_W ) )
+  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) )
   {
     // Move back
     mPosX -= mVelX;
@@ -452,7 +414,7 @@ void Dot::move(void)
   mPosY += mVelY;
 
   // If the dot went too far up or down
-  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > LEVEL_H ) )
+  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) )
   {
     // Move back
     mPosY -= mVelY;
@@ -461,22 +423,10 @@ void Dot::move(void)
 }
 
 
-void Dot::render( int camX, int camY )
+void Dot::render(void)
 {
-  // Show the dot relative to the camera
-  gDotTexture.render( mPosX - camX, mPosY - camY );
-}
-
-
-int Dot::getPosX(void) const
-{
-  return mPosX;
-}
-
-
-int Dot::getPosY(void) const
-{
-  return mPosY;
+  // Show the dot
+  gDotTexture.render( mPosX, mPosY );
 }
 
 
@@ -669,8 +619,8 @@ int main( int argc, char* args[] )
       // The dot that will be moving around on the screen
       Dot dot;
 
-      // The camera area
-      SDL_Rect camera = { 0, 0, SCREEN_W, SCREEN_H };
+      // The background scrolling offset
+      int scrollingOffset = 0;
 
       // While application is running
       while( !quit )
@@ -692,45 +642,25 @@ int main( int argc, char* args[] )
         // Move the dot
         dot.move();
 
-        // Center the camera over the dot
-        camera.x = ( dot.getPosX() + Dot::DOT_WIDTH  / 2 ) - SCREEN_W / 2;
-        camera.y = ( dot.getPosY() + Dot::DOT_HEIGHT / 2 ) - SCREEN_H / 2;
+        // Scroll background
+        --scrollingOffset;
 
-        // Keep the camera in bounds
-        if( camera.x < 0 )
+        if( scrollingOffset < -gBGTexture.getWidth() )
         {
-          camera.x = 0;
+          scrollingOffset = 0;
         }
-        else { /* Camera's position is OK */ }
-
-        if( camera.y < 0 )
-        {
-          camera.y = 0;
-        }
-        else { /* Camera's position is OK */ }
-
-        if( camera.x > LEVEL_W - camera.w )
-        {
-          camera.x = LEVEL_W - camera.w;
-        }
-        else { /* Camera's position is OK */ }
-
-        if( camera.y > LEVEL_H - camera.h )
-        {
-          camera.y = LEVEL_H - camera.h;
-        }
-        else { /* Camera's position is OK */ }
-
+        else { /*  */ }
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
         // Render background
-        gBGTexture.render( 0, 0, &camera ); // x = 0, y = 0 --> Il background va sempre agganciato all'origine della finestra
+        gBGTexture.render( scrollingOffset                        , 0 );
+        gBGTexture.render( scrollingOffset + gBGTexture.getWidth(), 0 );
 
         // Render objects
-        dot.render( camera.x, camera.y );
+        dot.render();
 
         // Update screen
         SDL_RenderPresent( gRenderer );
@@ -746,7 +676,7 @@ int main( int argc, char* args[] )
   if ( HasProgramSucceeded == true )
   {
     printf("\nProgram ended successfully!\n");
-  }
+    }
   else
   {
     printf("\nThere was a problem during the execution of the program!\n");

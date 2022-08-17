@@ -1,42 +1,53 @@
 /**
- * @file 31_scrolling_backgrounds.cpp
+ * @file 32_text_input_and_clipboard_handling.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/31_scrolling_backgrounds/index.php
+ * @brief https://lazyfoo.net/tutorials/SDL/32_text_input_and_clipboard_handling/index.php
  *
- * Often times in games you may want an infinite or looping background. With scrolling backgrounds,
- * you can cycle a background that goes on forever. If we want to move around a dot on a infinite
- * background, all we have to do is render two iterations of the background next to each other and
- * move them a little every frame. When the background has moved completely over, you can reset the
- * motion.
+ * Getting text input from the keyboard is a common task in games. Here we'll be getting text using
+ * SDL 2's new text input and clipboard handling.
  *
- * For this tutorial we'll be using a plain version of the dot that just moves on screen. Before we
- * enter the main loop we declare a Dot object and the scrolling offset.
+ * Before we go into the main loop we declare a string to hold our text and render it to a texture.
+ * We then call SDL_StartTextInput so the SDL text input functionality is enabled.
  *
- * Updating the position of the scrolling background is just decrementing the x position. If the x
- * position is less than the width of the background, that means the background has gone completely
- * off screen, and the position needs to be reset.
- * 
- * NOTA: nulla vieta di renderizzare una texture al di fuori della finestra di visualizzazione. Ad
- * esempio, se chiediamo al renderer di visualizzare una texture di dimensioni 50 x 80 in posizione
- * (-20, -30), vedremo la texture comparire parzialmente (ne vedremo solo una porzione di dimensione
- * 30 x 50) nell'angolo in alto a sinistra della finestra. Per questo motivo, il modo più semplice
- * per implementare lo scorrimento verso sinistra della background texture è di decrementare la
- * posizione orizzontale di rendering mediante un offset, e resettare l'offset quando la texture è
- * andata completamente fuori dallo schermo.
+ * We only want to update the input text texture when we need to, so we have the "renderText" flag
+ * that keeps track of whether we need to update the texture.
  *
- * Then, we're rendering the background and the dot. First, we render the scrolling background by
- * rendering two iterations of the texture next to each other, and then we render the dot over it.
- * This will give us the effect of a smooth scrolling infinite background.
+ * There are a couple special key presses we want to handle:
+ *  - When the user presses backspace we want to remove the last character from the string.
+ *  - When the user is holding control and presses c, we want to copy the current text to the clip
+ *    board using SDL_SetClipboardText. You can check if the CTRL key is being held using
+ *    SDL_GetModState.
+ *  - When the user does CTRL + C, we want to get the text from the clip board using
+ *    SDL_GetClipboardText. Also notice that whenever we alter the contents of the string we set the
+ *    text update flag.
+ *
+ * With text input enabled, your key presses will also generate SDL_TextInputEvents, which
+ * simplifies things like shift key and caps lock. Here we first want to check that we're not
+ * getting a CTRL and C/V event, because we want to ignore those since they are already handled as
+ * keydown events. If it isn't a copy or paste event, we append the character to our input string.
+ *
+ * If the text render update flag has been set, we rerender the texture. One little hack we have
+ * here is if we have an empty string, we render a space because SDL_ttf will not render an empty
+ * string.
+ *
+ * At the end of the main loop we render the prompt text and the input text. Once we're done with
+ * text input we disable it, since enabling text input introduces some overhead.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
  **/
 
-// Using SDL, SDL_image, standard IO, vectors, and strings
+/**************************************************************************************************
+* Includes
+***************************************************************************************************/
+
+// Using SDL, SDL_image, SDL_ttf, standard IO, strings, and string streams
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
 
 
 /**************************************************************************************************
@@ -54,14 +65,19 @@ static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
 static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
 static constexpr int WHITE_A = 0xFF; // Alpha component
 
+// Colore nero
+static constexpr int BLACK_R = 0x00; // Amount of red   needed to compose black
+static constexpr int BLACK_G = 0x00; // Amount of green needed to compose black
+static constexpr int BLACK_B = 0x00; // Amount of blue  needed to compose black
+static constexpr int BLACK_A = 0xFF; // Alpha component
+
 // Colore ciano
 static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
-static const std::string DotPath("dot.bmp");
-static const std::string BackGroundPath("bg.png");
+static const std::string FontPath("lazy.ttf");
 
 
 /***************************************************************************************************
@@ -115,42 +131,6 @@ class LTexture
 };
 
 
-/**
- * @brief The dot that will move around on the screen.
- **/
-class Dot
-{
-  public:
-
-    // The dimensions of the dot
-  static constexpr int DOT_WIDTH  = 20;
-  static constexpr int DOT_HEIGHT = 20;
-
-  // Initializes the variables
-  Dot(void);
-
-  // Takes key presses and adjusts the dot's velocity
-  void handleEvent( SDL_Event& );
-
-  // Moves the dot
-  void move(void);
-
-  // Shows the dot on the screen
-  void render(void);
-
-  private:
-
-  // Maximum axis velocity of the dot
-  static constexpr int DOT_VEL = 10;
-
-  // The X and Y offsets of the dot
-  int mPosX, mPosY;
-
-  // The velocity of the dot
-  int mVelX, mVelY;
-};
-
-
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -167,9 +147,12 @@ static void close     ( void );
 static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
+// Globally used font
+static TTF_Font *gFont = NULL;
+
 // Scene textures
-static LTexture gDotTexture;
-static LTexture gBGTexture;
+static LTexture gPromptTextTexture;
+static LTexture gInputTextTexture;
 
 
 /***************************************************************************************************
@@ -253,7 +236,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   if( textSurface != NULL )
   {
     // Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
 
     if( mTexture == NULL )
     {
@@ -359,84 +342,6 @@ int LTexture::getHeight(void) const
 }
 
 
-Dot::Dot(void)
-{
-    // Initialize the offsets
-    mPosX = 0;
-    mPosY = 0;
-
-    // Initialize the velocity
-    mVelX = 0;
-    mVelY = 0;
-}
-
-
-void Dot::handleEvent( SDL_Event& e )
-{
-  // If a key was pressed (e.key.repeat == 0 serve per ignorare la ripetizione automatica in caso di
-  // tasto tenuto premuto)
-  if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
-  {
-    // Adjust the velocity
-    switch( e.key.keysym.sym )
-    {
-      case SDLK_UP   : mVelY -= DOT_VEL; break;
-      case SDLK_DOWN : mVelY += DOT_VEL; break;
-      case SDLK_LEFT : mVelX -= DOT_VEL; break;
-      case SDLK_RIGHT: mVelX += DOT_VEL; break;
-      default        :                   break;
-    }
-  }
-  // If a key was released
-  else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
-  {
-    // Adjust the velocity
-    switch( e.key.keysym.sym )
-    {
-      case SDLK_UP   : mVelY += DOT_VEL; break;
-      case SDLK_DOWN : mVelY -= DOT_VEL; break;
-      case SDLK_LEFT : mVelX += DOT_VEL; break;
-      case SDLK_RIGHT: mVelX -= DOT_VEL; break;
-      default        :                   break;
-    }
-  }
-  else { /* Ignore this event */ }
-}
-
-
-void Dot::move(void)
-{
-  // Move the dot left or right
-  mPosX += mVelX;
-
-  // If the dot went too far to the left or right
-  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) )
-  {
-    // Move back
-    mPosX -= mVelX;
-  }
-  else { /* Movement was OK */ }
-
-  // Move the dot up or down
-  mPosY += mVelY;
-
-  // If the dot went too far up or down
-  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) )
-  {
-    // Move back
-    mPosY -= mVelY;
-  }
-  else { /* Movement was OK */ }
-}
-
-
-void Dot::render(void)
-{
-  // Show the dot
-  gDotTexture.render( mPosX, mPosY );
-}
-
-
 /**
  * @brief Starts up SDL and creates window
  *
@@ -508,6 +413,17 @@ static bool init(void)
           printf( "\nSDL_image initialised" );
         }
 
+         // Initialize SDL_ttf
+        if( TTF_Init() == -1 )
+        {
+          printf( "\nSDL_ttf could not initialize! SDL_ttf Error: \"%s\"\n", TTF_GetError() );
+          success = false;
+        }
+        else
+        {
+          printf( "\nSDL_ttf initialised" );
+        }
+
       } // Renderer created
 
     } // Window created
@@ -528,26 +444,30 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Load dot texture
-  if ( !gDotTexture.loadFromFile( DotPath.c_str() ) )
-  {
-    printf( "\nFailed to load dot texture!" );
-    success = false;
-  }
-  else
-  {
-    printf( "\nDot texture loaded" );
-  }
+  // Open the font
+  gFont = TTF_OpenFont( FontPath.c_str(), 28 );
 
-  // Load background texture
-  if ( !gBGTexture.loadFromFile( BackGroundPath.c_str() ) )
+  if( gFont == NULL )
   {
-    printf( "\nFailed to load background texture!\n" );
+    printf( "\nFailed to load lazy font! SDL_ttf Error: \"%s\"\n", TTF_GetError() );
     success = false;
   }
   else
   {
-    printf( "\nBackground texture loaded" );
+    printf( "\nLazy font loaded" );
+
+    // Render the prompt
+    SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
+
+    if( !gPromptTextTexture.loadFromRenderedText( "Enter Text:", textColor ) )
+    {
+      printf( "\nFailed to render prompt text!\n" );
+      success = false;
+    }
+    else
+    {
+      printf( "\nPrompt text rendered\n" );
+    }
   }
 
   return success;
@@ -557,8 +477,12 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Free loaded images
-  gDotTexture.free();
-  gBGTexture.free();
+  gPromptTextTexture.free();
+  gInputTextTexture.free();
+
+  // Free global font
+  TTF_CloseFont( gFont );
+  gFont = NULL;
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -567,6 +491,7 @@ static void close(void)
   gWindow   = NULL;
 
   // Quit SDL subsystems
+  TTF_Quit();
   IMG_Quit();
   SDL_Quit();
 }
@@ -623,15 +548,22 @@ int main( int argc, char* args[] )
       // Event handler
       SDL_Event e;
 
-      // The dot that will be moving around on the screen
-      Dot dot;
+      // Set text color as black
+      SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
 
-      // The background scrolling offset
-      int scrollingOffset = 0;
+      // The current input text
+      std::string inputText = "Some Text";
+      gInputTextTexture.loadFromRenderedText( inputText.c_str(), textColor );
+
+      // Enable text input
+      SDL_StartTextInput();
 
       // While application is running
       while( !quit )
       {
+        // The rerender text flag
+        bool renderText = false;
+
         // Handle events on queue
         while( SDL_PollEvent( &e ) != 0 )
         {
@@ -640,38 +572,73 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
-          else { /* ignore event */ }
-
-          // Handle input for the dot
-          dot.handleEvent( e );
+          // Special key input
+          else if( e.type == SDL_KEYDOWN )
+          {
+            // Handle backspace
+            if( e.key.keysym.sym == SDLK_BACKSPACE && inputText.length() > 0 )
+            {
+              // lop off character
+              inputText.pop_back();
+              renderText = true;
+            }
+            // Handle copy
+            else if( e.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL )
+            {
+              SDL_SetClipboardText( inputText.c_str() );
+            }
+            // Handle paste
+            else if( e.key.keysym.sym == SDLK_v && SDL_GetModState() & KMOD_CTRL )
+            {
+              inputText = SDL_GetClipboardText();
+              renderText = true;
+            }
+          }
+          // Special text input event
+          else if( e.type == SDL_TEXTINPUT )
+          {
+            // Not copy or pasting
+            if( !( SDL_GetModState() & KMOD_CTRL && ( e.text.text[ 0 ] == 'c' || e.text.text[ 0 ] == 'C' || e.text.text[ 0 ] == 'v' || e.text.text[ 0 ] == 'V' ) ) )
+            {
+              // Append character
+              inputText += e.text.text;
+              renderText = true;
+            }
+          }
         }
 
-        // Move the dot
-        dot.move();
-
-        // Scroll background
-        --scrollingOffset;
-
-        if( scrollingOffset < -gBGTexture.getWidth() )
+        // Rerender text if needed
+        if( renderText )
         {
-          scrollingOffset = 0;
+          // Text is not empty
+          if( inputText != "" )
+          {
+            // Render new text
+            gInputTextTexture.loadFromRenderedText( inputText.c_str(), textColor );
+          }
+          // Text is empty
+          else
+          {
+            // Render space texture
+            gInputTextTexture.loadFromRenderedText( " ", textColor );
+          }
         }
-        else { /*  */ }
+        else { /* No need to render text */ }
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render background
-        gBGTexture.render( scrollingOffset                        , 0 );
-        gBGTexture.render( scrollingOffset + gBGTexture.getWidth(), 0 );
-
-        // Render objects
-        dot.render();
+        // Render text textures
+        gPromptTextTexture.render( ( SCREEN_W - gPromptTextTexture.getWidth() ) / 2, 0 );
+        gInputTextTexture.render(  ( SCREEN_W - gInputTextTexture.getWidth()  ) / 2, gPromptTextTexture.getHeight() );
 
         // Update screen
         SDL_RenderPresent( gRenderer );
       }
+
+      // Disable text input
+      SDL_StopTextInput();
 
     } // All media loaded
 

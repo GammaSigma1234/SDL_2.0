@@ -19,6 +19,7 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
   - [A.Left   > B.Right](#aleft----bright)
 - [Errori da Segnalare](#errori-da-segnalare)
   - [Tutorial 23](#tutorial-23)
+- [Tutorial 34](#tutorial-34)
 
 
 ## Getting Started
@@ -140,6 +141,11 @@ Una qualsiasi delle condizioni qui sopra assicura che i due rettangoli siano sep
 ### Tutorial 23
 
 - "acccessor"
+
+## Tutorial 34
+
+- In un commento del codice, "Recieved" invece che "Received".
+- Nel tutorial online, "dissapoint" al posto di "disappoint".
 
 $$x=y$$
 

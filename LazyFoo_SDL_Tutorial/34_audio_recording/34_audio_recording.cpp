@@ -1,49 +1,16 @@
 /**
- * @file 33_file_reading_and_writing.cpp
+ * @file 34_audio_recording.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/33_file_reading_and_writing/index.php
+ * @brief https://lazyfoo.net/tutorials/SDL/34_audio_recording/index.php
+ * 
+ * NOTA: [[maybe_unused]] è un attributo inserito nel C++17 che permette di sopprimere gli "unused
+ * parameter" warnings.
  *
- * Being able to save and load data is needed to keep data between play sessions. SDL_RWops file
- * handling allows us to do cross platform file IO to save data.
- *
- * We're declaring an array of signed integers that are 32 bits long. This will be the data we
- * will be loading and saving. For this demo, this array will be of length 10.
- *
- * In our media loading function we're opening the save file for reading using SDL_RWFromFile. The
- * first argument is the path to the file, and the second argument defines how we will be opening it.
- * "r+b" means it is being opened for reading in binary.
- *
- * If the file does not exist that doesn't exactly mean an error. It could mean this is the
- * first time the program has run and the file has not been created yet. If the file does not exist
- * we prompt a warning and create a file by opening a file with "w+b". This will open a new file for
- * writing in binary.
- *
- * If a new file was created successfully, we then start writing the initialized data to it using
- * "SDL_RWwrite". The first argument is the file we're writing to, the second argument is the
- * address of the objects in memory we're writing, the third argument is the number of bytes per
- * object we're writing, and the last one is the number of objects we're writing. After we're done
- * writing out all the objects, we close the file for writing using "SDL_RWclose". If the file was
- * never created in the first place, we report an error to the console and set the success flag to
- * false.
- *
- * If our file loaded successfully on the first try, all we have to do is reading in the data using
- * SDL_RWread, which basically functions like SDL_RWwrite but in reverse. After the file is loaded,
- * we render the text textures that correspond with each of our data numbers. Our
- * "loadFromRenderedText" function only accepts strings, so we have to convert the integers to
- * strings.
- *
- * When we close the program, we open up the file again for writing and write out all the data.
- *
- * Before we go into the main loop we declare "currentDataIndex" to keep track of which of our data
- * integers we're altering. We also declare a plain text color and a highlight color for rendering
- * text.
- *
- * When we press up or down we want to rerender the the old current data in plain color, move to the
- * next data point (with some bounds checking), and rerender the new current data in the highlight
- * color. When we press left or right, we decrement or increment the current data and rerender the
- * texture associated with it.
- *
- * At the end of the main loop we render all the textures to the screen.
+ * An SDL_AudioSpec is an audio specification which basically defines how audio is recorded or
+ * played back. When we open an audio device for recording or playing, we request a specification,
+ * but we may not get what we requested back because the audio driver does not support it. This is
+ * why we are going to store the specification we get back from the driver for recording and
+ * playback.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -96,11 +63,21 @@ static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
 static const std::string FontPath("lazy.ttf");
-static const std::string BinaryFileName("nums.bin");
 
-static constexpr int TOTAL_DATA       = 10; // Number of data integers
-static constexpr int WRITE_ONE_OBJECT = 1;  // Number of objects to write in SDL_RWwrite
-static constexpr int  READ_ONE_OBJECT = 1;  // Number of objects to read  in SDL_RWread
+static const int MAX_RECORDING_DEVICES    = 10; // Maximum number of supported recording devices
+static const int MAX_RECORDING_SECONDS    = 5;  // Maximum recording time
+static const int RECORDING_BUFFER_SECONDS = MAX_RECORDING_SECONDS + 1; // Maximum recording time plus padding
+
+// The various recording actions we can take
+enum RecordingState
+{
+  SELECTING_DEVICE,
+  STOPPED,
+  RECORDING,
+  RECORDED,
+  PLAYBACK,
+  ERROR
+};
 
 
 /***************************************************************************************************
@@ -120,10 +97,10 @@ class LTexture
   // Loads image at specified path
   bool loadFromFile( const std::string& );
 
-  #if defined(SDL_TTF_MAJOR_VERSION)
+    #if defined(SDL_TTF_MAJOR_VERSION)
   // Creates image from font string
   bool loadFromRenderedText( const std::string&, SDL_Color );
-  #endif
+    #endif
 
   // Deallocates texture
   void free(void);
@@ -144,7 +121,7 @@ class LTexture
   int getWidth (void) const;
   int getHeight(void) const;
 
-  private:
+private:
   // The actual hardware texture
   SDL_Texture* mTexture;
 
@@ -162,6 +139,10 @@ static bool init      ( void );
 static bool loadMedia ( void );
 static void close     ( void );
 
+// Recording/playback callbacks
+static void audioRecordingCallback( void* userdata, Uint8* stream, int len );
+static void audioPlaybackCallback ( void* userdata, Uint8* stream, int len );
+
 
 /***************************************************************************************************
 * Private global variables
@@ -172,13 +153,22 @@ static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 // Globally used font
 static TTF_Font* gFont = NULL;
+static SDL_Color gTextColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
 
-// Scene textures
-static LTexture gPromptTextTexture;
-static LTexture gDataTextures[ TOTAL_DATA ];
+static LTexture gPromptTexture; // Prompt texture
+static LTexture gDeviceTextures[ MAX_RECORDING_DEVICES ]; // The text textures that specify recording device names
 
-// Data points
-static Sint32 gData[ TOTAL_DATA ];
+// Number of available devices
+static int gRecordingDeviceCount = 0;
+
+// Received audio spec
+static SDL_AudioSpec gReceivedRecordingSpec;
+static SDL_AudioSpec gReceivedPlaybackSpec;
+
+static Uint8* gRecordingBuffer         = NULL; // Recording data buffer
+static Uint32 gBufferSize_Bytes        = 0;    // Size of data buffer
+static Uint32 gBufferPosition_Bytes    = 0;    // Position in data buffer
+static Uint32 gBufferMaxPosition_Bytes = 0;    // Maximum position in data buffer for recording
 
 
 /***************************************************************************************************
@@ -211,7 +201,6 @@ bool LTexture::loadFromFile( const std::string& path )
 
   // Load image at specified path
   SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
-
   if( loadedSurface == NULL )
   {
     printf( "\nUnable to load image \"%s\"! SDL_image Error: %s", path.c_str(), IMG_GetError() );
@@ -379,7 +368,7 @@ static bool init(void)
   bool success = true;
 
   // Initialize SDL
-  if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+  if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
   {
     printf( "\nSDL could not initialize! SDL Error: \"%s\"\n", SDL_GetError() );
     success = false;
@@ -439,7 +428,7 @@ static bool init(void)
           printf( "\nSDL_image initialised" );
         }
 
-         // Initialize SDL_ttf
+        // Initialize SDL_ttf
         if( TTF_Init() == -1 )
         {
           printf( "\nSDL_ttf could not initialize! SDL_ttf Error: \"%s\"\n", TTF_GetError() );
@@ -448,7 +437,7 @@ static bool init(void)
         else
         {
           printf( "\nSDL_ttf initialised" );
-        }
+      }
 
       } // Renderer created
 
@@ -467,10 +456,6 @@ static bool init(void)
  **/
 static bool loadMedia(void)
 {
-  // Text rendering color
-  SDL_Color textColor      = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
-  SDL_Color highlightColor = { RED_R, RED_G, RED_B, RED_A };
-
   // Loading success flag
   bool success = true;
 
@@ -486,71 +471,41 @@ static bool loadMedia(void)
   {
     printf( "\nLazy font loaded" );
 
-    // Render the prompt
-    if( !gPromptTextTexture.loadFromRenderedText( "Enter Data:", textColor ) )
+    // Set starting prompt
+    gPromptTexture.loadFromRenderedText( "Select your recording device:", gTextColor );
+
+    // Get capture device count
+    gRecordingDeviceCount = SDL_GetNumAudioDevices( SDL_TRUE );
+
+    // No recording devices
+    if( gRecordingDeviceCount < 1 )
     {
-      printf( "\nFailed to render prompt text!\n" );
+      printf( "\nUnable to get audio capture device! SDL Error: \"%s\"\n", SDL_GetError() );
       success = false;
     }
+    // At least one device connected
     else
     {
-      printf( "\nPrompt text rendered" );
-    }
-  }
-
-  // Open file for reading in binary
-  SDL_RWops* file = SDL_RWFromFile( BinaryFileName.c_str(), "r+b" );
-
-  // File does not exist
-  if( file == NULL )
-  {
-    // printf( "\nWarning: Unable to open file! SDL Error: %s", SDL_GetError() ); // Originale
-    printf( "\nCreating new \"%s\" file...", BinaryFileName.c_str() );
-
-    // Create file for writing
-    file = SDL_RWFromFile( BinaryFileName.c_str(), "w+b" );
-
-    if( file != NULL )
-    {
-      printf( "\nNew file created" );
-
-      // Initialize data
-      for( int i = 0; i < TOTAL_DATA; ++i )
+      // Cap recording device count
+      if( gRecordingDeviceCount > MAX_RECORDING_DEVICES )
       {
-        gData[ i ] = 0;
-        SDL_RWwrite( file, &gData[ i ], sizeof(Sint32), WRITE_ONE_OBJECT );
+        gRecordingDeviceCount = MAX_RECORDING_DEVICES;
       }
+      else { /* No capping necessary */ }
 
-      // Close file handler
-      SDL_RWclose( file );
+      // Render device names
+      std::stringstream promptText;
+
+      for( int i = 0; i != gRecordingDeviceCount; ++i )
+      {
+        // Get capture device name
+        promptText.str( "" );
+        promptText << i << ": " << SDL_GetAudioDeviceName( i, SDL_TRUE );
+
+        // Set texture from name
+        gDeviceTextures[ i ].loadFromRenderedText( promptText.str().c_str(), gTextColor );
+      }
     }
-    else
-    {
-      printf( "\nError: Unable to create file! SDL Error: %s", SDL_GetError() );
-      success = false;
-    }
-  }
-  // File exists
-  else
-  {
-    // Load data
-    printf( "\nReading file..." );
-
-    for( int i = 0; i != TOTAL_DATA; ++i )
-    {
-      SDL_RWread( file, &gData[ i ], sizeof(Sint32), READ_ONE_OBJECT );
-    }
-
-    // Close file handler
-    SDL_RWclose( file );
-  }
-
-  // Initialize data textures. All'avvio, la prima riga p "highlightColor"; tutte le altre sono "textColor"
-  gDataTextures[ 0 ].loadFromRenderedText( std::to_string( gData[ 0 ] ), highlightColor );
-
-  for( int i = 1; i != TOTAL_DATA; ++i )
-  {
-    gDataTextures[ i ].loadFromRenderedText( std::to_string( gData[ i ] ), textColor );
   }
 
   return success;
@@ -559,31 +514,11 @@ static bool loadMedia(void)
 
 static void close(void)
 {
-  // Open data for writing
-  SDL_RWops* file = SDL_RWFromFile( BinaryFileName.c_str(), "w+b" );
-
-  if( file != NULL )
+  // Free textures
+  gPromptTexture.free();
+  for( int i = 0; i != MAX_RECORDING_DEVICES; ++i )
   {
-    // Save data
-    for( int i = 0; i < TOTAL_DATA; ++i )
-    {
-      SDL_RWwrite( file, &gData[ i ], sizeof(Sint32), 1 );
-    }
-
-    // Close file handler
-    SDL_RWclose( file );
-  }
-  else
-  {
-    printf( "\nError: Unable to save file! %s", SDL_GetError() );
-  }
-
-  // Free loaded images
-  gPromptTextTexture.free();
-
-  for( int i = 0; i < TOTAL_DATA; ++i )
-  {
-    gDataTextures[ i ].free();
+    gDeviceTextures[ i ].free();
   }
 
   // Free global font
@@ -596,10 +531,43 @@ static void close(void)
   gRenderer = NULL;
   gWindow   = NULL;
 
+  // Free playback audio
+  if( gRecordingBuffer != NULL )
+  {
+    delete[] gRecordingBuffer;
+    gRecordingBuffer = NULL;
+  }
+  else
+  { /* Nothing to free */ }
+
   // Quit SDL subsystems
   TTF_Quit();
   IMG_Quit();
   SDL_Quit();
+}
+
+
+/***************************************************************************************************
+* Private functions definitions
+****************************************************************************************************/
+
+void audioRecordingCallback([[maybe_unused]] void* userdata, Uint8* stream, int len )
+{
+  // Copy audio from stream
+  memcpy( &gRecordingBuffer[ gBufferPosition_Bytes ], stream, len );
+
+  // Move along buffer
+  gBufferPosition_Bytes += len;
+}
+
+
+void audioPlaybackCallback([[maybe_unused]] void* userdata, Uint8* stream, int len )
+{
+  // Copy audio to stream
+  memcpy( stream, &gRecordingBuffer[ gBufferPosition_Bytes ], len );
+
+  // Move along buffer
+  gBufferPosition_Bytes += len;
 }
 
 
@@ -654,12 +622,12 @@ int main( int argc, char* args[] )
       // Event handler
       SDL_Event e;
 
-      // Text rendering color
-      SDL_Color textColor      = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
-      SDL_Color highlightColor = { RED_R, RED_G, RED_B, RED_A };
+      // Set the default recording state
+      RecordingState currentState = SELECTING_DEVICE;
 
-      // Current input point
-      int currentDataIndex = 0;
+      // Audio device IDs
+      SDL_AudioDeviceID recordingDeviceId = 0;
+      SDL_AudioDeviceID playbackDeviceId = 0;
 
       // While application is running
       while( !quit )
@@ -672,67 +640,232 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
-          else if( e.type == SDL_KEYDOWN )
+
+          // Do current state event handling
+          switch( currentState )
           {
-            switch( e.key.keysym.sym )
-            {
-              // Previous data entry
-              case SDLK_UP:
-              // Rerender previous entry input point
-              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), textColor );
-              --currentDataIndex;
+            // User is selecting recording device
+            case SELECTING_DEVICE:
 
-              if( currentDataIndex < 0 )
+              // On key press
+              if( e.type == SDL_KEYDOWN )
               {
-                currentDataIndex = TOTAL_DATA - 1;
-              }
-              else { /* No wrap-around necessary */ }
+                // Handle key press from 0 to 9
+                if( e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9 )
+                {
+                  // Get selection index
+                  int index = e.key.keysym.sym - SDLK_0;
 
-              // Re-render current entry input point
-              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
+                  // Index is valid
+                  if( index != gRecordingDeviceCount )
+                  {
+                    // Default audio spec
+                    SDL_AudioSpec desiredRecordingSpec;
+                    SDL_zero(desiredRecordingSpec);
+                    desiredRecordingSpec.freq     = 44100;
+                    desiredRecordingSpec.format   = AUDIO_F32;
+                    desiredRecordingSpec.channels = 2;
+                    desiredRecordingSpec.samples  = 4096;
+                    desiredRecordingSpec.callback = audioRecordingCallback;
+
+                    // Open recording device
+                    recordingDeviceId = SDL_OpenAudioDevice( SDL_GetAudioDeviceName( index, SDL_TRUE ), SDL_TRUE, &desiredRecordingSpec, &gReceivedRecordingSpec, SDL_AUDIO_ALLOW_FORMAT_CHANGE );
+
+                    // Device failed to open
+                    if( recordingDeviceId == 0 )
+                    {
+                      // Report error
+                      printf( "\nFailed to open recording device! SDL Error: \"%s\"", SDL_GetError() );
+                      gPromptTexture.loadFromRenderedText( "Failed to open recording device!", gTextColor );
+                      currentState = ERROR;
+                    }
+                    // Device opened successfully
+                    else
+                    {
+                      // Default audio spec
+                      SDL_AudioSpec desiredPlaybackSpec;
+                      SDL_zero(desiredPlaybackSpec);
+                      desiredPlaybackSpec.freq     = 44100;
+                      desiredPlaybackSpec.format   = AUDIO_F32;
+                      desiredPlaybackSpec.channels = 2;
+                      desiredPlaybackSpec.samples  = 4096;
+                      desiredPlaybackSpec.callback = audioPlaybackCallback;
+
+                      // Open playback device
+                      playbackDeviceId = SDL_OpenAudioDevice( NULL, SDL_FALSE, &desiredPlaybackSpec, &gReceivedPlaybackSpec, SDL_AUDIO_ALLOW_FORMAT_CHANGE );
+
+                      // Device failed to open
+                      if( playbackDeviceId == 0 )
+                      {
+                        // Report error
+                        printf( "\nFailed to open playback device! SDL Error: \"%s\"", SDL_GetError() );
+                        gPromptTexture.loadFromRenderedText( "Failed to open playback device!", gTextColor );
+                        currentState = ERROR;
+                      }
+                      // Device opened successfully
+                      else
+                      {
+                        // Calculate per sample bytes
+                        int bytesPerSample = gReceivedRecordingSpec.channels * ( SDL_AUDIO_BITSIZE( gReceivedRecordingSpec.format ) / 8 );
+
+                        // Calculate bytes per second
+                        int bytesPerSecond = gReceivedRecordingSpec.freq * bytesPerSample;
+
+                        // Calculate buffer size
+                        gBufferSize_Bytes = RECORDING_BUFFER_SECONDS * bytesPerSecond;
+
+                        // Calculate max buffer use
+                        gBufferMaxPosition_Bytes = MAX_RECORDING_SECONDS * bytesPerSecond;
+
+                        // Allocate and initialize byte buffer
+                        gRecordingBuffer = new Uint8[ gBufferSize_Bytes ];
+                        memset( gRecordingBuffer, 0, gBufferSize_Bytes );
+
+                        // Go on to next state
+                        gPromptTexture.loadFromRenderedText("Press 1 to record for 5 seconds.", gTextColor);
+                        currentState = STOPPED;
+                      }
+                    }
+                  }
+                  else
+                  {
+                    printf( "\nError: unrecognised command" );
+                    return EXIT_FAILURE;
+                  }
+                }
+              }
               break;
 
-              // Next data entry
-              case SDLK_DOWN:
-              // Rerender previous entry input point
-              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), textColor );
-              ++currentDataIndex;
+            // User getting ready to record
+            case STOPPED:
 
-              if( currentDataIndex == TOTAL_DATA )
+              // On key press
+              if( e.type == SDL_KEYDOWN )
               {
-                currentDataIndex = 0;
+                // Start recording
+                if( e.key.keysym.sym == SDLK_1 )
+                {
+                  // Go back to beginning of buffer
+                  gBufferPosition_Bytes = 0;
+
+                  // Start recording
+                  SDL_PauseAudioDevice( recordingDeviceId, SDL_FALSE );
+
+                  // Go on to next state
+                  gPromptTexture.loadFromRenderedText( "Recording...", gTextColor );
+                  currentState = RECORDING;
+                }
+                else {;}
               }
-              else { /* No wrap-around necessary */ }
-
-              // Rerender current entry input point
-              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
+              else {;}
               break;
 
-              // Decrement input point
-              case SDLK_LEFT:
-              --gData[ currentDataIndex ];
-              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
+            // User has finished recording
+            case RECORDED:
+
+              // On key press
+              if( e.type == SDL_KEYDOWN )
+              {
+                // Start playback
+                if( e.key.keysym.sym == SDLK_1 )
+                {
+                  // Go back to beginning of buffer
+                  gBufferPosition_Bytes = 0;
+
+                  // Start playback
+                  SDL_PauseAudioDevice( playbackDeviceId, SDL_FALSE );
+
+                  // Go on to next state
+                  gPromptTexture.loadFromRenderedText( "Playing...", gTextColor );
+                  currentState = PLAYBACK;
+                }
+                // Record again
+                if( e.key.keysym.sym == SDLK_2 )
+                {
+                  // Reset the buffer
+                  gBufferPosition_Bytes = 0;
+                  memset( gRecordingBuffer, 0, gBufferSize_Bytes );
+
+                  // Start recording
+                  SDL_PauseAudioDevice( recordingDeviceId, SDL_FALSE );
+
+                  // Go on to next state
+                  gPromptTexture.loadFromRenderedText( "Recording...", gTextColor );
+                  currentState = RECORDING;
+                }
+              }
               break;
 
-              // Increment input point
-              case SDLK_RIGHT:
-              ++gData[ currentDataIndex ];
-              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
-              break;
-            }
+            case RECORDING:
+            case PLAYBACK:
+            case ERROR:
+            default:
+            ;
+            /* Not managed in this switch-case */
           }
+        }
+
+        // Updating recording
+        if( currentState == RECORDING )
+        {
+          // Lock callback
+          SDL_LockAudioDevice( recordingDeviceId );
+
+          // Finished recording
+          if( gBufferPosition_Bytes > gBufferMaxPosition_Bytes )
+          {
+            // Stop recording audio
+            SDL_PauseAudioDevice( recordingDeviceId, SDL_TRUE );
+
+            // Go on to next state
+            gPromptTexture.loadFromRenderedText( "Press 1 to play back. Press 2 to record again.", gTextColor );
+            currentState = RECORDED;
+          }
+          else { /* Not finished recording yet */ }
+
+          // Unlock callback
+          SDL_UnlockAudioDevice( recordingDeviceId );
+        }
+        // Updating playback
+        else if( currentState == PLAYBACK )
+        {
+          // Lock callback
+          SDL_LockAudioDevice( playbackDeviceId );
+
+          // Finished playback
+          if( gBufferPosition_Bytes > gBufferMaxPosition_Bytes )
+          {
+            // Stop playing audio
+            SDL_PauseAudioDevice( playbackDeviceId, SDL_TRUE );
+
+            // Go on to next state
+            gPromptTexture.loadFromRenderedText( "Press 1 to play back. Press 2 to record again.", gTextColor );
+            currentState = RECORDED;
+          }
+          else { /* Still playing back */ }
+
+          // Unlock callback
+          SDL_UnlockAudioDevice( playbackDeviceId );
         }
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render text textures
-        gPromptTextTexture.render( ( SCREEN_W - gPromptTextTexture.getWidth() ) / 2, 0 );
+        // Render prompt centered at the top of the screen
+        gPromptTexture.render( ( SCREEN_W - gPromptTexture.getWidth() ) / 2, 0 );
 
-        for( int i = 0; i < TOTAL_DATA; ++i )
+        // User is selecting
+        if( currentState == SELECTING_DEVICE )
         {
-          gDataTextures[ i ].render( ( SCREEN_W - gDataTextures[ i ].getWidth() ) / 2, gPromptTextTexture.getHeight() + gDataTextures[ 0 ].getHeight() * i );
+          // Render device names
+          int yOffset = gPromptTexture.getHeight() * 2;
+
+          for( int i = 0; i != gRecordingDeviceCount; ++i )
+          {
+            gDeviceTextures[ i ].render( 0, yOffset );
+            yOffset += gDeviceTextures[ i ].getHeight() + 1;
+          }
         }
 
         // Update screen

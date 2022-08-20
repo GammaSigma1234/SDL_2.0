@@ -34,7 +34,7 @@
  *
  * When we close the program, we open up the file again for writing and write out all the data.
  *
- * Before we go into the main loop we declare "currentData" to keep track of which of our data
+ * Before we go into the main loop we declare "currentDataIndex" to keep track of which of our data
  * integers we're altering. We also declare a plain text color and a highlight color for rendering
  * text.
  *
@@ -100,6 +100,7 @@ static const std::string BinaryFileName("nums.bin");
 
 static constexpr int TOTAL_DATA       = 10; // Number of data integers
 static constexpr int WRITE_ONE_OBJECT = 1;  // Number of objects to write in SDL_RWwrite
+static constexpr int  READ_ONE_OBJECT = 1;  // Number of objects to read  in SDL_RWread
 
 
 /***************************************************************************************************
@@ -261,7 +262,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   if( textSurface != NULL )
   {
     // Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
 
     if( mTexture == NULL )
     {
@@ -508,9 +509,10 @@ static bool loadMedia(void)
 
     // Create file for writing
     file = SDL_RWFromFile( BinaryFileName.c_str(), "w+b" );
+
     if( file != NULL )
     {
-      printf( "\nNew file created!" );
+      printf( "\nNew file created" );
 
       // Initialize data
       for( int i = 0; i < TOTAL_DATA; ++i )
@@ -534,19 +536,19 @@ static bool loadMedia(void)
     // Load data
     printf( "\nReading file..." );
 
-    for( int i = 0; i < TOTAL_DATA; ++i )
+    for( int i = 0; i != TOTAL_DATA; ++i )
     {
-      SDL_RWread( file, &gData[ i ], sizeof(Sint32), 1 );
+      SDL_RWread( file, &gData[ i ], sizeof(Sint32), READ_ONE_OBJECT );
     }
 
     // Close file handler
     SDL_RWclose( file );
   }
 
-  // Initialize data textures
+  // Initialize data textures. All'avvio, la prima riga p "highlightColor"; tutte le altre sono "textColor"
   gDataTextures[ 0 ].loadFromRenderedText( std::to_string( gData[ 0 ] ), highlightColor );
 
-  for( int i = 1; i < TOTAL_DATA; ++i )
+  for( int i = 1; i != TOTAL_DATA; ++i )
   {
     gDataTextures[ i ].loadFromRenderedText( std::to_string( gData[ i ] ), textColor );
   }
@@ -653,11 +655,11 @@ int main( int argc, char* args[] )
       SDL_Event e;
 
       // Text rendering color
-      SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
+      SDL_Color textColor      = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
       SDL_Color highlightColor = { RED_R, RED_G, RED_B, RED_A };
 
       // Current input point
-      int currentData = 0;
+      int currentDataIndex = 0;
 
       // While application is running
       while( !quit )
@@ -677,41 +679,45 @@ int main( int argc, char* args[] )
               // Previous data entry
               case SDLK_UP:
               // Rerender previous entry input point
-              gDataTextures[ currentData ].loadFromRenderedText( std::to_string( gData[ currentData ] ), textColor );
-              --currentData;
-              if( currentData < 0 )
-              {
-                currentData = TOTAL_DATA - 1;
-              }
+              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), textColor );
+              --currentDataIndex;
 
-              // Rerender current entry input point
-              gDataTextures[ currentData ].loadFromRenderedText( std::to_string( gData[ currentData ] ), highlightColor );
+              if( currentDataIndex < 0 )
+              {
+                currentDataIndex = TOTAL_DATA - 1;
+              }
+              else { /* No wrap-around necessary */ }
+
+              // Re-render current entry input point
+              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
               break;
 
               // Next data entry
               case SDLK_DOWN:
               // Rerender previous entry input point
-              gDataTextures[ currentData ].loadFromRenderedText( std::to_string( gData[ currentData ] ), textColor );
-              ++currentData;
-              if( currentData == TOTAL_DATA )
+              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), textColor );
+              ++currentDataIndex;
+
+              if( currentDataIndex == TOTAL_DATA )
               {
-                currentData = 0;
+                currentDataIndex = 0;
               }
+              else { /* No wrap-around necessary */ }
 
               // Rerender current entry input point
-              gDataTextures[ currentData ].loadFromRenderedText( std::to_string( gData[ currentData ] ), highlightColor );
+              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
               break;
 
               // Decrement input point
               case SDLK_LEFT:
-              --gData[ currentData ];
-              gDataTextures[ currentData ].loadFromRenderedText( std::to_string( gData[ currentData ] ), highlightColor );
+              --gData[ currentDataIndex ];
+              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
               break;
 
               // Increment input point
               case SDLK_RIGHT:
-              ++gData[ currentData ];
-              gDataTextures[ currentData ].loadFromRenderedText( std::to_string( gData[ currentData ] ), highlightColor );
+              ++gData[ currentDataIndex ];
+              gDataTextures[ currentDataIndex ].loadFromRenderedText( std::to_string( gData[ currentDataIndex ] ), highlightColor );
               break;
             }
           }
@@ -732,6 +738,7 @@ int main( int argc, char* args[] )
         // Update screen
         SDL_RenderPresent( gRenderer );
       }
+
     } // All media loaded
 
   } // All systems initialised

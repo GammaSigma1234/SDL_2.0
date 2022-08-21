@@ -1,34 +1,29 @@
-@REM By GS - Settembre 2021 - Rivisitato Lug 2022
-
 @echo off
 
+cls
+echo.
+
 @REM Project's name
-set SDL2_PROJECT_NAME=03_event_driven_programming
+set SDL2_PROJECT_NAME=Pallina
 
 @REM Source files
-set SOURCE_FILES=%SDL2_PROJECT_NAME%.cpp
+set SOURCE_FILES=main.cpp
 
 @REM Static libraries
 set SDL2_LIB_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\lib
 set SDL2_IMAGE_LIB_PATH=D:\Dati\SDL2\SDL2_image-2.6.0\x86_64-w64-mingw32\lib\
-@REM set SDL2_TTF_LIB_PATH=D:\Dati\SDL2\SDL2_ttf-2.20.0\x86_64-w64-mingw32\lib\
-set SDL2_LIB_PATHS=-L%SDL2_LIB_PATH% -L%SDL2_IMAGE_LIB_PATH% &:: -L%SDL2_TTF_LIB_PATH%
-set SDL2_LIBRARIES=-lmingw32 -lSDL2main -lSDL2 -lSDL2_image &:: -lSDL2_ttf
+set SDL2_TTF_LIB_PATH=D:\Dati\SDL2\SDL2_ttf-2.20.0\x86_64-w64-mingw32\lib\
+set SDL2_LIB_PATHS=-L%SDL2_LIB_PATH% -L%SDL2_IMAGE_LIB_PATH% -L%SDL2_TTF_LIB_PATH%
+set SDL2_LIBRARIES=-lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf
 
 @REM Header files
 set SDL2_INCLUDE_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\include\SDL2
 set SDL2_IMAGE_INCLUDE_PATH=D:\Dati\SDL2\SDL2_image-2.6.0\x86_64-w64-mingw32\include\SDL2\
-@REM set SDL2_TTF_INCLUDE_PATH=D:\Dati\SDL2\SDL2_ttf-2.20.0\x86_64-w64-mingw32\include\SDL2
-set SDL2_INCLUDE_PATHS=-I%SDL2_INCLUDE_PATH% -I%SDL2_IMAGE_INCLUDE_PATH% &:: -I%SDL2_TTF_INCLUDE_PATH%
+set SDL2_TTF_INCLUDE_PATH=D:\Dati\SDL2\SDL2_ttf-2.20.0\x86_64-w64-mingw32\include\SDL2
+set SDL2_INCLUDE_PATHS=-I%SDL2_INCLUDE_PATH% -I%SDL2_IMAGE_INCLUDE_PATH% -I%SDL2_TTF_INCLUDE_PATH%
 
 @REM C++ compilation options
 set COMPILATION_OPTIONS=-Wall -Wextra -Wpedantic -Wconversion
-
-@REM @REM Assign global variables from TXT file (not used any more)
-@REM @REM for /f "delims== tokens=1,2 skip=2" %%G in (..\Global_Variables_For_Batch_Files.txt) do set %%G=%%H
-
-cls
-echo.
 
 
 if %1.==-c. goto Clean

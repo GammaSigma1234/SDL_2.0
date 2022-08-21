@@ -2,7 +2,7 @@
  * @file 34_audio_recording.cpp
  *
  * @brief https://lazyfoo.net/tutorials/SDL/34_audio_recording/index.php
- * 
+ *
  * NOTA: [[maybe_unused]] è un attributo inserito nel C++17 che permette di sopprimere gli "unused
  * parameter" warnings.
  *
@@ -602,6 +602,7 @@ int main( int argc, char* args[] )
   if( !init() )
   {
     printf( "\nFailed to initialize!" );
+    HasProgramSucceeded = false;
   }
   else
   {
@@ -611,6 +612,7 @@ int main( int argc, char* args[] )
     if( !loadMedia() )
     {
       printf( "\nFailed to load media!" );
+      HasProgramSucceeded = false;
     }
     else
     {
@@ -678,6 +680,7 @@ int main( int argc, char* args[] )
                       printf( "\nFailed to open recording device! SDL Error: \"%s\"", SDL_GetError() );
                       gPromptTexture.loadFromRenderedText( "Failed to open recording device!", gTextColor );
                       currentState = ERROR;
+                      HasProgramSucceeded = false;
                     }
                     // Device opened successfully
                     else
@@ -701,6 +704,7 @@ int main( int argc, char* args[] )
                         printf( "\nFailed to open playback device! SDL Error: \"%s\"", SDL_GetError() );
                         gPromptTexture.loadFromRenderedText( "Failed to open playback device!", gTextColor );
                         currentState = ERROR;
+                        HasProgramSucceeded = false;
                       }
                       // Device opened successfully
                       else
@@ -800,8 +804,8 @@ int main( int argc, char* args[] )
             case PLAYBACK:
             case ERROR:
             default:
-            ;
-            /* Not managed in this switch-case */
+            HasProgramSucceeded = false;
+            /* Error: not managed in this switch-case */
           }
         }
 

@@ -1,35 +1,7 @@
 /**
- * @file 31_scrolling_backgrounds.cpp
+ * @file main.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/31_scrolling_backgrounds/index.php
- *
- * Often times in games you may want an infinite or looping background. With scrolling backgrounds,
- * you can cycle a background that goes on forever. If we want to move around a dot on a infinite
- * background, all we have to do is render two iterations of the background next to each other and
- * move them a little every frame. When the background has moved completely over, you can reset the
- * motion.
- *
- * For this tutorial we'll be using a plain version of the dot that just moves on screen. Before we
- * enter the main loop we declare a Dot object and the scrolling offset.
- *
- * Updating the position of the scrolling background is just decrementing the x position. If the x
- * position is less than the width of the background, that means the background has gone completely
- * off screen, and the position needs to be reset.
- *
- * NOTA: nulla vieta di renderizzare una texture al di fuori della finestra di visualizzazione. Ad
- * esempio, se chiediamo al renderer di visualizzare una texture di dimensioni 50 x 80 in posizione
- * (-20, -30), vedremo la texture comparire parzialmente (ne vedremo solo una porzione di dimensione
- * 30 x 50) nell'angolo in alto a sinistra della finestra. Per questo motivo, il modo più semplice
- * per implementare lo scorrimento verso sinistra della background texture è di decrementare la
- * posizione orizzontale di rendering mediante un offset, e resettare l'offset quando la texture è
- * andata completamente fuori dallo schermo.
- *
- * Then, we're rendering the background and the dot. First, we render the scrolling background by
- * rendering two iterations of the texture next to each other, and then we render the dot over it.
- * This will give us the effect of a smooth scrolling infinite background.
- *
- * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
+ * @brief
  **/
 
 // Using SDL, SDL_image, standard IO, vectors, and strings
@@ -43,10 +15,14 @@
 * Private constants
 ***************************************************************************************************/
 
-static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
+static constexpr int INIT_F1 = -1; // Initialise the first rendering driver supporting the requested flags
 
-static constexpr int SCREEN_W = 640; // Screen's width
-static constexpr int SCREEN_H = 480; // Screen's heigth
+static constexpr int SCRN_W = 640; // Screen's width
+static constexpr int SCRN_H = 480; // Screen's heigth
+
+// The dimensions of the level
+static constexpr int LEVEL_W = 1280;
+static constexpr int LEVEL_H = 960;
 
 // Colore bianco
 static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
@@ -60,13 +36,23 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
-static const std::string DotPath("dot.bmp");
-static const std::string BackGroundPath("bg.png");
+static const std::string DotPath("dot.bmp");  // Dot        texture's path
+static const std::string BGPath("bg.png");    // Background texture's path
 
 
 /***************************************************************************************************
 * Classes
 ****************************************************************************************************/
+
+/**
+ * @brief A circle stucture. Defines the centre (x, y) and the radius (r) of the circle.
+ **/
+struct Circle
+{
+  int x, y;
+  int r;
+};
+
 
 // Texture wrapper class
 class LTexture
@@ -99,7 +85,7 @@ class LTexture
   void setAlpha( Uint8 );
 
   // Renders texture at given point
-  void render( int, int, SDL_Rect* = NULL, double = 0.0, SDL_Point* = NULL, SDL_RendererFlip = SDL_FLIP_NONE );
+  void render( int = 0, int = 0, SDL_Rect* = NULL, double = 0.0, SDL_Point* = NULL, SDL_RendererFlip = SDL_FLIP_NONE );
 
   // Gets image dimensions
   int getWidth (void) const;
@@ -107,11 +93,11 @@ class LTexture
 
   private:
   // The actual hardware texture
-  SDL_Texture* mTexture;
+  SDL_Texture* m_Texture;
 
   // Image dimensions
-  int mWidth;
-  int mHeight;
+  int m_Width;
+  int m_Height;
 };
 
 
@@ -122,9 +108,9 @@ class Dot
 {
   public:
 
-    // The dimensions of the dot
-  static constexpr int DOT_WIDTH  = 20;
-  static constexpr int DOT_HEIGHT = 20;
+  // The dimensions (width and height) of the dot
+  static constexpr int DOT_W = 20;
+  static constexpr int DOT_H = 20;
 
   // Initializes the variables
   Dot(void);
@@ -133,21 +119,45 @@ class Dot
   void handleEvent( SDL_Event& );
 
   // Moves the dot
-  void move(void);
+  void ProcessMovement(void);
 
-  // Shows the dot on the screen
-  void render(void);
+  // Shows the dot on the screen relative to the camera
+  void render( int, int );
+
+  // Position accessors
+  int getPosX(void) const;
+  int getPosY(void) const;
 
   private:
 
+  enum class ACCEL_DIR
+  {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+
+    HOW_MANY
+  };
+
+  void AccelReq     ( ACCEL_DIR );
+  void AccelStop    ( ACCEL_DIR );
+  void ProcessAccel (void);
+
   // Maximum axis velocity of the dot
-  static constexpr int DOT_VEL = 10;
+  static constexpr int DOT_V = 10;
+
+  // Acceleration addition
+  static constexpr double DOT_A = 0.5;
 
   // The X and Y offsets of the dot
-  int mPosX, mPosY;
+  int m_PosX, m_PosY;
 
   // The velocity of the dot
-  int mVelX, mVelY;
+  double m_VelX, m_VelY;
+
+  // Used to set the direction of the acceleration
+  bool m_IsAccelUp, m_IsAccelDown, m_IsAccelLeft, m_IsAccelRight;
 };
 
 
@@ -165,7 +175,7 @@ static void close     ( void );
 ****************************************************************************************************/
 
 static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
-static SDL_Renderer* gRenderer = NULL; // The window renderer
+static SDL_Renderer* g_Renderer = NULL; // The window renderer
 
 // Scene textures
 static LTexture gDotTexture;
@@ -177,12 +187,8 @@ static LTexture gBGTexture;
 ****************************************************************************************************/
 
 LTexture::LTexture(void)
-{
-  // Initialize
-  mTexture = NULL;
-  mWidth   = 0;
-  mHeight  = 0;
-}
+  : m_Texture(NULL), m_Width(0), m_Height(0)
+{ /* Initialize members */ }
 
 
 LTexture::~LTexture(void)
@@ -215,7 +221,7 @@ bool LTexture::loadFromFile( const std::string& path )
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
     // Create texture from surface pixels
-    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+    newTexture = SDL_CreateTextureFromSurface( g_Renderer, loadedSurface );
 
     if( newTexture == NULL )
     {
@@ -226,8 +232,8 @@ bool LTexture::loadFromFile( const std::string& path )
       printf( "\nTexture created from \"%s\"", path.c_str() );
 
       // Get image dimensions
-      mWidth  = loadedSurface->w;
-      mHeight = loadedSurface->h;
+      m_Width  = loadedSurface->w;
+      m_Height = loadedSurface->h;
     }
 
     // Get rid of old loaded surface
@@ -235,9 +241,9 @@ bool LTexture::loadFromFile( const std::string& path )
   }
 
   // Return success
-  mTexture = newTexture;
+  m_Texture = newTexture;
 
-  return mTexture != NULL;
+  return m_Texture != NULL;
 }
 
 
@@ -253,17 +259,17 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   if( textSurface != NULL )
   {
     // Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+        m_Texture = SDL_CreateTextureFromSurface( g_Renderer, textSurface );
 
-    if( mTexture == NULL )
+    if( m_Texture == NULL )
     {
       printf( "\nUnable to create texture from rendered text! SDL Error: %s", SDL_GetError() );
     }
     else
     {
       // Get image dimensions
-      mWidth  = textSurface->w;
-      mHeight = textSurface->h;
+      m_Width  = textSurface->w;
+      m_Height = textSurface->h;
     }
 
     // Get rid of old surface
@@ -275,7 +281,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   }
 
   // Return success
-  return mTexture != NULL;
+  return m_Texture != NULL;
 }
 #endif
 
@@ -283,12 +289,12 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 void LTexture::free(void)
 {
   // Free texture if it exists
-  if( mTexture != NULL )
+  if( m_Texture != NULL )
   {
-    SDL_DestroyTexture( mTexture );
-    mTexture = NULL;
-    mWidth = 0;
-    mHeight = 0;
+    SDL_DestroyTexture( m_Texture );
+    m_Texture = NULL;
+    m_Width = 0;
+    m_Height = 0;
   }
   else { /* Nothing to destroy */ }
 }
@@ -303,7 +309,7 @@ void LTexture::free(void)
  **/
 void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
 {
-  SDL_SetTextureColorMod( mTexture, red, green, blue );
+  SDL_SetTextureColorMod( m_Texture, red, green, blue );
 }
 
 
@@ -314,7 +320,7 @@ void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
  **/
 void LTexture::setBlendMode( SDL_BlendMode blending )
 {
-  SDL_SetTextureBlendMode( mTexture, blending );
+  SDL_SetTextureBlendMode( m_Texture, blending );
 }
 
 
@@ -325,14 +331,24 @@ void LTexture::setBlendMode( SDL_BlendMode blending )
  **/
 void LTexture::setAlpha( Uint8 alpha )
 {
-  SDL_SetTextureAlphaMod( mTexture, alpha );
+  SDL_SetTextureAlphaMod( m_Texture, alpha );
 }
 
 
-void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
+/**
+ * @brief Renders the texture.
+ *
+ * @param x x position on the window where the texture will be rendered.
+ * @param y y position on the window where the texture will be rendered.
+ * @param clip used to render only a portion of the texture. Defaults to NULL (renders the whole texture).
+ * @param angle the rotation angle of the texture around the centre. Defaults to 0.0 (no rotation).
+ * @param centre centre of rotation. Defaults to NULL (renders around 0, 0).
+ * @param flip flips the image around the vertical or horizontal axis. Defaults to SDL_flip_NONE (no flipping).
+ **/
+void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* centre, SDL_RendererFlip flip )
 {
   // Set rendering space and render to screen
-  SDL_Rect renderQuad = { x, y, mWidth, mHeight };
+  SDL_Rect renderQuad = { x, y, m_Width, m_Height };
 
   // Set clip rendering dimensions
   if( clip != NULL )
@@ -343,32 +359,26 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
   else { /* Render the whole texture */ }
 
   // Render to screen
-  SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
+  SDL_RenderCopyEx( g_Renderer, m_Texture, clip, &renderQuad, angle, centre, flip );
 }
 
 
 int LTexture::getWidth(void) const
 {
-  return mWidth;
+  return m_Width;
 }
 
 
 int LTexture::getHeight(void) const
 {
-  return mHeight;
+  return m_Height;
 }
 
 
 Dot::Dot(void)
-{
-    // Initialize the offsets
-    mPosX = 0;
-    mPosY = 0;
-
-    // Initialize the velocity
-    mVelX = 0;
-    mVelY = 0;
-}
+  : m_PosX(0), m_PosY(0), m_VelX(0), m_VelY(0),
+    m_IsAccelUp(false), m_IsAccelDown(false), m_IsAccelLeft(false), m_IsAccelRight(false)
+{ /* Initialise the offsets, the velocity, and the acceleration */ }
 
 
 void Dot::handleEvent( SDL_Event& e )
@@ -380,11 +390,11 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : mVelY -= DOT_VEL; break;
-      case SDLK_DOWN : mVelY += DOT_VEL; break;
-      case SDLK_LEFT : mVelX -= DOT_VEL; break;
-      case SDLK_RIGHT: mVelX += DOT_VEL; break;
-      default        :                   break;
+      case SDLK_UP   : AccelReq(Dot::ACCEL_DIR::UP);    break;
+      case SDLK_DOWN : AccelReq(Dot::ACCEL_DIR::DOWN);  break;
+      case SDLK_LEFT : AccelReq(Dot::ACCEL_DIR::LEFT);  break;
+      case SDLK_RIGHT: AccelReq(Dot::ACCEL_DIR::RIGHT); break;
+      default        :                                  break;
     }
   }
   // If a key was released
@@ -393,47 +403,173 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : mVelY += DOT_VEL; break;
-      case SDLK_DOWN : mVelY -= DOT_VEL; break;
-      case SDLK_LEFT : mVelX += DOT_VEL; break;
-      case SDLK_RIGHT: mVelX -= DOT_VEL; break;
-      default        :                   break;
+      case SDLK_UP   : AccelStop(Dot::ACCEL_DIR::UP);    break;
+      case SDLK_DOWN : AccelStop(Dot::ACCEL_DIR::DOWN);  break;
+      case SDLK_LEFT : AccelStop(Dot::ACCEL_DIR::LEFT);  break;
+      case SDLK_RIGHT: AccelStop(Dot::ACCEL_DIR::RIGHT); break;
+      default        :                                   break;
     }
   }
   else { /* Ignore this event */ }
 }
 
 
-void Dot::move(void)
+void Dot::ProcessMovement(void)
 {
+  ProcessAccel();
+
   // Move the dot left or right
-  mPosX += mVelX;
+  m_PosX += static_cast<int>(m_VelX);
 
   // If the dot went too far to the left or right
-  if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_W ) )
+  if( ( m_PosX < 0 ) || ( m_PosX + DOT_W > LEVEL_W ) )
   {
     // Move back
-    mPosX -= mVelX;
+    m_PosX -= static_cast<int>(m_VelX);
   }
   else { /* Movement was OK */ }
 
   // Move the dot up or down
-  mPosY += mVelY;
+  m_PosY += static_cast<int>(m_VelY);
 
   // If the dot went too far up or down
-  if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_H ) )
+  if( ( m_PosY < 0 ) || ( m_PosY + DOT_H > LEVEL_H ) )
   {
     // Move back
-    mPosY -= mVelY;
+    m_PosY -= static_cast<int>(m_VelY);
   }
   else { /* Movement was OK */ }
 }
 
 
-void Dot::render(void)
+/**
+ * @brief Requests acceleration in a given direction.
+ **/
+void Dot::AccelReq( Dot::ACCEL_DIR Direction )
 {
-  // Show the dot
-  gDotTexture.render( mPosX, mPosY );
+  switch ( Direction )
+  {
+    case Dot::ACCEL_DIR::UP:
+      m_IsAccelUp = true;
+      break;
+
+    case Dot::ACCEL_DIR::DOWN:
+      m_IsAccelDown = true;
+      break;
+
+    case Dot::ACCEL_DIR::LEFT:
+      m_IsAccelLeft = true;
+      break;
+
+    case Dot::ACCEL_DIR::RIGHT:
+      m_IsAccelRight = true;
+      break;
+
+    default:
+      break;
+  }
+}
+
+
+/**
+ * @brief Stops acceleration requests in a given direction.
+ **/
+void Dot::AccelStop( Dot::ACCEL_DIR Direction )
+{
+  switch ( Direction )
+  {
+    case Dot::ACCEL_DIR::UP:
+      m_IsAccelUp = false;
+      break;
+
+    case Dot::ACCEL_DIR::DOWN:
+      m_IsAccelDown = false;
+      break;
+
+    case Dot::ACCEL_DIR::LEFT:
+      m_IsAccelLeft = false;
+      break;
+
+    case Dot::ACCEL_DIR::RIGHT:
+      m_IsAccelRight = false;
+      break;
+
+    default:
+      break;
+  }
+}
+
+
+void Dot::ProcessAccel(void)
+{
+  if ( m_IsAccelUp )
+  {
+    m_VelY = m_VelY - DOT_A;
+  }
+  else { /* No upwards acceleration requested */ }
+
+  if ( m_IsAccelDown )
+  {
+    m_VelY = m_VelY + DOT_A;
+  }
+  else { /* No downwards acceleration requested */ }
+
+  if ( m_IsAccelLeft )
+  {
+    m_VelX = m_VelX - DOT_A;
+  }
+  else { /* No upwards acceleration requested */ }
+
+  if ( m_IsAccelRight )
+  {
+    m_VelX = m_VelX + DOT_A;
+  }
+  else { /* No downwards acceleration requested */ }
+
+  // Speed check and saturation
+
+  if ( m_VelY < -DOT_V )
+  {
+    m_VelY = -DOT_V;
+  }
+  else { /* Max speed on negative y axis not yet reached */ }
+
+  if ( m_VelY > DOT_V )
+  {
+    m_VelY = DOT_V;
+  }
+  else { /* Max speed on positive y axis not yet reached */ }
+
+  if ( m_VelX > DOT_V )
+  {
+    m_VelX = DOT_V;
+  }
+  else { /* Max speed on positive x axis not yet reached */ }
+
+  if ( m_VelX < -DOT_V )
+  {
+    m_VelX = -DOT_V;
+  }
+  else { /* Max speed on negative x axis not yet reached */ }
+}
+
+
+void Dot::render( int camX, int camY )
+{
+  // Show the dot relative to the camera
+  gDotTexture.render( m_PosX - camX, m_PosY - camY );
+}
+
+
+int Dot::getPosX(void) const
+{
+  return m_PosX;
+}
+
+
+int Dot::getPosY(void) const
+{
+  return m_PosY;
 }
 
 
@@ -469,7 +605,12 @@ static bool init(void)
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "Pallina",
+                                SDL_WINDOWPOS_UNDEFINED,
+                                SDL_WINDOWPOS_UNDEFINED,
+                                SCRN_W,
+                                SCRN_H,
+                                SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
 
     if( gWindow == NULL )
     {
@@ -481,9 +622,9 @@ static bool init(void)
       printf( "\nWindow created" );
 
       // Create accelerated and vsynced renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INIT_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+      g_Renderer = SDL_CreateRenderer( gWindow, INIT_F1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 
-      if( gRenderer == NULL )
+      if( g_Renderer == NULL )
       {
         printf( "\nRenderer could not be created! SDL Error: %s", SDL_GetError() );
         success = false;
@@ -493,7 +634,7 @@ static bool init(void)
         printf( "\nRenderer created" );
 
         // Initialize renderer color
-        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
+        SDL_SetRenderDrawColor( g_Renderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 
         // Initialize PNG loading
         int imgFlags = IMG_INIT_PNG;
@@ -540,7 +681,7 @@ static bool loadMedia(void)
   }
 
   // Load background texture
-  if ( !gBGTexture.loadFromFile( BackGroundPath.c_str() ) )
+  if ( !gBGTexture.loadFromFile( BGPath.c_str() ) )
   {
     printf( "\nFailed to load background texture!\n" );
     success = false;
@@ -561,9 +702,9 @@ static void close(void)
   gBGTexture.free();
 
   // Destroy window
-  SDL_DestroyRenderer( gRenderer );
+  SDL_DestroyRenderer( g_Renderer );
   SDL_DestroyWindow( gWindow );
-  gRenderer = NULL;
+  g_Renderer = NULL;
   gWindow   = NULL;
 
   // Quit SDL subsystems
@@ -626,8 +767,8 @@ int main( int argc, char* args[] )
       // The dot that will be moving around on the screen
       Dot dot;
 
-      // The background scrolling offset
-      int scrollingOffset = 0;
+      // The camera area
+      SDL_Rect camera = { 0, 0, SCRN_W, SCRN_H };
 
       // While application is running
       while( !quit )
@@ -647,30 +788,50 @@ int main( int argc, char* args[] )
         }
 
         // Move the dot
-        dot.move();
+        dot.ProcessMovement();
 
-        // Scroll background
-        --scrollingOffset;
+        // Center the camera over the dot
+        camera.x = ( dot.getPosX() + Dot::DOT_W  / 2 ) - SCRN_W / 2;
+        camera.y = ( dot.getPosY() + Dot::DOT_H / 2 ) - SCRN_H / 2;
 
-        if( scrollingOffset < -gBGTexture.getWidth() )
+        // Keep the camera in bounds
+        if( camera.x < 0 )
         {
-          scrollingOffset = 0;
+          camera.x = 0;
         }
-        else { /*  */ }
+        else { /* Camera's position is OK */ }
+
+        if( camera.y < 0 )
+        {
+          camera.y = 0;
+        }
+        else { /* Camera's position is OK */ }
+
+        if( camera.x > LEVEL_W - camera.w )
+        {
+          camera.x = LEVEL_W - camera.w;
+        }
+        else { /* Camera's position is OK */ }
+
+        if( camera.y > LEVEL_H - camera.h )
+        {
+          camera.y = LEVEL_H - camera.h;
+        }
+        else { /* Camera's position is OK */ }
+
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
-        SDL_RenderClear( gRenderer );
+        SDL_SetRenderDrawColor( g_Renderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
+        SDL_RenderClear( g_Renderer );
 
         // Render background
-        gBGTexture.render( scrollingOffset                        , 0 );
-        gBGTexture.render( scrollingOffset + gBGTexture.getWidth(), 0 );
+        gBGTexture.render( 0, 0, &camera ); // x = 0, y = 0 --> Il background va sempre agganciato all'origine della finestra
 
         // Render objects
-        dot.render();
+        dot.render( camera.x, camera.y );
 
         // Update screen
-        SDL_RenderPresent( gRenderer );
+        SDL_RenderPresent( g_Renderer );
       }
 
     } // All media loaded

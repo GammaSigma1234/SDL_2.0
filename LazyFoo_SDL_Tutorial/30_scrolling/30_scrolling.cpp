@@ -2,7 +2,7 @@
  * @file 30_scrolling.cpp
  *
  * @brief https://lazyfoo.net/tutorials/SDL/30_scrolling/index.php
- * 
+ *
  * Up until now we've only been dealing with levels the size of the screen. With scrolling you can
  * navigate through levels of any size by rendering everything relative to a camera. The basic
  * principle of scrolling is that you have a rectangle that functions as a camera, and then you only
@@ -10,18 +10,18 @@
  * only showing portions of objects inside the camera. Since the level is no longer the size of the
  * screen we have to have a separate set of constants to define the level size. Also, this time the
  * dot has to render relative to the camera, so its rendering function takes in a camera position.
- * 
+ *
  * This time, in the moving function we check if the dot moved off the level as opposed to checking
  * if it moved off the screen since the screen is going to move around the level.
- * 
+ *
  * Now, when we render objects to the screen in the render method, we render them relative to the
  * camera by subtracting the camera offset.
  *
  * Before we go into the main loop, we declare the dot and the camera that is going to be following it.
- * 
+ *
  * After we move the dot, we want to change the camera position to center over it. We don't want the
  * camera to go outside of the level, so we keep it in bounds after moving it.
- * 
+ *
  * After the camera is in place, we render the portion of the background that is inside that camera,
  * and then render the dot relative to the camera position.
  *
@@ -33,7 +33,7 @@
  * Questo è il motivo per cui il metodo "render" viene chiamato su "gBGTexture" passando sempre 0
  * come primo e secondo argomento, mentre il terzo argomento è la porzione di background texture da
  * visualizzare.
- * 
+ *
  * Il punto si muove assieme all'inquadratura, e deve comparire sempre al centro, a parte i casi in
  * cui l'inquadratura è bloccata ai bordi della background texture. Per ottenere questo effetto, la
  * funzione di renderizzazione del punto deve costantemente calcolare la distanza tra la coordinata

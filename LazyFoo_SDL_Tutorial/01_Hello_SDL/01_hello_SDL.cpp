@@ -38,8 +38,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-constexpr int SCREEN_WIDTH  = 1024;
-constexpr int SCREEN_HEIGHT = 768;
+constexpr int SCREEN_W = 1024;
+constexpr int SCREEN_H = 768;
 
 
 /***************************************************************************************************
@@ -66,7 +66,7 @@ int main( int argc, char* args[] )
     printf( "\nSDL initialised" );
 
     // Create window
-    Window = SDL_CreateWindow( "SDL Tutorial - Wait 5 seconds", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    Window = SDL_CreateWindow( "SDL Tutorial - Wait 5 seconds", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
 
     if( Window == NULL )
     {

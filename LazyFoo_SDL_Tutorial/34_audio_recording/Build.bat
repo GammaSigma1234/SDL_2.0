@@ -3,7 +3,7 @@
 cls
 echo.
 
-@REM Set temporary environment variables
+@REM Project's name
 set SDL2_PROJECT_NAME=34_audio_recording
 
 @REM Static libraries

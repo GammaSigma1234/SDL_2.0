@@ -7,8 +7,11 @@
 // Using SDL, SDL_image, standard IO, vectors, and strings
 #include <SDL.h>
 #include <SDL_image.h>
-#include <stdio.h>
+#include <SDL_ttf.h>
+#include <cstdio>
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 
 /**************************************************************************************************
@@ -17,8 +20,8 @@
 
 static constexpr int INIT_F1 = -1; // Initialise the first rendering driver supporting the requested flags
 
-static constexpr int SCRN_W = 640; // Screen's width
-static constexpr int SCRN_H = 480; // Screen's heigth
+static constexpr int SCRN_W = 800; // Screen's width
+static constexpr int SCRN_H = 600; // Screen's heigth
 
 // The dimensions of the level
 static constexpr int LEVEL_W = 1280;
@@ -30,6 +33,12 @@ static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
 static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
 static constexpr int WHITE_A = 0xFF; // Alpha component
 
+// Colore nero
+static constexpr int BLACK_R = 0x00; // Amount of red   needed to compose black
+static constexpr int BLACK_G = 0x00; // Amount of green needed to compose black
+static constexpr int BLACK_B = 0x00; // Amount of blue  needed to compose black
+static constexpr int BLACK_A = 0xFF; // Alpha component
+
 // Colore ciano
 static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
 static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
@@ -38,6 +47,7 @@ static constexpr int CYAN_A = 0xFF; // Alpha component
 
 static const std::string DotPath("dot.bmp");  // Dot        texture's path
 static const std::string BGPath("bg.png");    // Background texture's path
+static const std::string FontPath("lazy.ttf");
 
 
 /***************************************************************************************************
@@ -84,7 +94,6 @@ class LTexture
   // Set alpha modulation
   void setAlpha( Uint8 );
 
-  // Renders texture at given point
   void render( int = 0, int = 0, SDL_Rect* = NULL, double = 0.0, SDL_Point* = NULL, SDL_RendererFlip = SDL_FLIP_NONE );
 
   // Gets image dimensions
@@ -118,7 +127,6 @@ class Dot
   // Takes key presses and adjusts the dot's velocity
   void handleEvent( SDL_Event& );
 
-  // Moves the dot
   void ProcessMovement(void);
 
   // Shows the dot on the screen relative to the camera
@@ -128,8 +136,19 @@ class Dot
   int getPosX(void) const;
   int getPosY(void) const;
 
+  // Velocity accessors
+  double getVelX_Debug(void) const;
+  double getVelY_Debug(void) const;
+
+  // Number of decimal digits used in the acceleration DOT_A
+  static constexpr size_t NUM_OF_DIGITS = 1;
+
+
   private:
 
+  /**
+   * @brief Acceleration directions
+   **/
   enum class ACCEL_DIR
   {
     UP,
@@ -140,15 +159,14 @@ class Dot
     HOW_MANY
   };
 
-  void AccelReq     ( ACCEL_DIR );
-  void AccelStop    ( ACCEL_DIR );
-  void ProcessAccel (void);
+  void AccelReq  ( ACCEL_DIR );
+  void AccelStop ( ACCEL_DIR );
 
   // Maximum axis velocity of the dot
-  static constexpr int DOT_V = 10;
+  static constexpr int DOT_MAX_VEL = 10;
 
   // Acceleration addition
-  static constexpr double DOT_A = 0.5;
+  static constexpr double DOT_A = 0.4;
 
   // The X and Y offsets of the dot
   int m_PosX, m_PosY;
@@ -162,24 +180,32 @@ class Dot
 
 
 /***************************************************************************************************
+* Private global variables
+****************************************************************************************************/
+
+static SDL_Window*   g_Window   = NULL; // The window we'll be rendering to
+static SDL_Renderer* g_Renderer = NULL; // The window renderer
+
+// Globally used font
+static TTF_Font* g_Font = NULL;
+static SDL_Color g_TextColorBlack = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
+
+// Textures
+static LTexture g_DotTexture;
+static LTexture g_BGTexture;
+static LTexture g_xPosText_Debug;
+static LTexture g_yPosText_Debug;
+static LTexture g_xVelText_Debug;
+static LTexture g_yVelText_Debug;
+
+
+/***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
 
 static bool init      ( void );
 static bool loadMedia ( void );
 static void close     ( void );
-
-
-/***************************************************************************************************
-* Private global variables
-****************************************************************************************************/
-
-static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
-static SDL_Renderer* g_Renderer = NULL; // The window renderer
-
-// Scene textures
-static LTexture gDotTexture;
-static LTexture gBGTexture;
 
 
 /***************************************************************************************************
@@ -254,12 +280,12 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   free();
 
   // Render text surface
-  SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
+  SDL_Surface* textSurface = TTF_RenderText_Solid( g_Font, textureText.c_str(), textColor );
 
   if( textSurface != NULL )
   {
     // Create texture from surface pixels
-        m_Texture = SDL_CreateTextureFromSurface( g_Renderer, textSurface );
+    m_Texture = SDL_CreateTextureFromSurface( g_Renderer, textSurface );
 
     if( m_Texture == NULL )
     {
@@ -376,7 +402,7 @@ int LTexture::getHeight(void) const
 
 
 Dot::Dot(void)
-  : m_PosX(0), m_PosY(0), m_VelX(0), m_VelY(0),
+  : m_PosX(0), m_PosY(0), m_VelX(0.0), m_VelY(0.0),
     m_IsAccelUp(false), m_IsAccelDown(false), m_IsAccelLeft(false), m_IsAccelRight(false)
 { /* Initialise the offsets, the velocity, and the acceleration */ }
 
@@ -414,29 +440,139 @@ void Dot::handleEvent( SDL_Event& e )
 }
 
 
+/**
+ * @brief Processes the movement of the dot.
+ **/
 void Dot::ProcessMovement(void)
 {
-  ProcessAccel();
+ /******************************************************************
+ * Process the acceleration of the dot, based on the user's request
+ *******************************************************************/
 
-  // Move the dot left or right
+  if ( m_IsAccelUp )
+  {
+    m_VelY = m_VelY - DOT_A;
+  }
+  else { /* No upwards acceleration requested */ }
+
+  if ( m_IsAccelDown )
+  {
+    m_VelY = m_VelY + DOT_A;
+  }
+  else { /* No downwards acceleration requested */ }
+
+  if ( m_IsAccelLeft )
+  {
+    m_VelX = m_VelX - DOT_A;
+  }
+  else { /* No upwards acceleration requested */ }
+
+  if ( m_IsAccelRight )
+  {
+    m_VelX = m_VelX + DOT_A;
+  }
+  else { /* No downwards acceleration requested */ }
+
+
+  /****************************
+  * Speed check and saturation
+  *****************************/
+
+  if ( m_VelY < -DOT_MAX_VEL )
+  {
+    m_VelY = -DOT_MAX_VEL;
+  }
+  else { /* Max speed on negative y axis not yet reached */ }
+
+  if ( m_VelY > DOT_MAX_VEL )
+  {
+    m_VelY = DOT_MAX_VEL;
+  }
+  else { /* Max speed on positive y axis not yet reached */ }
+
+  if ( m_VelX > DOT_MAX_VEL )
+  {
+    m_VelX = DOT_MAX_VEL;
+  }
+  else { /* Max speed on positive x axis not yet reached */ }
+
+  if ( m_VelX < -DOT_MAX_VEL )
+  {
+    m_VelX = -DOT_MAX_VEL;
+  }
+  else { /* Max speed on negative x axis not yet reached */ }
+
+
+ /****************************
+ * Move the dot left or right
+ *****************************/
+
   m_PosX += static_cast<int>(m_VelX);
 
-  // If the dot went too far to the left or right
-  if( ( m_PosX < 0 ) || ( m_PosX + DOT_W > LEVEL_W ) )
+
+ /**********************************************
+ * If the dot went too far to the left
+ ***********************************************/
+
+  if( m_PosX < 0 )
   {
     // Move back
-    m_PosX -= static_cast<int>(m_VelX);
+    m_IsAccelLeft  = false;
+    m_IsAccelRight = false;
+    m_PosX = 0;
+    m_VelX = 0;
   }
   else { /* Movement was OK */ }
 
-  // Move the dot up or down
-  m_PosY += static_cast<int>(m_VelY);
 
-  // If the dot went too far up or down
-  if( ( m_PosY < 0 ) || ( m_PosY + DOT_H > LEVEL_H ) )
+ /**********************************************
+ * If the dot went too far to the right
+ ***********************************************/
+
+  if( m_PosX + DOT_W > LEVEL_W )
   {
     // Move back
-    m_PosY -= static_cast<int>(m_VelY);
+    m_IsAccelLeft  = false;
+    m_IsAccelRight = false;
+    m_PosX = LEVEL_W - DOT_W;
+    m_VelX = 0;
+  }
+  else { /* Movement was OK */ }
+
+
+ /*************************
+ * Move the dot up or down
+ **************************/
+
+  m_PosY += static_cast<int>(m_VelY);
+
+
+ /************************************
+ * If the dot went too far up
+ *************************************/
+
+  if( m_PosY < 0 )
+  {
+    // Move back
+    m_IsAccelUp   = false;
+    m_IsAccelDown = false;
+    m_PosY = 0;
+    m_VelY = 0;
+  }
+  else { /* Movement was OK */ }
+
+
+ /************************************
+ * If the dot went too far down
+ *************************************/
+
+  if( m_PosY + DOT_H > LEVEL_H )
+  {
+    // Move back
+    m_IsAccelUp   = false;
+    m_IsAccelDown = false;
+    m_PosY = LEVEL_H - DOT_H;
+    m_VelY = 0;
   }
   else { /* Movement was OK */ }
 }
@@ -500,64 +636,15 @@ void Dot::AccelStop( Dot::ACCEL_DIR Direction )
 }
 
 
-void Dot::ProcessAccel(void)
-{
-  if ( m_IsAccelUp )
-  {
-    m_VelY = m_VelY - DOT_A;
-  }
-  else { /* No upwards acceleration requested */ }
-
-  if ( m_IsAccelDown )
-  {
-    m_VelY = m_VelY + DOT_A;
-  }
-  else { /* No downwards acceleration requested */ }
-
-  if ( m_IsAccelLeft )
-  {
-    m_VelX = m_VelX - DOT_A;
-  }
-  else { /* No upwards acceleration requested */ }
-
-  if ( m_IsAccelRight )
-  {
-    m_VelX = m_VelX + DOT_A;
-  }
-  else { /* No downwards acceleration requested */ }
-
-  // Speed check and saturation
-
-  if ( m_VelY < -DOT_V )
-  {
-    m_VelY = -DOT_V;
-  }
-  else { /* Max speed on negative y axis not yet reached */ }
-
-  if ( m_VelY > DOT_V )
-  {
-    m_VelY = DOT_V;
-  }
-  else { /* Max speed on positive y axis not yet reached */ }
-
-  if ( m_VelX > DOT_V )
-  {
-    m_VelX = DOT_V;
-  }
-  else { /* Max speed on positive x axis not yet reached */ }
-
-  if ( m_VelX < -DOT_V )
-  {
-    m_VelX = -DOT_V;
-  }
-  else { /* Max speed on negative x axis not yet reached */ }
-}
-
-
+/**
+ * @brief // Show the dot relative to the camera
+ *
+ * @param camX Camera's x position
+ * @param camY Camera's y position
+ **/
 void Dot::render( int camX, int camY )
 {
-  // Show the dot relative to the camera
-  gDotTexture.render( m_PosX - camX, m_PosY - camY );
+  g_DotTexture.render( m_PosX - camX, m_PosY - camY );
 }
 
 
@@ -572,6 +659,22 @@ int Dot::getPosY(void) const
   return m_PosY;
 }
 
+
+double Dot::getVelX_Debug(void) const
+{
+  return m_VelX;
+}
+
+
+double Dot::getVelY_Debug(void) const
+{
+  return m_VelY;
+}
+
+
+/***************************************************************************************************
+* Private functions definitions
+****************************************************************************************************/
 
 /**
  * @brief Starts up SDL and creates window
@@ -605,14 +708,14 @@ static bool init(void)
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "Pallina",
-                                SDL_WINDOWPOS_UNDEFINED,
-                                SDL_WINDOWPOS_UNDEFINED,
-                                SCRN_W,
-                                SCRN_H,
-                                SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
+    g_Window = SDL_CreateWindow( "Pallina",
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  SCRN_W,
+                                  SCRN_H,
+                                  SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
 
-    if( gWindow == NULL )
+    if( g_Window == NULL )
     {
       printf( "\nWindow could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
       success = false;
@@ -622,7 +725,7 @@ static bool init(void)
       printf( "\nWindow created" );
 
       // Create accelerated and vsynced renderer for window
-      g_Renderer = SDL_CreateRenderer( gWindow, INIT_F1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+      g_Renderer = SDL_CreateRenderer( g_Window, INIT_F1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 
       if( g_Renderer == NULL )
       {
@@ -649,6 +752,17 @@ static bool init(void)
           printf( "\nSDL_image initialised" );
         }
 
+        // Initialize SDL_ttf
+        if( TTF_Init() == -1 )
+        {
+          printf( "\nSDL_ttf could not initialize! SDL_ttf Error: \"%s\"\n", TTF_GetError() );
+          success = false;
+        }
+        else
+        {
+          printf( "\nSDL_ttf initialised" );
+        }
+
       } // Renderer created
 
     } // Window created
@@ -669,8 +783,21 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
+ // Open the font
+  g_Font = TTF_OpenFont( FontPath.c_str(), 28 );
+
+  if( g_Font == NULL )
+  {
+    printf( "\nFailed to load lazy font! SDL_ttf Error: \"%s\"\n", TTF_GetError() );
+    success = false;
+  }
+  else
+  {
+    printf( "\nLazy font loaded" );
+  }
+
   // Load dot texture
-  if ( !gDotTexture.loadFromFile( DotPath.c_str() ) )
+  if ( !g_DotTexture.loadFromFile( DotPath.c_str() ) )
   {
     printf( "\nFailed to load dot texture!" );
     success = false;
@@ -681,7 +808,7 @@ static bool loadMedia(void)
   }
 
   // Load background texture
-  if ( !gBGTexture.loadFromFile( BGPath.c_str() ) )
+  if ( !g_BGTexture.loadFromFile( BGPath.c_str() ) )
   {
     printf( "\nFailed to load background texture!\n" );
     success = false;
@@ -698,14 +825,14 @@ static bool loadMedia(void)
 static void close(void)
 {
   // Free loaded images
-  gDotTexture.free();
-  gBGTexture.free();
+  g_DotTexture.free();
+  g_BGTexture.free();
 
   // Destroy window
   SDL_DestroyRenderer( g_Renderer );
-  SDL_DestroyWindow( gWindow );
+  SDL_DestroyWindow( g_Window );
   g_Renderer = NULL;
-  gWindow   = NULL;
+  g_Window   = NULL;
 
   // Quit SDL subsystems
   IMG_Quit();
@@ -765,7 +892,7 @@ int main( int argc, char* args[] )
       SDL_Event e;
 
       // The dot that will be moving around on the screen
-      Dot dot;
+      Dot ScreenDot;
 
       // The camera area
       SDL_Rect camera = { 0, 0, SCRN_W, SCRN_H };
@@ -784,15 +911,15 @@ int main( int argc, char* args[] )
           else { /* ignore event */ }
 
           // Handle input for the dot
-          dot.handleEvent( e );
+          ScreenDot.handleEvent( e );
         }
 
         // Move the dot
-        dot.ProcessMovement();
+        ScreenDot.ProcessMovement();
 
         // Center the camera over the dot
-        camera.x = ( dot.getPosX() + Dot::DOT_W  / 2 ) - SCRN_W / 2;
-        camera.y = ( dot.getPosY() + Dot::DOT_H / 2 ) - SCRN_H / 2;
+        camera.x = ( ScreenDot.getPosX() + Dot::DOT_W / 2 ) - SCRN_W / 2;
+        camera.y = ( ScreenDot.getPosY() + Dot::DOT_H / 2 ) - SCRN_H / 2;
 
         // Keep the camera in bounds
         if( camera.x < 0 )
@@ -825,14 +952,50 @@ int main( int argc, char* args[] )
         SDL_RenderClear( g_Renderer );
 
         // Render background
-        gBGTexture.render( 0, 0, &camera ); // x = 0, y = 0 --> Il background va sempre agganciato all'origine della finestra
+        g_BGTexture.render( 0, 0, &camera ); // x = 0, y = 0 --> Il background va sempre agganciato all'origine della finestra
 
         // Render objects
-        dot.render( camera.x, camera.y );
+        ScreenDot.render( camera.x, camera.y );
+
+        /************************************
+        * Stampa info di debugging on-screen
+        *************************************/
+
+        std::stringstream StringStream_xPos;
+        std::stringstream StringStream_yPos;
+        std::stringstream StringStream_xVel;
+        std::stringstream StringStream_yVel;
+
+        StringStream_xPos << "x pos: " << std::fixed << std::setprecision(Dot::NUM_OF_DIGITS) << ScreenDot.getPosX();
+        StringStream_yPos << "y pos: " << std::fixed << std::setprecision(Dot::NUM_OF_DIGITS) << ScreenDot.getPosY();
+        StringStream_xVel << "x vel: " << std::fixed << std::setprecision(Dot::NUM_OF_DIGITS) << ScreenDot.getVelX_Debug();
+        StringStream_yVel << "y vel: " << std::fixed << std::setprecision(Dot::NUM_OF_DIGITS) << ScreenDot.getVelY_Debug();
+
+        g_xPosText_Debug.loadFromRenderedText(StringStream_xPos.str(), g_TextColorBlack );
+        g_yPosText_Debug.loadFromRenderedText(StringStream_yPos.str(), g_TextColorBlack );
+        g_xVelText_Debug.loadFromRenderedText(StringStream_xVel.str(), g_TextColorBlack );
+        g_yVelText_Debug.loadFromRenderedText(StringStream_yVel.str(), g_TextColorBlack );
+
+        // Position of debugging text
+        int xPosText_xPos_Debug = ( SCRN_W - g_xPosText_Debug.getWidth()  ) / 2;
+        int xPosText_yPos_Debug = ( SCRN_H - g_xPosText_Debug.getHeight() ) / 2 + 0 * g_yPosText_Debug.getHeight();
+        int yPosText_xPos_Debug = ( SCRN_W - g_yPosText_Debug.getWidth()  ) / 2;
+        int yPosText_yPos_Debug = ( SCRN_H - g_yPosText_Debug.getHeight() ) / 2 + 1 * g_yPosText_Debug.getHeight();
+
+        int xVelText_xPos_Debug = ( SCRN_W - g_xVelText_Debug.getWidth()  ) / 2;
+        int xVelText_yPos_Debug = ( SCRN_H - g_xVelText_Debug.getHeight() ) / 2 + 2 * g_xVelText_Debug.getHeight();
+        int yVelText_xPos_Debug = ( SCRN_W - g_yVelText_Debug.getWidth()  ) / 2;
+        int yVelText_yPos_Debug = ( SCRN_H - g_yVelText_Debug.getHeight() ) / 2 + 3 * g_yVelText_Debug.getHeight();
+
+        g_xPosText_Debug.render( xPosText_xPos_Debug, xPosText_yPos_Debug );
+        g_yPosText_Debug.render( yPosText_xPos_Debug, yPosText_yPos_Debug );
+        g_xVelText_Debug.render( xVelText_xPos_Debug, xVelText_yPos_Debug );
+        g_yVelText_Debug.render( yVelText_xPos_Debug, yVelText_yPos_Debug );
 
         // Update screen
         SDL_RenderPresent( g_Renderer );
-      }
+
+      } // Main loop
 
     } // All media loaded
 

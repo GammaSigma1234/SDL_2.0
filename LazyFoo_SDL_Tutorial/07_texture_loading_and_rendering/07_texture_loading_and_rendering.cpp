@@ -1,9 +1,11 @@
 /**
  * @file 07_texture_loading_and_rendering.cpp
+ * 
+ * https://lazyfoo.net/tutorials/SDL/07_texture_loading_and_rendering/index.php
  *
- * @brief This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
- *
+ * @brief A major new addition to SDL 2 is the texture rendering API. This gives you fast, flexible
+ * hardware-based rendering. In this tutorial we'll be using this new rendering technique.
+ * 
  * Textures in SDL have their own data type, intuitively called an "SDL_Texture". When we deal with
  * SDL textures, you need an "SDL_Renderer" object to render it to the screen, which is why we
  * declare a global renderer named "gRenderer".
@@ -14,7 +16,7 @@
  * After we create our window, we have to create a renderer for our window, so we can render textures
  * on it. This is easily done with a call to "SDL_CreateRenderer".
  *
- * After creating the renderer, we want to initialize the rendering color using
+ * After creating the renderer, we want to initialize the rendering colour using
  * "SDL_SetRenderDrawColor". This controls what color is used for various rendering operations.
  *
  * Our texture loading function looks largely the same as the earlier "loadSurface", only now
@@ -68,6 +70,9 @@
  * |----SDL_RenderCopy    (predispone la texture ad essere renderizzata)
  * |----SDL_RenderPresent (l'alternativa a SDL_UpdateWindowSurface quando si usano le texture)
  * |----close
+ * 
+ * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
+ * and may not be redistributed without written permission.
  **/
 
 

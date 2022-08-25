@@ -17,7 +17,8 @@
  *  - In questo semplice esempio, disegneremo un rettangolo bianco sulla superficie mediante
  *    SDL_FillRect.
  *  - Una volta disegnata la superficie, è necessario aggiornarla mediante SDL_UpdateWindowSurface.
- *  - Per evitare che la finestra si chiuda subito, possiamo congelarla con SDL_Delay.
+ *  - Per evitare che la finestra si chiuda subito, possiamo congelarla con SDL_Delay. In futuro
+ *    useremo i metodi di quit forniti dal sistema operativo.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2020)
  * and may not be redistributed without written permission.

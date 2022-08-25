@@ -28,12 +28,12 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int    SCREEN_WIDTH  = 640;
-static constexpr int    SCREEN_HEIGHT = 480;
+static constexpr int    WINDOW_W = 640;
+static constexpr int    WINDOW_H = 480;
 
-static constexpr size_t ONE_SECOND_S  = 1;
-static constexpr size_t WAIT_TIME_S   = 3;    // How long to wait (in seconds) in case of error messages
-static constexpr size_t MS_IN_S       = 1000; // Milliseconds in a second
+static constexpr size_t ONE_SECOND_S = 1;
+static constexpr size_t WAIT_TIME_S  = 3;    // How long to wait (in seconds) in case of error messages
+static constexpr size_t MS_IN_S      = 1000; // Milliseconds in a second
 
 
 /***************************************************************************************************
@@ -82,7 +82,7 @@ static bool init(void)
     printf( "\nSDL initialised" );
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {

@@ -31,8 +31,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int SCREEN_WIDTH  = 640;
-static constexpr int SCREEN_HEIGHT = 480;
+static constexpr int WINDOW_W = 640;
+static constexpr int WINDOW_H = 480;
 
 
 /***************************************************************************************************
@@ -81,7 +81,7 @@ static bool init(void)
     SDL_Delay(1000);
 
     // Create window
-    gWindow = SDL_CreateWindow( "\nSDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "\nSDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {

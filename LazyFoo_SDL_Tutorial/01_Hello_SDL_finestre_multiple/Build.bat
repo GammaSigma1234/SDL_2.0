@@ -8,6 +8,9 @@ set SDL2_INCLUDE_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\include\SDL2
 set SDL2_LIB_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\lib
 set SDL2_LIBRARIES=-lmingw32 -lSDL2main -lSDL2
 
+@REM C++ compilation options
+set COMPILATION_OPTIONS=-Wall -Wextra -Wpedantic -Wconversion
+
 @REM Assign global variables from TXT file (not used any more)
 @REM for /f "delims== tokens=1,2 skip=2" %%G in (..\Global_Variables_For_Batch_Files.txt) do set %%G=%%H
 
@@ -31,7 +34,7 @@ if exist %SDL2_PROJECT_NAME%.exe (
 echo Building executable...
 echo.
 
-g++ %SDL2_PROJECT_NAME%.cpp -I%SDL2_INCLUDE_PATH% -L%SDL2_LIB_PATH% %SDL2_LINKER_OPTIONS% %SDL2_LIBRARIES% -o %SDL2_PROJECT_NAME%.exe
+g++ %COMPILATION_OPTIONS% %SDL2_PROJECT_NAME%.cpp -I%SDL2_INCLUDE_PATH% -L%SDL2_LIB_PATH% %SDL2_LINKER_OPTIONS% %SDL2_LIBRARIES% -o %SDL2_PROJECT_NAME%.exe
 
 IF %ERRORLEVEL% EQU 0 (
   echo.

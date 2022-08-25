@@ -41,8 +41,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int SCREEN_WIDTH  = 640;
-static constexpr int SCREEN_HEIGHT = 480;
+static constexpr int WINDOW_W = 640;
+static constexpr int WINDOW_H = 480;
 
 // Key press surfaces constants
 enum KeyPressSurfaces
@@ -115,7 +115,7 @@ bool init(void)
     printf( "\nSDL initialised" );
 
     // Create window and check
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -269,8 +269,7 @@ static SDL_Surface* loadSurface( const std::string& path )
     printf( "Unable to load image %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
     MsgTimer();
   }
-  else
-  {;} // Image loaded correctly
+  else { /* Image loaded correctly */ }
 
   return loadedSurface;
 }

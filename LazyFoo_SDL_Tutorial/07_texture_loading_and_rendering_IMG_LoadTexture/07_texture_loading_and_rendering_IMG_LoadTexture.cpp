@@ -2,6 +2,30 @@
  * @file 07_texture_loading_and_rendering_IMG_LoadTexture.cpp
  *
  * @brief Come il precedente, ma con l'uso di "IMG_LoadTexture".
+ *
+ * main
+ * |
+ * |----init
+ * |    |
+ * |    |----SDL_Init               (inizializzazione SDL)
+ * |    |----SDL_SetHint            (abilita linear texture filtering)
+ * |    |----SDL_CreateWindow       (crea la finestra principale del programma)
+ * |    |----SDL_CreateRenderer     (renderizza le immagini nella finestra)
+ * |    |----SDL_SetRenderDrawColor (imposta il colore della renderizzazione)
+ * |    |----IMG_Init               (inizializzazione SDL_image)
+ * |
+ * |----loadMedia
+ * |    |
+ * |    |----loadTexture
+ * |         |
+ * |         |----IMG_LoadTexture               (carica immagine come surface, e non come texture)
+ * |
+ * |----SDL_PollEvent     (gestisce l'ultimo evento nella coda degli eventi)
+ * |----SDL_RenderClear   (riempie lo schermo del colore impostato tramite SDL_SetRenderDrawColor)
+ * |----SDL_RenderCopy    (predispone la texture ad essere renderizzata)
+ * |----SDL_RenderPresent (l'alternativa a SDL_UpdateWindowSurface quando si usano le texture)
+ * |----close
+
  **/
 
 
@@ -21,8 +45,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int         SCREEN_WIDTH  = 640;
-static constexpr int         SCREEN_HEIGHT = 480;
+static constexpr int         WINDOW_W = 640;
+static constexpr int         WINDOW_H = 480;
 static const     std::string TexturePath("texture.png");
 
 
@@ -83,7 +107,7 @@ static bool init(void)
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -227,6 +251,12 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
+  printf("\nProgram started with %d additional arguments.", argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
 
   // Start up SDL and create window
   if( !init() )

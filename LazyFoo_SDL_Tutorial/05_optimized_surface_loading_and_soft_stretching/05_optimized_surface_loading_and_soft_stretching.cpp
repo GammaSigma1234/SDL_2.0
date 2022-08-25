@@ -41,8 +41,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int     SCREEN_WIDTH  = 1024;
-static constexpr int     SCREEN_HEIGHT = 768;
+static constexpr int     WINDOW_W = 1024;
+static constexpr int     WINDOW_H = 768;
 static const std::string Img("stretch.bmp");
 
 
@@ -94,7 +94,7 @@ bool init(void)
     printf( "\nSDL initialised" );
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -278,8 +278,8 @@ int main( int argc, char* args[] )
         SDL_Rect stretchRect;
         stretchRect.x = 0;
         stretchRect.y = 0;
-        stretchRect.w = SCREEN_WIDTH;
-        stretchRect.h = SCREEN_HEIGHT;
+        stretchRect.w = WINDOW_W;
+        stretchRect.h = WINDOW_H;
         SDL_BlitScaled( gStretchedSurface, NULL, gWindowSurface, &stretchRect );
 
         // Update the surface

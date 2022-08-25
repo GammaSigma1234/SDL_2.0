@@ -3,7 +3,12 @@
  *
  * https://lazyfoo.net/tutorials/SDL/06_extension_libraries_and_loading_other_image_formats/index.php
  *
- * @brief Now that we're using SDL_image, we need to initialize it. Here we want to initialize
+ * @brief SDL extension libraries allow you do things like load image files besides BMP, render TTF
+ * fonts, and play music. You can set up SDL_image to load PNG files, which can save you a lot of
+ * disk space. SDL itself is an extension library, since it adds game and media functionality that
+ * doesn't come standard with your C++ compiler.
+ *
+ * Now that we're using SDL_image, we need to initialize it. Here we want to initialize
  * SDL_image with PNG loading, so we pass in the PNG loading flags into IMG_Init. IMG_Init returns
  * the flags that loaded successfully. If the flags that are returned do not contain the flags we
  * requested, that means there's an error.
@@ -33,8 +38,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int     SCREEN_WIDTH  = 640;
-static constexpr int     SCREEN_HEIGHT = 480;
+static constexpr int     WINDOW_W = 640;
+static constexpr int     WINDOW_H = 480;
 static const std::string Img_Path("loaded.png");
 
 
@@ -85,7 +90,7 @@ bool init(void)
     printf( "\nSDL initialised" );
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -190,8 +195,7 @@ static SDL_Surface* loadSurface( std::string path )
   // The final optimized image
   SDL_Surface* optimizedSurface = NULL;
 
-  // Load image at specified path
-  //  Uses IMG_Load instead of SDL_LoadBMP
+  // Load image at specified path. Uses IMG_Load instead of SDL_LoadBMP
   SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
 
   if( loadedSurface == NULL )

@@ -44,8 +44,8 @@
 ***************************************************************************************************/
 
 // Screen dimension constants
-static constexpr int         SCREEN_WIDTH  = 640;
-static constexpr int         SCREEN_HEIGHT = 480;
+static constexpr int         WINDOW_W = 640;
+static constexpr int         WINDOW_H = 480;
 static const     std::string TexturePath("viewport.png");
 
 
@@ -106,7 +106,7 @@ static bool init(void)
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -295,8 +295,8 @@ int main( int argc, char* args[] )
         SDL_Rect topLeftViewport;
         topLeftViewport.x = 0;
         topLeftViewport.y = 0;
-        topLeftViewport.w = SCREEN_WIDTH / 2;
-        topLeftViewport.h = SCREEN_HEIGHT / 2;
+        topLeftViewport.w = WINDOW_W / 2;
+        topLeftViewport.h = WINDOW_H / 2;
         SDL_RenderSetViewport( gRenderer, &topLeftViewport );
 
         // Render texture to screen
@@ -305,10 +305,10 @@ int main( int argc, char* args[] )
 
         // Top right viewport
         SDL_Rect topRightViewport;
-        topRightViewport.x = SCREEN_WIDTH / 2;
+        topRightViewport.x = WINDOW_W / 2;
         topRightViewport.y = 0;
-        topRightViewport.w = SCREEN_WIDTH / 2;
-        topRightViewport.h = SCREEN_HEIGHT / 2;
+        topRightViewport.w = WINDOW_W / 2;
+        topRightViewport.h = WINDOW_H / 2;
         SDL_RenderSetViewport( gRenderer, &topRightViewport );
 
         // Render texture to screen
@@ -318,9 +318,9 @@ int main( int argc, char* args[] )
         // Bottom viewport
         SDL_Rect bottomViewport;
         bottomViewport.x = 0;
-        bottomViewport.y = SCREEN_HEIGHT / 2;
-        bottomViewport.w = SCREEN_WIDTH;
-        bottomViewport.h = SCREEN_HEIGHT / 2;
+        bottomViewport.y = WINDOW_H / 2;
+        bottomViewport.w = WINDOW_W;
+        bottomViewport.h = WINDOW_H / 2;
         SDL_RenderSetViewport( gRenderer, &bottomViewport );
 
 

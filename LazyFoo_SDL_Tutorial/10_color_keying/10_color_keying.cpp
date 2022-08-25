@@ -30,8 +30,8 @@
  * covers whether we want to enable color keying, and the last argument is the pixel we want to
  * color key with.
  *
- * The most cross platform way to create a pixel from RGB color is with SDL_MapRGB. The first
- * argument is the format we want the pixel in. Fortunately the loaded surface has a format member
+ * The most cross platform way to create a pixel from RGB color is with "SDL_MapRGB". The first
+ * argument is the format we want the pixel in. Fortunately, the loaded surface has a format member
  * variable. The last three variables are the red, green, and blue components for color you want to
  * map. Here we're mapping cyan, which is red 0, green 255, blue 255.
  *

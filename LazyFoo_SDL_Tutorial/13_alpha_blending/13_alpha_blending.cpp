@@ -15,7 +15,7 @@
  * blue color components, it goes from 0 to 255 when modulating it. 100% opacity (255) = completely
  * visible. 0% opacity (0) = completely invisible.
  *
- * SDL_SetTextureBlendMode in setBlendMode allows us to enable blending and SDL_SetTextureAlphaMod
+ * "SDL_SetTextureBlendMode" in setBlendMode allows us to enable blending and SDL_SetTextureAlphaMod
  * allows us to set the amount of alpha for the whole texture.
  *
  * Right before entering the main loop, we declare a variable to control how much alpha the texture

@@ -406,6 +406,12 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
+  printf("\nProgram \"%s\" started with %d additional arguments.", args[0], argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
 
   // Start up SDL and create window
   if( !init() )

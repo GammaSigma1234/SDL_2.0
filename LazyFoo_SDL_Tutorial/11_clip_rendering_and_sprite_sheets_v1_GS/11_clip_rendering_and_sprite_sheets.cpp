@@ -55,6 +55,14 @@ int main( int argc, char* args[] )
 {
   bool HasProgramSucceeded = true;
 
+  printf("\n*** Debugging console ***\n");
+  printf("\nProgram \"%s\" started with %d additional arguments.", args[0], argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
+
   const std::string FilePath("Colori_GS.png");
 
   SDL_Window*   Window;
@@ -63,17 +71,20 @@ int main( int argc, char* args[] )
   SDL_Surface*  loadedSurface = IMG_Load( FilePath.c_str() ); // Load image at specified path. Verrà convertita in texture
 
   constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
-  constexpr int SCREEN_WIDTH       = 1024;
-  constexpr int SCREEN_HEIGHT      = 768;
-  constexpr int INIT_RED_COMPONENT = 0xFF;
-  constexpr int INIT_GRN_COMPONENT = 0xFF;
-  constexpr int INIT_BLU_COMPONENT = 0xFF;
-  constexpr int INIT_LFA_COMPONENT = 0xFF;
+
+  constexpr int WINDOW_W = 1024;
+  constexpr int WINDOW_H = 768;
+
+  constexpr int INIT_R = 0xFF;
+  constexpr int INIT_G = 0xFF;
+  constexpr int INIT_B = 0xFF;
+  constexpr int INIT_A = 0xFF;
 
   // Colore ciano
-  constexpr int CYAN_RED_COMPONENT = 0x00;
-  constexpr int CYAN_GRN_COMPONENT = 0xFF;
-  constexpr int CYAN_BLU_COMPONENT = 0xFF;
+  constexpr int CYAN_R = 0x00;
+  constexpr int CYAN_G = 0xFF;
+  constexpr int CYAN_B = 0xFF;
+  // constexpr int CYAN_A = 0xFF;
 
   // Posizioni e dimensioni dei quattro clip sorgente
   SDL_Rect RedPoint{0  , 0  , 200, 200}; // Punto rosso
@@ -121,7 +132,7 @@ int main( int argc, char* args[] )
     HasProgramSucceeded = false;
   }
 
-  Window = SDL_CreateWindow( "Colori", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+  Window = SDL_CreateWindow( "Colori", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
   if( Window == NULL )
   {
@@ -147,7 +158,7 @@ int main( int argc, char* args[] )
   }
 
   // Initialise renderer color
-  SDL_SetRenderDrawColor( Renderer, INIT_RED_COMPONENT, INIT_GRN_COMPONENT, INIT_BLU_COMPONENT, INIT_LFA_COMPONENT );
+  SDL_SetRenderDrawColor( Renderer, INIT_R, INIT_G, INIT_B, INIT_A );
 
   // Initialize PNG loading
   int imgFlags = IMG_INIT_PNG;
@@ -180,7 +191,7 @@ int main( int argc, char* args[] )
   }
 
   // Color key image (selezione del ciano come colore trasparente)
-  SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_RED_COMPONENT, CYAN_GRN_COMPONENT, CYAN_BLU_COMPONENT ) );
+  SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
   // Create texture from surface pixels
   Texture = SDL_CreateTextureFromSurface( Renderer, loadedSurface );
@@ -226,7 +237,7 @@ int main( int argc, char* args[] )
     }
 
     // Clear screen
-    SDL_SetRenderDrawColor( Renderer, INIT_RED_COMPONENT, INIT_GRN_COMPONENT, INIT_BLU_COMPONENT, INIT_LFA_COMPONENT );
+    SDL_SetRenderDrawColor( Renderer, INIT_R, INIT_G, INIT_B, INIT_A );
     SDL_RenderClear( Renderer );
 
     SDL_RenderCopy( Renderer, Texture, &RedPoint, &Dest_TopLft ); // Render top left sprite

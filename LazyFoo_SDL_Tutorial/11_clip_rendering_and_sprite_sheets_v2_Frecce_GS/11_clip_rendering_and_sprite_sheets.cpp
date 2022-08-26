@@ -38,6 +38,14 @@ int main( int argc, char* args[] )
 {
   bool HasProgramSucceeded = true;
 
+  printf("\n*** Debugging console ***\n");
+  printf("\nProgram \"%s\" started with %d additional arguments.", args[0], argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
+
   const std::string FilePath("Colori_GS.png");
 
   SDL_Window*   Window;
@@ -80,8 +88,6 @@ int main( int argc, char* args[] )
   SDL_Rect Dest_Lft{150, 350, 100, 100};
   SDL_Rect Dest_Rgt{550, 350, 100, 100};
   SDL_Rect Dest_Cnt{350, 350, 100, 100};
-
-  std::cout << "\n*** Debugging console ***\n";
 
   /***************************************************************************************************
   * Inizializzazione SDL

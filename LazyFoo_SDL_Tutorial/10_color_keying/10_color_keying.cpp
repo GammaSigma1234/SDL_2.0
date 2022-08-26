@@ -1,10 +1,10 @@
 /**
  * @file 10_color_keying.cpp
  *
- * https:// lazyfoo.net/tutorials/SDL/10_color_keying/index.php
+ * https://lazyfoo.net/tutorials/SDL/10_color_keying/index.php
  *
  * @brief When rendering multiple images on the screen, having images with transparent backgrounds
- * is usually necessary. Fortunately SDL provides an easy way to do this using color keying.
+ * is usually necessary. Fortunately, SDL provides an easy way to do this using color keying.
  *
  * For this tutorial we're going to wrap the SDL_Texture in a class to make some things easier. For
  * example, if you want to get certain information about the texture such as its width or height you
@@ -66,7 +66,7 @@
  * - in particolare, il metodo "render" di LTexture invoca "SDL_RenderCopy". Quest'ultima copia
  *   una texture nel rendering target. Due parametri facoltativi sono il rettangolo sorgente e
  *   il rettangolo destinazione. Se entrambi sono NULL, l'intera texture sorgente viene copiata
- *   nella destinazione, con eventuale stretching.
+ *   nella destinazione (con eventuale stretching?).
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
  * redistributed without written permission.
@@ -91,6 +91,12 @@
 // Screen dimension constants
 static constexpr int SCREEN_WIDTH = 640;
 static constexpr int SCREEN_HEIGHT = 480;
+
+// Colore bianco
+static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
+static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
+static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
+static constexpr int WHITE_A = 0xFF; // Alpha component
 
 
 /***************************************************************************************************
@@ -472,13 +478,13 @@ int main( int argc, char* args[] )
         }
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
         // Render background texture to screen (order matters!)
         gBackgroundTexture.render( 0, 0 );
 
-        // Render Foo' to the screen (order matters!)
+        // Render Foo to the screen (order matters!)
         gFooTexture.render( 240, 190 );
 
         // Update screen

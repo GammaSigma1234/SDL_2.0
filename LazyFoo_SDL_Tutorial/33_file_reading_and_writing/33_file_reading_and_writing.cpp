@@ -100,7 +100,7 @@ static const std::string BinaryFileName("nums.bin");
 
 static constexpr int TOTAL_DATA       = 10; // Number of data integers
 static constexpr int WRITE_ONE_OBJECT = 1;  // Number of objects to write in SDL_RWwrite
-static constexpr int  READ_ONE_OBJECT = 1;  // Number of objects to read  in SDL_RWread
+static constexpr int READ_ONE_OBJECT  = 1;  // Number of objects to read  in SDL_RWread
 
 
 /***************************************************************************************************

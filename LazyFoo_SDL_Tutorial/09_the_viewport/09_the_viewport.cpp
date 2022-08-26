@@ -1,7 +1,10 @@
 /**
  * @file 09_the_viewport.cpp
  *
- * @brief https:// lazyfoo.net/tutorials/SDL/09_the_viewport/index.php
+ * @brief https://lazyfoo.net/tutorials/SDL/09_the_viewport/index.php
+ * 
+ * SUNTO: "SDL_RenderSetViewport" permette di selezionare un SDL_Rect all'interno del quale avverrà
+ * il rendering.
  *
  * Sometimes you only want to render part of the screen for things like minimaps. Using the
  * viewport you can control where you render on the screen.

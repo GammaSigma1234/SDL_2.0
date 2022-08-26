@@ -4,7 +4,7 @@ cls
 echo.
 
 @REM Project's name
-set SDL2_PROJECT_NAME=Textures
+set SDL2_PROJECT_NAME=Textures_Alpha_Geometry
 
 @REM Source files
 set SOURCE_FILES=main.cpp

@@ -1,9 +1,25 @@
 /**
  * @file main.cpp
  *
- * @brief
+ * @brief Uso di textures con e senza canale alpha, e geometria di base.
  *
- * Anche il formato BMP funziona
+ * Usato un header file esterno per definire i colori. I "#define" al posto dei "constexpr" sono una
+ * buona scelta?
+ *
+ * - Inizializzazione SDL con "SDL_init"
+ * - Texture filtering lineare con "SDL_SetHint"
+ * - Creazione della finestra principale con "SDL_CreateWindow"
+ * - Creazione del renderer con "SDL_CreateRenderer"
+ * - Impostazione colore base del renderer con "SDL_SetRenderDrawColor"
+ * - Inizializzazione SDL_image con "IMG_Init"
+ * - Creazione textures (una senza canale alpha e una con) mediante caricamento file immagine con "IMG_LoadTexture"
+ * - Creazione main loop, e analisi eventi con "SDL_PollEvent"
+ * - Pulizia finestra con "SDL_RenderClear"
+ * - Rendering delle texture mediante "SDL_RenderCopy"
+ * - Disegno di forme geometriche con "FillRect", "DrawRect", "DrawLine" e "DrawPoint"
+ * - Aggiornamento della finestra con "SDL_RenderPresent"
+ * - Liberazione risorse mediante metodi "SDL_Destroy"
+ * - Liberazione sottosistemi mediante metodi "_Quit"
  **/
 
 /***************************************************************************************************
@@ -14,6 +30,7 @@
 #include <SDL_image.h>
 #include <cstdio>
 #include <string>
+#include "colours.hpp"
 
 
 /**************************************************************************************************
@@ -37,34 +54,10 @@ static constexpr int WINDOW_W  =  1024; // Window's width
 static constexpr int WINDOW_H  =  768;  // Window's height
 static constexpr int FIRST_ONE = -1;    // index of the first initialisable rendering driver supporting the requested flags
 
-// Colore bianco (R, G, B, A)
-static constexpr size_t ArraySize = static_cast<size_t>(Colour_Components::HOW_MANY);
-static constexpr Uint8  White[ArraySize]
-                            { static_cast<Uint8>(0xFF),
-                              static_cast<Uint8>(0xFF),
-                              static_cast<Uint8>(0xFF),
-                              static_cast<Uint8>(0xFF)  };
-
-// Colore nero
-static constexpr int BLACK_R = 0x00; // Amount of red   needed to compose black
-static constexpr int BLACK_G = 0x00; // Amount of green needed to compose black
-static constexpr int BLACK_B = 0x00; // Amount of blue  needed to compose black
-static constexpr int BLACK_A = 0xFF; // Alpha component
-
-// Colore rosso
-static constexpr int RED_R = 0xFF; // Amount of red   needed to compose red
-static constexpr int RED_G = 0x00; // Amount of green needed to compose red
-static constexpr int RED_B = 0x00; // Amount of blue  needed to compose red
-static constexpr int RED_A = 0xFF; // Alpha component
-
-// Colore ciano
-static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
-static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
-static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
-static constexpr int CYAN_A = 0xFF; // Alpha component
 
 // Image path
-std::string PNGImagePath("SDL_RedDot_CyanBG.png");
+std::string PNGImageWithCyanBGPath("SDL_RedDot_CyanBG.png");
+std::string PNGImageWithAlphaBGPath("SDL_RedDot_AlphaBG.png");
 
 
 /***************************************************************************************************
@@ -73,7 +66,14 @@ std::string PNGImagePath("SDL_RedDot_CyanBG.png");
 
 static SDL_Window*   g_Window   = NULL; // The window we'll be rendering to
 static SDL_Renderer* g_Renderer = NULL; // The window renderer
-static SDL_Texture*  g_Texture  = NULL; // Currently displayed texture
+
+static SDL_Texture*  g_Texture_CyanBG  = NULL;
+static SDL_Texture*  g_Texture_AlphaBG = NULL;
+
+static int g_Texture_CyanBG_W  = 0;
+static int g_Texture_CyanBG_H  = 0;
+static int g_Texture_AlphaBG_W = 0;
+static int g_Texture_AlphaBG_H = 0;
 
 
 /***************************************************************************************************
@@ -102,7 +102,7 @@ int main( int argc, char* args[] )
   /* Start debugging console */
 
   printf("\n*** Debugging console ***\n");
-  printf("\nProgram started with %d additional arguments.", argc - 1); // Il primo argomento è il nome dell'eseguibile
+  printf("\nProgram \"%s\" started with %d additional arguments.", args[0], argc - 1); // Il primo argomento è il nome dell'eseguibile
 
   for (int i = 1; i != argc; ++i)
   {
@@ -166,12 +166,7 @@ int main( int argc, char* args[] )
 
   /* Initialise renderer colour */
 
-  Uint8 RedIdx   = static_cast<Uint8>(Colour_Components::RED);
-  Uint8 GreenIdx = static_cast<Uint8>(Colour_Components::GREEN);
-  Uint8 BlueIdx  = static_cast<Uint8>(Colour_Components::BLUE);
-  Uint8 AlphaIdx = static_cast<Uint8>(Colour_Components::ALPHA);
-
-  if ( SDL_SetRenderDrawColor( g_Renderer, White[RedIdx], White[GreenIdx], White[BlueIdx], White[AlphaIdx] ) != 0 )
+  if ( SDL_SetRenderDrawColor( g_Renderer, YELLOW_R, YELLOW_G, YELLOW_B, YELLOW_A ) != 0 )
   {
     printf( "\nCould not set render drawing colour! SDL Error: \"%s\"\n", SDL_GetError() );
     HasProgramSucceeded = false;
@@ -181,7 +176,7 @@ int main( int argc, char* args[] )
     printf( "\nOK: render drawing colour set" );
   }
 
-  /* Initialise PNG loading */
+  /* Initialise SDL_image */
 
   int imgFlags = static_cast<int>(IMG_INIT_PNG);
 
@@ -195,56 +190,31 @@ int main( int argc, char* args[] )
     printf( "\nOK: SDL_image initialised" );
   }
 
-  /* Load texture from PNG */
+  /* Load textures from PNG */
 
-  SDL_Surface* loadedSurface = IMG_Load( PNGImagePath.c_str() );
+  g_Texture_CyanBG  = IMG_LoadTexture( g_Renderer, PNGImageWithCyanBGPath.c_str() );
+  g_Texture_AlphaBG = IMG_LoadTexture( g_Renderer, PNGImageWithAlphaBGPath.c_str() );
 
-  if( loadedSurface == NULL )
+  if( g_Texture_CyanBG == NULL )
   {
-    printf( "\nUnable to load image \"%s\"! SDL_image Error: \"%s\"", PNGImagePath.c_str(), IMG_GetError() );
+    printf( "\nUnable to create texture from \"%s\"! SDL Error: \"%s\"\n", PNGImageWithCyanBGPath.c_str(), SDL_GetError() );
+    HasProgramSucceeded = false;
+  }
+  else if (  g_Texture_AlphaBG == NULL )
+  {
+    printf( "\nUnable to create texture from \"%s\"! SDL Error: \"%s\"\n", PNGImageWithAlphaBGPath.c_str(), SDL_GetError() );
+    HasProgramSucceeded = false;
   }
   else
   {
-    printf( "\nImage \"%s\" loaded", PNGImagePath.c_str() );
+    printf( "\nOK: texture created from \"%s\"", PNGImageWithCyanBGPath.c_str() );
+    printf( "\nOK: texture created from \"%s\"", PNGImageWithAlphaBGPath.c_str() );
   }
 
-  // Colour key image
-  if ( SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0x00, 0xFF, 0xFF ) ) != 0 )
-  {
-    printf("\nFailed to set colour key for surface \"%s\"! SDL error: \"%s\"", PNGImagePath.c_str(), SDL_GetError());
-  }
-  else
-  {
-    printf("\nColour key set for surface \"%s\"", PNGImagePath.c_str());
-  }
-
-  // Create texture from surface pixels
-  g_Texture = SDL_CreateTextureFromSurface( g_Renderer, loadedSurface );
-
-  if( g_Texture == NULL )
-  {
-    printf( "Unable to create texture from \"%s\"! SDL Error: \"%s\"\n", PNGImagePath.c_str(), SDL_GetError() );
-  }
-  else
-  {
-    printf( "\nTexture created from \"%s\"", PNGImagePath.c_str() );
-  }
-
-
-  // g_Texture = IMG_LoadTexture( g_Renderer, PNGImagePath.c_str() );
-
-  // if( g_Texture == NULL )
-  // {
-  //   printf( "\nUnable to create texture from \"%s\"! SDL Error: \"%s\"\n", PNGImagePath.c_str(), SDL_GetError() );
-  //   HasProgramSucceeded = false;
-  // }
-  // else
-  // {
-  //   printf( "\nOK: texture created from \"%s\"", PNGImagePath.c_str() );
-  // }
+  SDL_QueryTexture( g_Texture_AlphaBG, NULL, NULL, &g_Texture_AlphaBG_W, &g_Texture_AlphaBG_H );
+  SDL_QueryTexture( g_Texture_CyanBG , NULL, NULL, &g_Texture_CyanBG_W , &g_Texture_CyanBG_H  );
 
   // SDL_SetTextureBlendMode( g_Texture, SDL_BLENDMODE_BLEND );
-  // SDL_SetTexture
 
   /* Preparing for main loop */
 
@@ -268,11 +238,36 @@ int main( int argc, char* args[] )
     }
 
     // Clear screen
+    SDL_SetRenderDrawColor( g_Renderer, YELLOW_R, YELLOW_G, YELLOW_B, YELLOW_A );
     SDL_RenderClear( g_Renderer );
 
     // Render texture to screen
-    SDL_Rect Dest{0, 0, 400, 400};
-    SDL_RenderCopy( g_Renderer, g_Texture, NULL, &Dest );
+    SDL_Rect CyanDest {0                             , 0, g_Texture_CyanBG_H , g_Texture_CyanBG_W};
+    SDL_Rect AlphaDest{WINDOW_W - g_Texture_AlphaBG_W, 0, g_Texture_AlphaBG_H, g_Texture_AlphaBG_W};
+
+    SDL_RenderCopy( g_Renderer, g_Texture_CyanBG , NULL, &CyanDest );
+    SDL_RenderCopy( g_Renderer, g_Texture_AlphaBG, NULL, &AlphaDest );
+
+    // Render orange-filled quad
+    SDL_Rect fillRect = { WINDOW_W / 4, WINDOW_H / 4, WINDOW_W / 2, WINDOW_H / 2 };
+    SDL_SetRenderDrawColor( g_Renderer, ORANGE_R, ORANGE_G, ORANGE_B, ORANGE_A );
+    SDL_RenderFillRect( g_Renderer, &fillRect );
+
+    // Render green-outlined quad
+    SDL_Rect outlineRect = { WINDOW_W / 6, WINDOW_H / 6, WINDOW_W * 2 / 3, WINDOW_H * 2 / 3 };
+    SDL_SetRenderDrawColor( g_Renderer, GREEN_R, GREEN_G, GREEN_B, GREEN_A );
+    SDL_RenderDrawRect( g_Renderer, &outlineRect );
+
+    // Draw blue horizontal line
+    SDL_SetRenderDrawColor( g_Renderer, BLUE_R, BLUE_G, BLUE_B, BLUE_A );
+    SDL_RenderDrawLine( g_Renderer, 0, WINDOW_H / 2, WINDOW_W, WINDOW_H / 2 );
+
+    // Draw vertical line of fuchsia dots
+    SDL_SetRenderDrawColor( g_Renderer, FUCHSIA_R, FUCHSIA_G, FUCHSIA_B, FUCHSIA_A );
+    for( int i = 0; i != WINDOW_H; i += 4 )
+    {
+      SDL_RenderDrawPoint( g_Renderer, WINDOW_W / 2, i );
+    }
 
     // Update screen
     SDL_RenderPresent( g_Renderer );
@@ -280,10 +275,12 @@ int main( int argc, char* args[] )
 
   /* Free resources and close SDL */
 
-  SDL_DestroyTexture( g_Texture );
+  SDL_DestroyTexture( g_Texture_CyanBG );
+  SDL_DestroyTexture( g_Texture_AlphaBG );
   SDL_DestroyRenderer( g_Renderer );
   SDL_DestroyWindow( g_Window );
-  g_Texture  = NULL;
+  g_Texture_CyanBG  = NULL;
+  g_Texture_AlphaBG = NULL;
   g_Renderer = NULL;
   g_Window   = NULL;
 

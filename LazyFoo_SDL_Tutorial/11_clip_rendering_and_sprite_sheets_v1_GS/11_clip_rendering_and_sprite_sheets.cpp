@@ -6,7 +6,7 @@
  * Sunto:
  *  - Solita procedura d'inizializzazione di SDL e SLD_image (vedi i file precedenti).
  *  - Carichiamo l'immagine principale (4 cerchi in sfondo ciano) in "loadedSurface". È solo un
- *    punto di appoggio per poi creare la texture vera e propria in "Texture".
+ *    punto di appoggio (sprite sheet) per poi creare la texture vera e propria in "Texture".
  *  - Impostiamo a ciano il colore di trasparenza dell'immagine "loadedSurface".
  *  - Creiamo quindi la vera texture a partire dalla loadedSurface. Eliminiamo la loadedSurface, ora
  *    divenuta inutile.
@@ -87,16 +87,16 @@ int main( int argc, char* args[] )
   // constexpr int CYAN_A = 0xFF;
 
   // Posizioni e dimensioni dei quattro clip sorgente
-  SDL_Rect RedPoint{0  , 0  , 200, 200}; // Punto rosso
-  SDL_Rect GrnPoint{200, 0  , 200, 200}; // Punto verde
-  SDL_Rect YlwPoint{0  , 200, 200, 200}; // Punto giallo
-  SDL_Rect BluPoint{200, 200, 200, 200}; // Punto blu
+  SDL_Rect RedPoint{0  , 0  , 200, 200}; // Sorgente del punto rosso
+  SDL_Rect GrnPoint{200, 0  , 200, 200}; // Sorgente del punto verde
+  SDL_Rect YlwPoint{0  , 200, 200, 200}; // Sorgente del punto giallo
+  SDL_Rect BluPoint{200, 200, 200, 200}; // Sorgente del punto blu
 
   // Posizioni e dimensioni delle destinazioni dei quattro clip
-  SDL_Rect Dest_TopLft{100, 100, 200, 200};
-  SDL_Rect Dest_TopRgt{500, 100, 200, 200};
-  SDL_Rect Dest_BotLft{100, 500, 200, 200};
-  SDL_Rect Dest_BotRgt{500, 500, 200, 200};
+  SDL_Rect Dest_TopLft{100, 100, 200, 200}; // Destinazione del punto rosso
+  SDL_Rect Dest_TopRgt{500, 100, 200, 200}; // Destinazione del punto verde
+  SDL_Rect Dest_BotLft{100, 500, 200, 200}; // Destinazione del punto giallo
+  SDL_Rect Dest_BotRgt{500, 500, 200, 200}; // Destinazione del punto blu
 
   // Extra clips
   SDL_Rect Dest_Top{350, 150, 100, 100};

@@ -1,6 +1,8 @@
 /**
  * @file 14_animated_sprites_and_vsync.cpp
  *
+ * https://lazyfoo.net/tutorials/SDL/14_animated_sprites_and_vsync/index.php
+ *
  * @brief Animation in a nutshell is just showing one image after another to create the illusion of
  * motion. Here we'll be showing different sprites to animate a stick figure.
  *
@@ -30,22 +32,22 @@
 ***************************************************************************************************/
 
 static constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
-static constexpr int WALKING_ANIMATION_FRAMES       = 4;
-static constexpr int SLOWING_FACTOR                 = 5; // Fattore di rallentamento dell'animazione. Cambia sprite ogni SLOWING_FACTOR aggiornamenti dello schermo.
+static constexpr int WALKING_ANIMATION_FRAMES       =  4;
+static constexpr int SLOWING_FACTOR                 =  5; // Fattore di rallentamento dell'animazione. Cambia sprite ogni SLOWING_FACTOR aggiornamenti dello schermo.
 
-static constexpr int SCREEN_WIDTH       = 640;
-static constexpr int SCREEN_HEIGHT      = 480;
+static constexpr int WINDOW_W = 640;
+static constexpr int WINDOW_H = 480;
 
-// Colore bianco (Inizializzazione renderer)
-static constexpr int WHITE_RED_COMPONENT = 0xFF;
-static constexpr int WHITE_GRN_COMPONENT = 0xFF;
-static constexpr int WHITE_BLU_COMPONENT = 0xFF;
-static constexpr int WHITE_LFA_COMPONENT = 0xFF;
+// Colore bianco
+static constexpr int WHITE_R = 0xFF;
+static constexpr int WHITE_G = 0xFF;
+static constexpr int WHITE_B = 0xFF;
+static constexpr int WHITE_A = 0xFF;
 
 // Colore ciano
-static constexpr int CYAN_RED_COMPONENT = 0x00;
-static constexpr int CYAN_GRN_COMPONENT = 0xFF;
-static constexpr int CYAN_BLU_COMPONENT = 0xFF;
+static constexpr int CYAN_R = 0x00;
+static constexpr int CYAN_G = 0xFF;
+static constexpr int CYAN_B = 0xFF;
 
 static const std::string SpriteSheetPath("foo.png");
 
@@ -130,11 +132,13 @@ LTexture::LTexture(void)
   mHeight  = 0;
 }
 
+
 LTexture::~LTexture(void)
 {
 	// Deallocate
 	free();
 }
+
 
 bool LTexture::loadFromFile( const std::string& path )
 {
@@ -156,10 +160,10 @@ bool LTexture::loadFromFile( const std::string& path )
     printf( "\nImage \"%s\" loaded", path.c_str() );
 
 		// Color key image
-		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_RED_COMPONENT, CYAN_GRN_COMPONENT, CYAN_BLU_COMPONENT ) );
+		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
 		// Create texture from surface pixels
-        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+		newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
 		if( newTexture == NULL )
 		{
@@ -183,6 +187,7 @@ bool LTexture::loadFromFile( const std::string& path )
 	return mTexture != NULL;
 }
 
+
 void LTexture::free(void)
 {
 	// Free texture if it exists
@@ -194,6 +199,7 @@ void LTexture::free(void)
 		mHeight = 0;
 	}
 }
+
 
 /**
  * @brief Set texture's colour modulation
@@ -208,17 +214,20 @@ void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
 	SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
 
+
 void LTexture::setBlendMode( SDL_BlendMode blending )
 {
 	// Set blending function
 	SDL_SetTextureBlendMode( mTexture, blending );
 }
 
+
 void LTexture::setAlpha( Uint8 alpha )
 {
 	// Modulate texture alpha
 	SDL_SetTextureAlphaMod( mTexture, alpha );
 }
+
 
 /**
  * @brief Renders texture at given (x, y) point. Accepts a rectangle defining which portion of the texture
@@ -247,10 +256,12 @@ void LTexture::render( int x, int y, SDL_Rect* clip )
 	SDL_RenderCopy( gRenderer, mTexture, clip, &renderQuad );
 }
 
+
 int LTexture::getWidth(void) const
 {
 	return mWidth;
 }
+
 
 int LTexture::getHeight(void) const
 {
@@ -288,7 +299,7 @@ static bool init(void)
 		}
 
 		// Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
 		if( gWindow == NULL )
 		{
@@ -312,7 +323,7 @@ static bool init(void)
         printf( "\nRenderer created" );
 
 				// Initialize renderer color
-        SDL_SetRenderDrawColor( gRenderer, WHITE_RED_COMPONENT, WHITE_GRN_COMPONENT, WHITE_BLU_COMPONENT, WHITE_LFA_COMPONENT );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 
 				// Initialize PNG loading
 				int imgFlags = IMG_INIT_PNG;
@@ -420,6 +431,12 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
+  printf("\nProgram started with %d additional arguments.", argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
 
 	// Start up SDL and create window
 	if( !init() )
@@ -460,13 +477,13 @@ int main( int argc, char* args[] )
 				}
 
 				// Clear screen
-				SDL_SetRenderDrawColor( gRenderer, WHITE_RED_COMPONENT, WHITE_GRN_COMPONENT, WHITE_BLU_COMPONENT, WHITE_LFA_COMPONENT );
+				SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 				SDL_RenderClear( gRenderer );
 
 				// Render current frame
 				SDL_Rect* currentClip     = &gSpriteClips[ CurrentFrame / SLOWING_FACTOR ];
-        int CENTERED_HORIZONTALLY = ( SCREEN_WIDTH  - currentClip->w ) / 2;
-        int CENTERED_VERTICALLY   = ( SCREEN_HEIGHT - currentClip->h ) / 2;
+        int CENTERED_HORIZONTALLY = ( WINDOW_W  - currentClip->w ) / 2;
+        int CENTERED_VERTICALLY   = ( WINDOW_H - currentClip->h ) / 2;
 				gSpriteSheetTexture.render( CENTERED_HORIZONTALLY, CENTERED_VERTICALLY, currentClip );
 
 				// Update screen

@@ -37,19 +37,6 @@
 * Private constants and types
 ***************************************************************************************************/
 
-/**
- * @brief The RGB components for each colour
- **/
-enum class Colour_Components
-{
-  RED,
-  GREEN,
-  BLUE,
-  ALPHA,
-
-  HOW_MANY
-};
-
 static constexpr int WINDOW_W  =  1024; // Window's width
 static constexpr int WINDOW_H  =  768;  // Window's height
 static constexpr int FIRST_ONE = -1;    // index of the first initialisable rendering driver supporting the requested flags

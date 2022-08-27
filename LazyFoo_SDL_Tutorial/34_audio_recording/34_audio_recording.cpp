@@ -213,7 +213,7 @@ bool LTexture::loadFromFile( const std::string& path )
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
     // Create texture from surface pixels
-        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
 
     if( newTexture == NULL )
     {

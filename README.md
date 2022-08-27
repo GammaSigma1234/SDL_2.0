@@ -17,6 +17,7 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
   - [A.Rigth  < B.Left](#arigth---bleft)
   - [A.Top    > B.Bottom](#atop-----bbottom)
   - [A.Left   > B.Right](#aleft----bright)
+- [Caricamento Textures](#caricamento-textures)
 - [Errori da Segnalare](#errori-da-segnalare)
   - [Tutorial 23](#tutorial-23)
 - [Tutorial 34](#tutorial-34)
@@ -91,7 +92,7 @@ int SDL_RenderCopyEx(      SDL_Renderer*    renderer,
 ```
 
 Questa funzione renderizza una porzione di *texture* in una porzione della finestra di destinazione, gestita dal renderer `renderer`.
-`srcrect` e `dstrect` sono entrambi degli `SDL_Rect`, cioè delle strutture che rappresentano dei rettangoli, composte dai campi `x`, `y`, `w` e `h`. I campi `x` e `y` rappresentano la posizione rispetto all'angolo in alto a destra, mentre `w` e `h` sono le dimensioni in larghezza e altezza, rispettivamente nel caso della *texture* e nel caso della finestra su cui renderizzare.
+`srcrect` e `dstrect` sono entrambi degli `SDL_Rect`, cioè delle strutture che rappresentano dei rettangoli, composte dai campi `x`, `y`, `w` e `h`. I campi `x` e `y` rappresentano la posizione rispetto all'angolo in alto a sinistra, mentre `w` e `h` sono le dimensioni in larghezza e altezza, rispettivamente nel caso della *texture* e nel caso della finestra su cui renderizzare.
 
 Gli argomenti passati ai parametri `x` e `y` di `LTexture::render` vengono poi passati a `dstrect`. Larghezza e altezza di `dstrect` vengono copiati da `SourceClip.x` e `SourceClip.y`. In caso `SourceClip` sia `NULL`, cioè vogliamo usare l'intera *texture*, larghezza e altezza passate a `dstrect` sono `mWidth` e `mHeight`, cioè le dimensioni originali della *texture* intera.
 
@@ -136,6 +137,17 @@ Una qualsiasi delle condizioni qui sopra assicura che i due rettangoli siano sep
 ### A.Left   > B.Right
 ![](Docs/SDL_Collisions_Avoided_ALeftGreaterBRight.svg)
 
+## Caricamento Textures
+
+A partire da SDL 2.0, le *textures* possono essere caricate direttamente da un *file* immagine, senza passare tramite una superficie per poi convertire la superficie a *texture*. Anziché usare `IMG_Load` e `SDL_CreateTextureFromSurface`, usiamo direttamente `IMG_LoadTexture`. È richiesto l'utilizzo del modulo `SDL_image`.
+
+```cpp
+#include <SDL.h>
+#include <SDL_image.h>
+
+SDL_Texture* newTexture = IMG_LoadTexture( Renderer, "PicturePath" );
+```
+
 ## Errori da Segnalare
 
 ### Tutorial 23
@@ -146,9 +158,3 @@ Una qualsiasi delle condizioni qui sopra assicura che i due rettangoli siano sep
 
 - In un commento del codice, "Recieved" invece che "Received".
 - Nel tutorial online, "dissapoint" al posto di "disappoint".
-
-$$x=y$$
-
-
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-<script type="text/x-mathjax-config"> MathJax.Hub.Config({ tex2jax: {inlineMath: [['$', '$']]}, messageStyle: "none" });</script>

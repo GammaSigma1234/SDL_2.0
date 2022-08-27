@@ -1,9 +1,15 @@
 /**
  * @file 13_alpha_blending.cpp
  *
- * @brief setAlpha is similar to setColor in the color modulation tutorial.
- * setBlendMode controls how the texture is blended. In order to get blending to work properly, you
- * must set the blend mode on the texture.
+ * https://lazyfoo.net/tutorials/SDL/13_alpha_blending/index.php
+ *
+ * @brief Thanks to new hardware accelerated rendering, transparency is much faster in SDL 2.0. Here
+ * we'll use alpha modulation (which works much like color modulation) to control the transparency
+ * of a texture.
+ *
+ * "setAlpha" is similar to "setColor" in the color modulation tutorial. "setBlendMode" controls how
+ * the texture is blended. In order to get blending to work properly, you must set the blend mode on
+ * the texture.
  *
  * In the texture loading function we're loading the front texture we're going to alpha blend, and a
  * background texture. As the front texture gets more transparent, we'll be able to see more of the
@@ -15,8 +21,8 @@
  * blue color components, it goes from 0 to 255 when modulating it. 100% opacity (255) = completely
  * visible. 0% opacity (0) = completely invisible.
  *
- * "SDL_SetTextureBlendMode" in setBlendMode allows us to enable blending and SDL_SetTextureAlphaMod
- * allows us to set the amount of alpha for the whole texture.
+ * "SDL_SetTextureBlendMode" in "setBlendMode" allows us to enable blending and
+ * "SDL_SetTextureAlphaMod" allows us to set the amount of alpha for the whole texture.
  *
  * Right before entering the main loop, we declare a variable to control how much alpha the texture
  * has. It is initialized to 255 so the front texture starts out completely opaque.
@@ -44,21 +50,24 @@
 * Private constants
 ***************************************************************************************************/
 
-static constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
+static constexpr int FIRST_ONE = -1;
 
-static constexpr int SCREEN_WIDTH       = 640;
-static constexpr int SCREEN_HEIGHT      = 480;
+static constexpr int WINDOW_W = 640;
+static constexpr int WINDOW_H = 480;
 
 // Colore bianco (Inizializzazione renderer)
-static constexpr int WHITE_RED_COMPONENT = 0xFF;
-static constexpr int WHITE_GRN_COMPONENT = 0xFF;
-static constexpr int WHITE_BLU_COMPONENT = 0xFF;
-static constexpr int WHITE_LFA_COMPONENT = 0xFF;
+static constexpr int WHITE_R = 0xFF;
+static constexpr int WHITE_G = 0xFF;
+static constexpr int WHITE_B = 0xFF;
+static constexpr int WHITE_A = 0xFF;
 
 // Colore ciano
-static constexpr int CYAN_RED_COMPONENT = 0x00;
-static constexpr int CYAN_GRN_COMPONENT = 0xFF;
-static constexpr int CYAN_BLU_COMPONENT = 0xFF;
+static constexpr int CYAN_R = 0x00;
+static constexpr int CYAN_G = 0xFF;
+static constexpr int CYAN_B = 0xFF;
+
+static constexpr Uint8 INCREMENT = static_cast<Uint8>(8);
+static constexpr Uint8 MAX_ALPHA = static_cast<Uint8>(255);
 
 static const std::string FrontTexture("fadeout.png");
 static const std::string BackTexture("fadein.png");
@@ -79,22 +88,22 @@ class LTexture
     ~LTexture(void);
 
 		// Loads image at specified path
-    bool loadFromFile( const std::string& path );
+    bool loadFromFile( const std::string& );
 
 		// Deallocates texture
     void free(void);
 
 		// Set color modulation
-		void setColor( Uint8 red, Uint8 green, Uint8 blue );
+		void setColor( Uint8, Uint8, Uint8 );
 
 		// Set blending
-		void setBlendMode( SDL_BlendMode blending );
+		void setBlendMode( SDL_BlendMode );
 
 		// Set alpha modulation
-		void setAlpha( Uint8 alpha );
+		void setAlpha( Uint8 );
 
 		// Renders texture at given point
-		void render( int x, int y, SDL_Rect* clip = NULL );
+		void render( int x, int y, SDL_Rect* = NULL );
 
 		// Gets image dimensions
     int getWidth(void) const;
@@ -168,7 +177,7 @@ bool LTexture::loadFromFile( const std::string& path )
     printf( "\nImage \"%s\" loaded", path.c_str() );
 
 		// Color key image
-		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_RED_COMPONENT, CYAN_GRN_COMPONENT, CYAN_BLU_COMPONENT ) );
+		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
 
 		// Create texture from surface pixels
 		newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
@@ -300,7 +309,7 @@ static bool init(void)
 		}
 
 		// Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
 		if( gWindow == NULL )
 		{
@@ -312,7 +321,7 @@ static bool init(void)
       printf( "\nWindow created" );
 
 			// Create renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INITIALISE_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED );
+      gRenderer = SDL_CreateRenderer( gWindow, FIRST_ONE, SDL_RENDERER_ACCELERATED );
 
 			if( gRenderer == NULL )
 			{
@@ -324,7 +333,7 @@ static bool init(void)
         printf( "\nRenderer created" );
 
 				// Initialize renderer color
-        SDL_SetRenderDrawColor( gRenderer, WHITE_RED_COMPONENT, WHITE_GRN_COMPONENT, WHITE_BLU_COMPONENT, WHITE_LFA_COMPONENT );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 
 				// Initialize PNG loading
 				int imgFlags = IMG_INIT_PNG;
@@ -367,7 +376,7 @@ static bool loadMedia(void)
 	}
 	else
 	{
-		printf( "\nFront texture loaded" );
+		printf( "\nFront texture loaded. Setting blend mode..." );
 
 		// Set standard alpha blending
 		gModulatedTexture.setBlendMode( SDL_BLENDMODE_BLEND );
@@ -426,6 +435,12 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
+  printf("\nProgram \"%s\" started with %d additional arguments.", args[0], argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
 
 	// Start up SDL and create window
 	if( !init() )
@@ -468,28 +483,28 @@ int main( int argc, char* args[] )
 						if( e.key.keysym.sym == SDLK_w )
 						{
 							// Cap if over 255
-							if( a + 16 > 255 )
+							if( a + INCREMENT > MAX_ALPHA )
 							{
-								a = (Uint8)255;
+								a = MAX_ALPHA;
 							}
 							// Increment otherwise
 							else
 							{
-								a += (Uint8)16;
+								a = static_cast<Uint8>( a + INCREMENT );
 							}
 						}
 						// Decrease alpha on s
 						else if( e.key.keysym.sym == SDLK_s )
 						{
 							// Cap if below 0
-							if( a - 16 < 0 )
+							if( a - INCREMENT < 0 )
 							{
-								a = (Uint8)0;
+								a = static_cast<Uint8>(0);
 							}
 							// Decrement otherwise
 							else
 							{
-								a -= (Uint8)16;
+								a = static_cast<Uint8>( a - INCREMENT );
 							}
 						}
 					}
@@ -498,7 +513,7 @@ int main( int argc, char* args[] )
 				}
 
 				// Clear screen
-				SDL_SetRenderDrawColor( gRenderer, WHITE_RED_COMPONENT, WHITE_GRN_COMPONENT, WHITE_BLU_COMPONENT, WHITE_LFA_COMPONENT );
+				SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 				SDL_RenderClear( gRenderer );
 
 				// Render background

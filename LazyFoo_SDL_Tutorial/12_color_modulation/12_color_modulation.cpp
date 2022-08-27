@@ -1,7 +1,18 @@
 /**
  * @file 12_color_modulation.cpp
  *
- * @brief Come funziona la modulazione RGB?
+ * @brief Come funziona la modulazione RGB? Vedi link qui sotto per una spiegazione.
+ *
+ * https://lazyfoo.net/tutorials/SDL/12_color_modulation/index.php
+ *
+ * Color modulation allows you to alter the color of your rendered textures. Here we're going to
+ * modulate a texture using various colors.
+ *
+ * We're adding a function to the texture wrapper class that will allow the texture modulation to be
+ * set. All it does is take in a red, green, and blue color components.
+ *
+ * Setting texture modulation is as easy as making a call to SDL_SetTextureColorMod. You just pass
+ * in the texture you want to modulate and the color you want to modulate with.
  *
  * SDL_SetTextureColorMod accepts Uint8 as arguments for the color components. An Uint8 is just an
  * integer that is Unsigned and 8bit. This means it goes from 0 to 255. 128 is about halfway between
@@ -29,15 +40,18 @@
 * Private constants
 ***************************************************************************************************/
 
-static constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
+static constexpr int FIRST_ONE = -1;
 
-static constexpr int SCREEN_WIDTH       = 640;
-static constexpr int SCREEN_HEIGHT      = 480;
+static constexpr int WINDOW_W = 640;
+static constexpr int WINDOW_H = 480;
 
-static constexpr int INIT_RED_COMPONENT = 0xFF;
-static constexpr int INIT_GRN_COMPONENT = 0xFF;
-static constexpr int INIT_BLU_COMPONENT = 0xFF;
-static constexpr int INIT_LFA_COMPONENT = 0xFF;
+// Colore bianco
+static constexpr int WHITE_R = 0xFF;
+static constexpr int WHITE_G = 0xFF;
+static constexpr int WHITE_B = 0xFF;
+static constexpr int WHITE_A = 0xFF;
+
+static constexpr Uint8 INCREMENT = static_cast<Uint8>(16);
 
 static const std::string FilePath("colors.png");
 
@@ -57,16 +71,19 @@ class LTexture
     ~LTexture(void);
 
     // Loads image at specified path
-    bool loadFromFile( const std::string& path );
+    bool loadFromFile( const std::string& );
 
     // Deallocates texture
     void free(void);
 
     // Set color modulation
-    void setColor( Uint8 red, Uint8 green, Uint8 blue );
+    void setColor( Uint8, Uint8, Uint8 );
+
+    // Get color modulation
+    void getColor( Uint8&, Uint8&, Uint8& );
 
     // Renders texture at given point
-    void render( int x, int y, SDL_Rect* clip = NULL );
+    void render( int x, int y, SDL_Rect* = NULL );
 
     // Gets image dimensions
     int getWidth(void) const;
@@ -178,6 +195,7 @@ void LTexture::free(void)
   }
 }
 
+
 /**
  * @brief Set texture's colour modulation
  *
@@ -190,6 +208,21 @@ void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
   // Modulate texture
   SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
+
+
+/**
+ * @brief Get texture's colour modulation
+ *
+ * @param red
+ * @param green
+ * @param blue
+ **/
+void LTexture::getColor( Uint8& red, Uint8& green, Uint8& blue )
+{
+  // Modulate texture
+  SDL_GetTextureColorMod( mTexture, (Uint8*)&red, (Uint8*)&green, (Uint8*)&blue );
+}
+
 
 /**
  * @brief Renders texture at given (x, y) point. Accepts a rectangle defining which portion of the texture
@@ -259,7 +292,7 @@ static bool init(void)
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -271,7 +304,7 @@ static bool init(void)
       printf( "\nWindow created" );
 
       // Create renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INITIALISE_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED );
+      gRenderer = SDL_CreateRenderer( gWindow, FIRST_ONE, SDL_RENDERER_ACCELERATED );
 
       if( gRenderer == NULL )
       {
@@ -283,7 +316,7 @@ static bool init(void)
         printf( "\nRenderer created" );
 
         // Initialize renderer color
-        SDL_SetRenderDrawColor( gRenderer, INIT_RED_COMPONENT, INIT_GRN_COMPONENT, INIT_BLU_COMPONENT, INIT_LFA_COMPONENT );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 
         // Initialize PNG loading
         int imgFlags = IMG_INIT_PNG;
@@ -371,6 +404,12 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
+  printf("\nProgram \"%s\" started with %d additional arguments.", args[0], argc - 1); // Il primo argomento è il nome dell'eseguibile
+
+  for (int i = 1; i != argc; ++i)
+  {
+    printf("\nArgument #%d: %s\n", i, args[i]);
+  }
 
   // Start up SDL and create window
   if( !init() )
@@ -393,9 +432,9 @@ int main( int argc, char* args[] )
       SDL_Event e;
 
       // Modulation components
-      Uint8 r = 255;
-      Uint8 g = 255;
-      Uint8 b = 255;
+      Uint8 r = static_cast<Uint8>(255);
+      Uint8 g = static_cast<Uint8>(255);
+      Uint8 b = static_cast<Uint8>(255);
 
       // While application is running
       while( !quit )
@@ -415,38 +454,47 @@ int main( int argc, char* args[] )
             {
               // Increase red
               case SDLK_q:
-                r += static_cast<Uint8>(32);
-                printf("\nRed increased by 32");
+                r = static_cast<Uint8>(r + INCREMENT);
+                printf("\nRed increased by %d", INCREMENT);
                 break;
 
               // Increase green
               case SDLK_w:
-                g += static_cast<Uint8>(32);
-                printf("\nGreen increased by 32");
+                g = static_cast<Uint8>(g + INCREMENT);
+                printf("\nGreen increased by %d", INCREMENT);
                 break;
 
               // Increase blue
               case SDLK_e:
-                b += static_cast<Uint8>(32);
-                printf("\nBlue increased by 32");
+                b = static_cast<Uint8>(b + INCREMENT);
+                printf("\nBlue increased by %d", INCREMENT);
                 break;
 
               // Decrease red
               case SDLK_a:
-                r -= static_cast<Uint8>(32);
-                printf("\nRed decreased by 32");
+                r = static_cast<Uint8>(r - INCREMENT);
+                printf("\nRed decreased by %d", INCREMENT);
                 break;
 
               // Decrease green
               case SDLK_s:
-                g -= static_cast<Uint8>(32);
-                printf("\nGreen decreased by 32");
+                g = static_cast<Uint8>(r - INCREMENT);
+                printf("\nGreen decreased by %d", INCREMENT);
                 break;
 
               // Decrease blue
               case SDLK_d:
-                b -= static_cast<Uint8>(32);
-                printf("\nBlue decreased by 32");
+                b = static_cast<Uint8>(r - INCREMENT);
+                printf("\nBlue decreased by %d", INCREMENT);
+                break;
+
+              // Get current values - Si può riciclare r, g, b senza bisogno di dicharare altre variabili
+              case SDLK_x:
+                gModulatedTexture.getColor(r, g, b);
+                printf("\nColours modulation:");
+                printf("\n  - Red:   %u", static_cast<unsigned int>(r));
+                printf("\n  - Green: %u", static_cast<unsigned int>(g));
+                printf("\n  - Blue:  %u", static_cast<unsigned int>(b));
                 break;
 
               // Reset values
@@ -466,7 +514,7 @@ int main( int argc, char* args[] )
         }
 
         // Clear screen
-        SDL_SetRenderDrawColor( gRenderer, INIT_RED_COMPONENT, INIT_GRN_COMPONENT, INIT_BLU_COMPONENT, INIT_LFA_COMPONENT );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
         // Modulate and render texture

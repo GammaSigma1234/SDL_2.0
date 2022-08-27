@@ -1,6 +1,8 @@
 /**
  * @file 16_true_type_fonts.cpp
  *
+ * https://lazyfoo.net/tutorials/SDL/16_true_type_fonts/index.php
+ *
  * @brief One way to render text with SDL is with the extension library SDL_ttf. SDL_ttf allows you
  * to create images from TrueType fonts which we'll use here to create textures from font text.
  *
@@ -64,10 +66,10 @@
 * Private constants
 ***************************************************************************************************/
 
-static constexpr int INIT_FIRST_ONE_AVAILABLE = -1;
+static constexpr int FIRST_ONE = -1;
 
-static constexpr int SCREEN_W = 640; // Screen's width
-static constexpr int SCREEN_H = 480; // Screen's heigth
+static constexpr int WINDOW_W = 640; // Screen's width
+static constexpr int WINDOW_H = 480; // Screen's heigth
 
 // Colore bianco (Inizializzazione renderer)
 static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
@@ -361,7 +363,7 @@ static bool init(void)
     }
 
     // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN );
+    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
 
     if( gWindow == NULL )
     {
@@ -373,7 +375,7 @@ static bool init(void)
       printf( "\nWindow created" );
 
       // Create accelerated and vsynced renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, INIT_FIRST_ONE_AVAILABLE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+      gRenderer = SDL_CreateRenderer( gWindow, FIRST_ONE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 
       if( gRenderer == NULL )
       {
@@ -400,7 +402,7 @@ static bool init(void)
           printf( "\nSDL_image initialised" );
         }
 
-         // Initialize SDL_ttf
+        // Initialize SDL_ttf
         if( TTF_Init() == -1 )
         {
           printf( "\nSDL_ttf could not initialize! SDL_ttf Error: %s", TTF_GetError() );
@@ -542,8 +544,8 @@ int main( int argc, char* args[] )
         SDL_RenderClear( gRenderer );
 
         // Render current frame
-        int CENTERED_HORIZONTALLY = ( SCREEN_W - gTextTexture.getWidth()  ) / 2;
-        int CENTERED_VERTICALLY   = ( SCREEN_H - gTextTexture.getHeight() ) / 2;
+        int CENTERED_HORIZONTALLY = ( WINDOW_W - gTextTexture.getWidth()  ) / 2;
+        int CENTERED_VERTICALLY   = ( WINDOW_H - gTextTexture.getHeight() ) / 2;
         gTextTexture.render( CENTERED_HORIZONTALLY, CENTERED_VERTICALLY );
 
         // Update screen

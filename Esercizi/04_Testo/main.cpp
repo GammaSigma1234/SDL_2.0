@@ -36,6 +36,7 @@
 #include <SDL_ttf.h>
 #include <cstdio>
 #include <string>
+#include <vector>
 #include "colours.hpp"
 
 
@@ -52,12 +53,25 @@ static constexpr int FONT_SIZE =  50;
 // static const std::string FontPath ("RachelBrown.ttf");
 static const std::string FontPath ("georgia.ttf");
 
-// Prompts
-static const std::string Prompt_1 ("Press UP or DOWN arrow keys");
-static const std::string Prompt_2 ("Press any other key to reset");
-static const std::string Prompt_3 ("UP key pressed");
-static const std::string Prompt_4 ("DOWN key pressed");
-static const std::string Prompt_5 ("Waiting for UP or DOWN...");
+enum class PromptMessages
+{
+  Press_UP_or_DOWN_arrow_keys,
+  Press_any_other_key_to_reset,
+  UP_key_pressed,
+  DOWN_key_pressed,
+  Waiting_for_UP_or_DOWN,
+
+  HOW_MANY
+};
+
+static const std::vector<std::string> Prompts_Vec
+{
+  "Press UP or DOWN arrow keys",
+  "Press any other key to reset",
+  "UP key pressed",
+  "DOWN key pressed",
+  "Waiting for UP or DOWN..."
+};
 
 
 /***************************************************************************************************
@@ -222,11 +236,15 @@ int main( int argc, char* args[] )
   SDL_Color    Text2_Colour{RED_R    , RED_G    , RED_B    , RED_A    };
   SDL_Color    Text3_Colour{GRN_DRK_R, GRN_DRK_G, GRN_DRK_B, GRN_DRK_A};
 
-  SDL_Surface* TempSurface_1 = TTF_RenderText_Blended( g_Font, Prompt_1.c_str(), Text1_Colour );
-  SDL_Surface* TempSurface_2 = TTF_RenderText_Blended( g_Font, Prompt_2.c_str(), Text2_Colour );
-  SDL_Surface* TempSurface_3 = TTF_RenderText_Blended( g_Font, Prompt_5.c_str(), Text3_Colour );
+  size_t Index1 = static_cast<size_t>(PromptMessages::Press_UP_or_DOWN_arrow_keys);
+  size_t Index2 = static_cast<size_t>(PromptMessages::Press_any_other_key_to_reset);
+  size_t Index3 = static_cast<size_t>(PromptMessages::Waiting_for_UP_or_DOWN);
 
-  if( TempSurface_1 == NULL || TempSurface_2 == NULL || TempSurface_3 == NULL )
+  SDL_Surface* TempSurface1 = TTF_RenderText_Blended( g_Font, Prompts_Vec[Index1].c_str(), Text1_Colour );
+  SDL_Surface* TempSurface2 = TTF_RenderText_Blended( g_Font, Prompts_Vec[Index2].c_str(), Text2_Colour );
+  SDL_Surface* TempSurface3 = TTF_RenderText_Blended( g_Font, Prompts_Vec[Index3].c_str(), Text3_Colour );
+
+  if( TempSurface1 == NULL || TempSurface2 == NULL || TempSurface3 == NULL )
   {
     printf( "\nUnable to render text surfaces! SDL_ttf Error: \"%s\"", TTF_GetError() );
     HasProgramSucceeded = false;
@@ -237,9 +255,9 @@ int main( int argc, char* args[] )
   }
 
   // Create texture from surface pixels
-  g_Text1_Tex = SDL_CreateTextureFromSurface( g_Renderer, TempSurface_1 );
-  g_Text2_Tex = SDL_CreateTextureFromSurface( g_Renderer, TempSurface_2 );
-  g_Text3_Tex = SDL_CreateTextureFromSurface( g_Renderer, TempSurface_3 );
+  g_Text1_Tex = SDL_CreateTextureFromSurface( g_Renderer, TempSurface1 );
+  g_Text2_Tex = SDL_CreateTextureFromSurface( g_Renderer, TempSurface2 );
+  g_Text3_Tex = SDL_CreateTextureFromSurface( g_Renderer, TempSurface3 );
 
   if( g_Text1_Tex == NULL || g_Text2_Tex == NULL || g_Text3_Tex == NULL )
   {
@@ -252,12 +270,12 @@ int main( int argc, char* args[] )
   }
 
   // Get rid of old surfaces
-  SDL_FreeSurface( TempSurface_1 );
-  SDL_FreeSurface( TempSurface_2 );
-  SDL_FreeSurface( TempSurface_3 );
-  TempSurface_1 = NULL;
-  TempSurface_2 = NULL;
-  TempSurface_3 = NULL;
+  SDL_FreeSurface( TempSurface1 );
+  SDL_FreeSurface( TempSurface2 );
+  SDL_FreeSurface( TempSurface3 );
+  TempSurface1 = NULL;
+  TempSurface2 = NULL;
+  TempSurface3 = NULL;
 
   /* Ottenimento delle dimensioni delle textures */
 
@@ -287,21 +305,22 @@ int main( int argc, char* args[] )
         switch ( EventHandler.key.keysym.sym )
         {
           case SDLK_UP:
-            TempSurface_3 = TTF_RenderText_Blended( g_Font, Prompt_3.c_str(), Text3_Colour );
+            Index3 = static_cast<size_t>(PromptMessages::UP_key_pressed);
             break;
 
           case SDLK_DOWN:
-            TempSurface_3 = TTF_RenderText_Blended( g_Font, Prompt_4.c_str(), Text3_Colour );
+            Index3 = static_cast<size_t>(PromptMessages::DOWN_key_pressed);
             break;
 
           default:
-            TempSurface_3 = TTF_RenderText_Blended( g_Font, Prompt_5.c_str(), Text3_Colour );
+            Index3 = static_cast<size_t>(PromptMessages::Waiting_for_UP_or_DOWN);
             break;
         }
 
-        g_Text3_Tex   = SDL_CreateTextureFromSurface( g_Renderer, TempSurface_3 );
-        SDL_FreeSurface(TempSurface_3);
-        TempSurface_3 = NULL;
+        TempSurface3 = TTF_RenderText_Blended( g_Font, Prompts_Vec[Index3].c_str(), Text3_Colour );
+        g_Text3_Tex   = SDL_CreateTextureFromSurface( g_Renderer, TempSurface3 );
+        SDL_FreeSurface(TempSurface3);
+        TempSurface3 = NULL;
         SDL_QueryTexture( g_Text3_Tex, NULL, NULL, &g_Text3_Size.w, &g_Text3_Size.h );
       }
       else

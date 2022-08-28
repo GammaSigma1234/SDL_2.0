@@ -6,6 +6,28 @@
  * @brief SDL also supports resizable windows. When you have resizable windows there are additional
  * events to handle, which is what we'll be doing here.
  *
+ * Sunto:
+ * - Aggiunta una nuova classe "LWindow". Contiene dei dati relativi alla finestra (dimensioni,
+ *   focus ecc.). Viene usata come oggetto globale.
+ * - Il metodo "LWindow::init" viene chiamato sull'oggetto finestra "gWindow" nella funzione privata
+ *   "init". Contiene una parte delle istruzioni che nei tutorial precedenti venivano interamente
+ *   eseguite nella funzione privata "init". Ora, alcune di queste istruzioni sono migrate nella
+ *   classe "LWindow".
+ * - La finestra viene ora inizializzata con "SDL_WINDOW_RESIZABLE".
+ * - L'autore ha scelto di far creare e inizializzare il renderer dall'oggetto "gWindow", nella
+ *   funzione privata "init", mediante il metodo "createRenderer", sebbene questo renderer sia
+ *   globale e gestito nel "main".
+ * - La gestione degli eventi è delegata all'oggetto finestra, mediante chiamata del metodo
+ *   "handleEvent".
+ * - Una volta determinato che il tipo di evento è un "SDL_WINDOWEVENT", possiamo processarlo
+ *   mediante uno switch-case su "e.window.event".
+ * - Al termine del metodo "handleEvent", gestiamo l'eventuale aggiornamento della barra della
+ *   finestra mediante "SDL_SetWindowTitle", e la dimensione della stessa mediante
+ *   "SDL_SetWindowFullscreen".
+ * - Il rendering viene gestito nella parte finale del "main", come sempre. Tuttavia, stavolta
+ *   prestiamo attenzione a non renderizzare quando la finestre è minimizzata, perché ciò può
+ *   provocare dei bachi.
+ *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
  **/
@@ -211,7 +233,7 @@ bool LTexture::loadFromFile( const std::string& path )
   }
   else
   {
-    printf( "\nImage \"%s\" loaded", path.c_str() );
+    printf( "\nOK: image \"%s\" loaded", path.c_str() );
 
     // Color key image
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
@@ -225,7 +247,7 @@ bool LTexture::loadFromFile( const std::string& path )
     }
     else
     {
-      printf( "\nTexture created from \"%s\"", path.c_str() );
+      printf( "\nOK: texture created from \"%s\"", path.c_str() );
 
       // Get image dimensions
       mWidth  = loadedSurface->w;
@@ -263,6 +285,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
     }
     else
     {
+      printf( "\nOK: texture created from rendered text" );
       // Get image dimensions
       mWidth  = textSurface->w;
       mHeight = textSurface->h;
@@ -476,8 +499,10 @@ void LWindow::handleEvent( SDL_Event& e )
               << " KeyboardFocus:"            << ( ( mKeyboardFocus ) ? "On" : "Off" );
       SDL_SetWindowTitle( mWindow, caption.str().c_str() );
     }
+    else { /* No need to update window's caption */ }
+
   }
-  // Enter exit full screen on return key
+  // Enter or exit full screen on return key
   else if( e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN )
   {
     if( mFullScreen )
@@ -493,7 +518,7 @@ void LWindow::handleEvent( SDL_Event& e )
       mMinimized  = false;
     }
   }
-  else {;}
+  else { /* Event not recognised / not managed here */ }
 }
 
 
@@ -563,7 +588,7 @@ static bool init(void)
   }
   else
   {
-    printf( "\nSDL initialised" );
+    printf( "\nOK: SDL initialised" );
 
     // Set texture filtering to linear
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
@@ -573,7 +598,7 @@ static bool init(void)
     }
     else
     {
-      printf( "\nLinear texture filtering enabled" );
+      printf( "\nOK: linear texture filtering enabled" );
     }
 
     // Create window
@@ -584,7 +609,7 @@ static bool init(void)
     }
     else
     {
-      printf( "\nWindow created" );
+      printf( "\nOK: window created" );
 
       // Create renderer for window
       gRenderer = gWindow.createRenderer();
@@ -596,7 +621,7 @@ static bool init(void)
       }
       else
       {
-        printf( "\nRenderer created" );
+        printf( "\nOK: renderer created" );
 
         // Initialize renderer color
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
@@ -611,7 +636,7 @@ static bool init(void)
         }
         else
         {
-          printf( "\nSDL_image initialised" );
+          printf( "\nOK: SDL_image initialised" );
         }
 
       } // Renderer created
@@ -640,6 +665,7 @@ static bool loadMedia(void)
     printf( "\nFailed to load window texture!" );
     success = false;
   }
+  else { /* All OK */ }
 
   return success;
 }
@@ -694,7 +720,7 @@ int main( int argc, char* args[] )
   }
   else
   {
-    printf( "\nAll systems initialised" );
+    printf( "\nOK: all systems initialised" );
 
     // Load media
     if( !loadMedia() )
@@ -703,7 +729,7 @@ int main( int argc, char* args[] )
     }
     else
     {
-      printf( "\nAll media loaded" );
+      printf( "\nOK: all media loaded" );
 
       // Main loop flag
       bool quit = false;
@@ -722,12 +748,13 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
+          else
+          { /* Continue until QUIT event */ }
 
           // Handle window events
           gWindow.handleEvent( e );
         }
 
-        // Only draw when not minimized
         if( !gWindow.isMinimized() )
         {
           // Clear screen
@@ -735,11 +762,13 @@ int main( int argc, char* args[] )
           SDL_RenderClear( gRenderer );
 
           // Render text textures
-          gSceneTexture.render( ( gWindow.getWidth() - gSceneTexture.getWidth() ) / 2, ( gWindow.getHeight() - gSceneTexture.getHeight() ) / 2 );
+          gSceneTexture.render( ( gWindow.getWidth()  - gSceneTexture.getWidth()  ) / 2,
+                                ( gWindow.getHeight() - gSceneTexture.getHeight() ) / 2 );
 
           // Update screen
           SDL_RenderPresent( gRenderer );
         }
+        else { /* Only draw when not minimised */ }
       }
 
     } // All media loaded

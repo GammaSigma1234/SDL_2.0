@@ -37,7 +37,7 @@
 * Includes
 ***************************************************************************************************/
 
-// Using SDL, SDL_image, standard IO, strings, and string streams
+// Using SDL, SDL_image, standard I/O, strings, and string streams
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>

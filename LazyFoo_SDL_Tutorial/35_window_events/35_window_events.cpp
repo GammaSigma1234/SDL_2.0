@@ -88,6 +88,7 @@ static const std::string TexPath("window.png");
 class LTexture
 {
   public:
+
   // Initializes variables
   LTexture(void);
 
@@ -122,6 +123,7 @@ class LTexture
   int getHeight(void) const;
 
   private:
+
   // The actual hardware texture
   SDL_Texture* mTexture;
 

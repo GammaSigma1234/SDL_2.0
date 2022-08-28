@@ -129,7 +129,7 @@ class LWindow
   bool hasMouseFocus(void) const;
   bool hasKeyboardFocus(void) const;
   bool isMinimized(void) const;
-  bool isShown(void);
+  bool isShown(void) const;
 
   private:
 
@@ -324,7 +324,7 @@ void LWindow::handleEvent( SDL_Event& e )
 }
 
 
-void LWindow::focus()
+void LWindow::focus(void)
 {
   // Restore window if needed
   if( !mShown )
@@ -339,7 +339,7 @@ void LWindow::focus()
 }
 
 
-void LWindow::render()
+void LWindow::render(void)
 {
   if( !mMinimized )
   {
@@ -398,7 +398,7 @@ bool LWindow::isMinimized(void) const
 }
 
 
-bool LWindow::isShown()
+bool LWindow::isShown(void) const
 {
   return mShown;
 }
@@ -431,7 +431,7 @@ static bool init(void)
     // Set texture filtering to linear
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "linear" ) )
     {
-      printf( "\nWarning: Linear texture filtering not enabled!" );
+      printf( "\nWarning: linear texture filtering not enabled!" );
       success = false;
     }
     else

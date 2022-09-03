@@ -99,6 +99,35 @@
 static constexpr int SCREEN_WIDTH  = 640;
 static constexpr int SCREEN_HEIGHT = 480;
 
+// Colore bianco
+static constexpr int WHITE_R(0xFF);
+static constexpr int WHITE_G(0xFF);
+static constexpr int WHITE_B(0xFF);
+static constexpr int WHITE_A(0xFF);
+
+// Colore rosso
+static constexpr int RED_R(0xFF);
+static constexpr int RED_G(0x00);
+static constexpr int RED_B(0x00);
+static constexpr int RED_A(0xFF);
+
+// Colore verde
+static constexpr int GREEN_R(0x00);
+static constexpr int GREEN_G(0xFF);
+static constexpr int GREEN_B(0x00);
+static constexpr int GREEN_A(0xFF);
+
+// Colore giallo
+static constexpr int YELLOW_R(0xFF);
+static constexpr int YELLOW_G(0xFF);
+static constexpr int YELLOW_B(0x00);
+static constexpr int YELLOW_A(0xFF);
+
+// Colore blu
+static constexpr int BLUE_R(0x00);
+static constexpr int BLUE_G(0x00);
+static constexpr int BLUE_B(0xFF);
+static constexpr int BLUE_A(0xFF);
 
 /***************************************************************************************************
 * Private prototypes
@@ -349,27 +378,27 @@ int main( int argc, char* args[] )
 
         // We're setting the clearing color to white at every frame as opposed to setting it once in
         // the initialization function
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 
         // Clear screen
         SDL_RenderClear( gRenderer );
 
         // Render red filled quad
         SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0x00, 0x00, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, RED_R, RED_G, RED_B, RED_A );
         SDL_RenderFillRect( gRenderer, &fillRect );
 
         // Render green outlined quad
         SDL_Rect outlineRect = { SCREEN_WIDTH / 6, SCREEN_HEIGHT / 6, SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT * 2 / 3 };
-        SDL_SetRenderDrawColor( gRenderer, 0x00, 0xFF, 0x00, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, GREEN_R, GREEN_G, GREEN_B, GREEN_A );
         SDL_RenderDrawRect( gRenderer, &outlineRect );
 
         // Draw blue horizontal line
-        SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0xFF, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, BLUE_R, BLUE_G, BLUE_B, BLUE_A );
         SDL_RenderDrawLine( gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2 );
 
         // Draw vertical line of yellow dots
-        SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0x00, 0xFF );
+        SDL_SetRenderDrawColor( gRenderer, YELLOW_R, YELLOW_G, YELLOW_B, YELLOW_A );
         for( int i = 0; i != SCREEN_HEIGHT; i += 4 )
         {
           SDL_RenderDrawPoint( gRenderer, SCREEN_WIDTH / 2, i );

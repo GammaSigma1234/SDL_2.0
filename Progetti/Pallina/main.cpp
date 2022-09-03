@@ -20,8 +20,8 @@
 
 static constexpr int INIT_F1 = -1; // Initialise the first rendering driver supporting the requested flags
 
-static constexpr int SCRN_W = 800; // Screen's width
-static constexpr int SCRN_H = 600; // Screen's heigth
+static constexpr int WINDOW_W = 800; // Screen's width
+static constexpr int WINDOW_H = 600; // Screen's heigth
 
 // The dimensions of the level
 static constexpr int LEVEL_W = 1280;
@@ -711,8 +711,8 @@ static bool init(void)
     g_Window = SDL_CreateWindow( "Pallina",
                                   SDL_WINDOWPOS_UNDEFINED,
                                   SDL_WINDOWPOS_UNDEFINED,
-                                  SCRN_W,
-                                  SCRN_H,
+                                  WINDOW_W,
+                                  WINDOW_H,
                                   SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
 
     if( g_Window == NULL )
@@ -895,7 +895,7 @@ int main( int argc, char* args[] )
       Dot ScreenDot;
 
       // The camera area
-      SDL_Rect camera = { 0, 0, SCRN_W, SCRN_H };
+      SDL_Rect camera = { 0, 0, WINDOW_W, WINDOW_H };
 
       // While application is running
       while( !quit )
@@ -918,8 +918,8 @@ int main( int argc, char* args[] )
         ScreenDot.ProcessMovement();
 
         // Center the camera over the dot
-        camera.x = ( ScreenDot.getPosX() + Dot::DOT_W / 2 ) - SCRN_W / 2;
-        camera.y = ( ScreenDot.getPosY() + Dot::DOT_H / 2 ) - SCRN_H / 2;
+        camera.x = ( ScreenDot.getPosX() + Dot::DOT_W / 2 ) - WINDOW_W / 2;
+        camera.y = ( ScreenDot.getPosY() + Dot::DOT_H / 2 ) - WINDOW_H / 2;
 
         // Keep the camera in bounds
         if( camera.x < 0 )
@@ -977,15 +977,15 @@ int main( int argc, char* args[] )
         g_yVelText_Debug.loadFromRenderedText(StringStream_yVel.str(), g_TextColorBlack );
 
         // Position of debugging text
-        int xPosText_xPos_Debug = ( SCRN_W - g_xPosText_Debug.getWidth()  ) / 2;
-        int xPosText_yPos_Debug = ( SCRN_H - g_xPosText_Debug.getHeight() ) / 2 + 0 * g_yPosText_Debug.getHeight();
-        int yPosText_xPos_Debug = ( SCRN_W - g_yPosText_Debug.getWidth()  ) / 2;
-        int yPosText_yPos_Debug = ( SCRN_H - g_yPosText_Debug.getHeight() ) / 2 + 1 * g_yPosText_Debug.getHeight();
+        int xPosText_xPos_Debug = ( WINDOW_W - g_xPosText_Debug.getWidth()  ) / 2;
+        int xPosText_yPos_Debug = ( WINDOW_H - g_xPosText_Debug.getHeight() ) / 2 + 0 * g_yPosText_Debug.getHeight();
+        int yPosText_xPos_Debug = ( WINDOW_W - g_yPosText_Debug.getWidth()  ) / 2;
+        int yPosText_yPos_Debug = ( WINDOW_H - g_yPosText_Debug.getHeight() ) / 2 + 1 * g_yPosText_Debug.getHeight();
 
-        int xVelText_xPos_Debug = ( SCRN_W - g_xVelText_Debug.getWidth()  ) / 2;
-        int xVelText_yPos_Debug = ( SCRN_H - g_xVelText_Debug.getHeight() ) / 2 + 2 * g_xVelText_Debug.getHeight();
-        int yVelText_xPos_Debug = ( SCRN_W - g_yVelText_Debug.getWidth()  ) / 2;
-        int yVelText_yPos_Debug = ( SCRN_H - g_yVelText_Debug.getHeight() ) / 2 + 3 * g_yVelText_Debug.getHeight();
+        int xVelText_xPos_Debug = ( WINDOW_W - g_xVelText_Debug.getWidth()  ) / 2;
+        int xVelText_yPos_Debug = ( WINDOW_H - g_xVelText_Debug.getHeight() ) / 2 + 2 * g_xVelText_Debug.getHeight();
+        int yVelText_xPos_Debug = ( WINDOW_W - g_yVelText_Debug.getWidth()  ) / 2;
+        int yVelText_yPos_Debug = ( WINDOW_H - g_yVelText_Debug.getHeight() ) / 2 + 3 * g_yVelText_Debug.getHeight();
 
         g_xPosText_Debug.render( xPosText_xPos_Debug, xPosText_yPos_Debug );
         g_yPosText_Debug.render( yPosText_xPos_Debug, yPosText_yPos_Debug );

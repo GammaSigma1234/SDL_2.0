@@ -1,23 +1,7 @@
 /**
- * @file 40_texture_manipulation.cpp
+ * @file 41_bitmap_fonts.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/40_texture_manipulation/index.php
- *
- * To do graphics effects often requires pixel access. In this tutorial we'll be altering an image's
- * pixels to white out the background.
- *
- * Sunto:
- *  - Lock/unlock: serve per poter manipolare i pixel.
- *  - mPixel: puntatore ai pixel grezzi dopo il locking.
- *  - Pitch: occupazione in memoria della texture.
- *  - "loadFromFile" è cambiata: ora fa uso di "SDL_ConvertSurfaceFormat" e "SDL_CreateTexture" con
- *    "SDL_TEXTUREACCESS_STREAMING". La creazione di texture che abbiamo utilizzato fino al tutorial
- *    precedente assegnava implicitamente "SDL_TEXTUREACCESS_STATIC".
- *  - Dopo aver bloccato la superficie, copiamo i pixel grezzi nella nuova texture vuota con memcpy.
- *    The pitch SDL gives us is the number of bytes per row of pixels, so all we have to do is
- *    multiply by the height of the surface to copy in all the pixels from the image.
- *  - Una volta caricata la texture streamabile, la modifichiamo in "loadMedia". In sostanza, è un
- *    colour-keying manuale.
+ * @brief https://lazyfoo.net/tutorials/SDL/41_bitmap_fonts/index.php
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -28,7 +12,7 @@
 * Includes
 ***************************************************************************************************/
 
-// Using SDL, SDL_image, standard I/O, and strings
+// Using SDL, SDL_image, SDL_ttf, standard I/O, math, strings, and string streams
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
@@ -59,7 +43,7 @@ static constexpr int CYAN_A = 0xFF; // Alpha component
 
 /* Paths */
 
-static const std::string g_FooTexture( "foo.png" );
+static const std::string g_LazyFont( "lazyfont.png" );
 
 
 /***************************************************************************************************
@@ -104,10 +88,11 @@ class LTexture
   int getHeight( void ) const;
 
   // Pixel manipulators
-  bool  lockTexture   ( void );
-  bool  unlockTexture ( void );
-  void* getPixels     ( void ) const;
-  int   getPitch      ( void ) const;
+  bool   lockTexture   ( void );
+  bool   unlockTexture ( void );
+  void*  getPixels     ( void ) const;
+  int    getPitch      ( void ) const;
+  Uint32 getPixel32    ( unsigned int, unsigned int );
 
 private:
 
@@ -119,6 +104,33 @@ private:
   // Image dimensions
   int mWidth;
   int mHeight;
+};
+
+
+/**
+ * @brief Our bitmap font
+ **/
+class LBitmapFont
+{
+    public:
+    // The default constructor
+    LBitmapFont();
+
+    // Generates the font
+    bool buildFont( LTexture *bitmap );
+
+    // Shows the text
+    void renderText( int x, int y, std::string text );
+
+    private:
+    // The font texture
+    LTexture* mBitmap;
+
+    // The individual characters in the surface
+    SDL_Rect mChars[ 256 ];
+
+    // Spacing Variables
+    int mNewLine, mSpace;
 };
 
 
@@ -139,7 +151,8 @@ static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 // Scene textures
-static LTexture gFooTexture;
+static LTexture    gBitmapTexture;
+static LBitmapFont gBitmapFont;
 
 
 /***************************************************************************************************
@@ -150,10 +163,10 @@ LTexture::LTexture(void)
 {
   // Initialize
   mTexture = NULL;
-  mWidth   = 0;
-  mHeight  = 0;
-  mPixels  = NULL;
-  mPitch   = 0;
+  mWidth = 0;
+  mHeight = 0;
+  mPixels = NULL;
+  mPitch = 0;
 }
 
 
@@ -184,8 +197,7 @@ bool LTexture::loadFromFile( const std::string& path )
     printf( "\nOK: image \"%s\" loaded", path.c_str() );
 
     // Convert surface to display format
-    SDL_Surface* formattedSurface = SDL_ConvertSurfaceFormat( loadedSurface, SDL_GetWindowPixelFormat( gWindow ), 0 );
-
+    SDL_Surface* formattedSurface = SDL_ConvertSurfaceFormat( loadedSurface, SDL_PIXELFORMAT_RGBA8888, 0 );
     if( formattedSurface == NULL )
     {
       printf( "\nUnable to convert loaded surface to display format! SDL Error: %s\n", SDL_GetError() );
@@ -193,28 +205,46 @@ bool LTexture::loadFromFile( const std::string& path )
     else
     {
       // Create blank streamable texture
-      newTexture = SDL_CreateTexture( gRenderer, SDL_GetWindowPixelFormat( gWindow ), SDL_TEXTUREACCESS_STREAMING,
-                                      formattedSurface->w, formattedSurface->h );
-
+      newTexture = SDL_CreateTexture( gRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, formattedSurface->w, formattedSurface->h );
       if( newTexture == NULL )
       {
         printf( "\nUnable to create blank texture! SDL Error: %s\n", SDL_GetError() );
       }
       else
       {
+        // Enable blending on texture
+        SDL_SetTextureBlendMode( newTexture, SDL_BLENDMODE_BLEND );
+
         // Lock texture for manipulation
-        SDL_LockTexture( newTexture, NULL, &mPixels, &mPitch );
+        SDL_LockTexture( newTexture, &formattedSurface->clip_rect, &mPixels, &mPitch );
 
         // Copy loaded/formatted surface pixels
         memcpy( mPixels, formattedSurface->pixels, formattedSurface->pitch * formattedSurface->h );
 
-        // Unlock texture to update
-        SDL_UnlockTexture( newTexture );
-        mPixels = NULL;
-
         // Get image dimensions
         mWidth  = formattedSurface->w;
         mHeight = formattedSurface->h;
+
+        // Get pixel data in editable format
+        Uint32* pixels = (Uint32*)mPixels;
+        int pixelCount = ( mPitch / 4 ) * mHeight;
+
+        // Map colors
+        Uint32 colorKey    = SDL_MapRGB( formattedSurface->format, 0, 0xFF, 0xFF );
+        Uint32 transparent = SDL_MapRGBA( formattedSurface->format, 0x00, 0xFF, 0xFF, 0x00 );
+
+        // Color key pixels
+        for( int i = 0; i < pixelCount; ++i )
+        {
+          if( pixels[ i ] == colorKey )
+          {
+            pixels[ i ] = transparent;
+          }
+        }
+
+        // Unlock texture to update
+        SDL_UnlockTexture( newTexture );
+        mPixels = NULL;
       }
 
       // Get rid of old formatted surface
@@ -418,6 +448,234 @@ int LTexture::getPitch(void) const
   return mPitch;
 }
 
+Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
+{
+    // Convert the pixels to 32 bit
+    Uint32 *pixels = (Uint32*)mPixels;
+
+    // Get the pixel requested
+    return pixels[ ( y * ( mPitch / 4 ) ) + x ];
+}
+
+
+LBitmapFont::LBitmapFont()
+{
+    // Initialize variables
+    mBitmap = NULL;
+    mNewLine = 0;
+    mSpace = 0;
+}
+
+
+bool LBitmapFont::buildFont( LTexture* bitmap )
+{
+  bool success = true;
+
+  // Lock pixels for access
+  if( !bitmap->lockTexture() )
+  {
+    printf( "Unable to lock bitmap font texture!\n" );
+    success = false;
+  }
+  else
+  {
+    // Set the background color
+    Uint32 bgColor = bitmap->getPixel32( 0, 0 );
+
+    // Set the cell dimensions
+    int cellW = bitmap->getWidth() / 16;
+    int cellH = bitmap->getHeight() / 16;
+
+    // New line variables
+    int top = cellH;
+    int baseA = cellH;
+
+    // The current character we're setting
+    int currentChar = 0;
+
+    // Go through the cell rows
+    for( int rows = 0; rows < 16; ++rows )
+    {
+      // Go through the cell columns
+      for( int cols = 0; cols < 16; ++cols )
+      {
+        // Set the character offset
+        mChars[ currentChar ].x = cellW * cols;
+        mChars[ currentChar ].y = cellH * rows;
+
+        // Set the dimensions of the character
+        mChars[ currentChar ].w = cellW;
+        mChars[ currentChar ].h = cellH;
+
+        // Find Left Side
+        // Go through pixel columns
+        for( int pCol = 0; pCol < cellW; ++pCol )
+        {
+          // Go through pixel rows
+          for( int pRow = 0; pRow < cellH; ++pRow )
+          {
+            // Get the pixel offsets
+            int pX = ( cellW * cols ) + pCol;
+            int pY = ( cellH * rows ) + pRow;
+
+            // If a non colorkey pixel is found
+            if( bitmap->getPixel32( pX, pY ) != bgColor )
+            {
+              // Set the x offset
+              mChars[ currentChar ].x = pX;
+
+              // Break the loops
+              pCol = cellW;
+              pRow = cellH;
+            }
+          }
+        }
+
+        // Find Right Side
+        // Go through pixel columns
+        for( int pColW = cellW - 1; pColW >= 0; --pColW )
+        {
+          // Go through pixel rows
+          for( int pRowW = 0; pRowW < cellH; ++pRowW )
+          {
+            // Get the pixel offsets
+            int pX = ( cellW * cols ) + pColW;
+            int pY = ( cellH * rows ) + pRowW;
+
+            // If a non colorkey pixel is found
+            if( bitmap->getPixel32( pX, pY ) != bgColor )
+            {
+              // Set the width
+              mChars[ currentChar ].w = ( pX - mChars[ currentChar ].x ) + 1;
+
+              // Break the loops
+              pColW = -1;
+              pRowW = cellH;
+            }
+          }
+        }
+
+        // Find Top
+        // Go through pixel rows
+        for( int pRow = 0; pRow < cellH; ++pRow )
+        {
+          // Go through pixel columns
+          for( int pCol = 0; pCol < cellW; ++pCol )
+          {
+            // Get the pixel offsets
+            int pX = ( cellW * cols ) + pCol;
+            int pY = ( cellH * rows ) + pRow;
+
+            // If a non colorkey pixel is found
+            if( bitmap->getPixel32( pX, pY ) != bgColor )
+            {
+              // If new top is found
+              if( pRow < top )
+              {
+                top = pRow;
+              }
+
+              // Break the loops
+              pCol = cellW;
+              pRow = cellH;
+            }
+          }
+        }
+
+        // Find Bottom of A
+        if( currentChar == 'A' )
+        {
+          // Go through pixel rows
+          for( int pRow = cellH - 1; pRow >= 0; --pRow )
+          {
+            // Go through pixel columns
+            for( int pCol = 0; pCol < cellW; ++pCol )
+            {
+              // Get the pixel offsets
+              int pX = ( cellW * cols ) + pCol;
+              int pY = ( cellH * rows ) + pRow;
+
+              // If a non colorkey pixel is found
+              if( bitmap->getPixel32( pX, pY ) != bgColor )
+              {
+                // Bottom of a is found
+                baseA = pRow;
+
+                // Break the loops
+                pCol = cellW;
+                pRow = -1;
+              }
+            }
+          }
+        }
+
+        // Go to the next character
+        ++currentChar;
+      }
+    }
+
+    // Calculate space
+    mSpace = cellW / 2;
+
+    // Calculate new line
+    mNewLine = baseA - top;
+
+    // Lop off excess top pixels
+    for( int i = 0; i < 256; ++i )
+    {
+      mChars[ i ].y += top;
+      mChars[ i ].h -= top;
+    }
+
+    bitmap->unlockTexture();
+    mBitmap = bitmap;
+  }
+
+  return success;
+}
+
+
+void LBitmapFont::renderText( int x, int y, std::string text )
+{
+  // If the font has been built
+  if( mBitmap != NULL )
+  {
+    // Temp offsets
+    int curX = x, curY = y;
+
+    // Go through the text
+    for( size_t i = 0; i != text.length(); ++i )
+    {
+      // If the current character is a space
+      if( text[ i ] == ' ' )
+      {
+        // Move over
+        curX += mSpace;
+      }
+      // If the current character is a newline
+      else if( text[ i ] == '\n' )
+      {
+        // Move down
+        curY += mNewLine;
+
+        // Move back
+        curX = x;
+      }
+      else
+      {
+        // Get the ASCII value of the character
+        int ascii = (unsigned char)text[ i ];
+
+        // Show the character
+        mBitmap->render( curX, curY, &mChars[ ascii ] );
+
+        // Move over the width of the character with one pixel of padding
+        curX += mChars[ ascii ].w + 1;
+      }
+    }
+  }
+}
+
 
 /***************************************************************************************************
 * Private functions definitions
@@ -453,6 +711,9 @@ static bool init(void)
     {
       printf( "\nOK: linear texture filtering enabled" );
     }
+
+    // Seed random
+    srand( SDL_GetTicks() );
 
     // Create window
     gWindow = SDL_CreateWindow( "SDL Tutorial"         ,
@@ -517,8 +778,8 @@ static bool loadMedia( void )
   // Loading success flag
   bool success = true;
 
-  // Load Foo texture
-  if( !gFooTexture.loadFromFile( g_FooTexture ) )
+  // Load font texture
+  if( !gBitmapTexture.loadFromFile( g_LazyFont ) )
   {
     printf( "\nFailed to load corner texture!" );
     success = false;
@@ -527,44 +788,8 @@ static bool loadMedia( void )
   {
     printf( "\nOK: corner texture loaded" );
 
-    // Lock texture
-    if( !gFooTexture.lockTexture() )
-    {
-      printf( "\nUnable to lock Foo' texture!\n" );
-    }
-    // Manual color key
-    else
-    {
-      printf( "\nOK: Foo texture locked" );
-
-      // Allocate format from window
-      Uint32           format        = SDL_GetWindowPixelFormat( gWindow );
-      SDL_PixelFormat* mappingFormat = SDL_AllocFormat( format );
-
-      // Get pixel data
-      Uint32* pixels     = (Uint32*)gFooTexture.getPixels();
-      int     pixelCount = ( gFooTexture.getPitch() / 4 ) * gFooTexture.getHeight();
-
-      // Map colors
-      Uint32 colorKey    = SDL_MapRGB ( mappingFormat, CYAN_R , CYAN_G , CYAN_B );
-      Uint32 transparent = SDL_MapRGBA( mappingFormat, WHITE_R, WHITE_G, WHITE_B, 0x00 );
-
-      // Color key pixels
-      for( int i = 0; i != pixelCount; ++i )
-      {
-        if( pixels[ i ] == colorKey )
-        {
-          pixels[ i ] = transparent;
-        }
-        else { /*  */ }
-      }
-
-      // Unlock texture
-      gFooTexture.unlockTexture();
-
-      // Free format
-      SDL_FreeFormat( mappingFormat );
-    }
+    // Build font from texture
+    gBitmapFont.buildFont( &gBitmapTexture );
   }
 
   return success;
@@ -574,7 +799,7 @@ static bool loadMedia( void )
 static void close(void)
 {
   // Free loaded images
-  gFooTexture.free();
+  gBitmapTexture.free();
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -657,8 +882,8 @@ int main( int argc, char* args[] )
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render stick figure
-        gFooTexture.render( ( WINDOW_W - gFooTexture.getWidth() ) / 2, ( WINDOW_H - gFooTexture.getHeight() ) / 2 );
+        // Render test text
+        gBitmapFont.renderText( 0, 0, "Bitmap Font:\nABDCEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789" );
 
         // Update screen
         SDL_RenderPresent( gRenderer );

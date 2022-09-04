@@ -252,9 +252,9 @@ static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 // Scene textures
-LTexture gDotTexture;
-LTexture gTileTexture;
-SDL_Rect gTileClips[ TOTAL_TILE_SPRITES ];
+static LTexture gDotTexture;
+static LTexture gTileTexture;
+static SDL_Rect gTileClips[ TOTAL_TILE_SPRITES ];
 
 
 /***************************************************************************************************

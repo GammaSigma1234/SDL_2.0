@@ -4,7 +4,7 @@
  * @brief
  **/
 
-// Using SDL, SDL_image, standard IO, vectors, and strings
+// Using SDL, SDL_image, standard I/O, vectors, and strings
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
@@ -18,10 +18,10 @@
 * Private constants
 ***************************************************************************************************/
 
-static constexpr int INIT_F1 = -1; // Initialise the first rendering driver supporting the requested flags
+static constexpr int INIT_FIRST_ONE = -1; // Initialise the first rendering driver supporting the requested flags
 
-static constexpr int WINDOW_W = 800; // Screen's width
-static constexpr int WINDOW_H = 600; // Screen's heigth
+static constexpr int WINDOW_W = /* 800 */ 1024; // Screen's width
+static constexpr int WINDOW_H = /* 600 */ 768; // Screen's heigth
 
 // The dimensions of the level
 static constexpr int LEVEL_W = 1280;
@@ -45,9 +45,9 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
-static const std::string DotPath("dot.bmp");  // Dot        texture's path
-static const std::string BGPath("bg.png");    // Background texture's path
-static const std::string FontPath("lazy.ttf");
+static const std::string DotPath  ("dot.bmp");  // Dot        texture's path
+static const std::string BGPath   ("bg.png");   // Background texture's path
+static const std::string FontPath ("lazy.ttf");
 
 
 /***************************************************************************************************
@@ -163,7 +163,7 @@ class Dot
   void AccelStop ( ACCEL_DIR );
 
   // Maximum axis velocity of the dot
-  static constexpr int DOT_MAX_VEL = 10;
+  static constexpr int DOT_MAX_VEL = 20;
 
   // Acceleration addition
   static constexpr double DOT_A = 0.4;
@@ -241,7 +241,7 @@ bool LTexture::loadFromFile( const std::string& path )
   }
   else
   {
-    printf( "\nImage \"%s\" loaded", path.c_str() );
+    printf( "\nOK: image \"%s\" loaded", path.c_str() );
 
     // Color key image
     SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, CYAN_R, CYAN_G, CYAN_B ) );
@@ -255,7 +255,7 @@ bool LTexture::loadFromFile( const std::string& path )
     }
     else
     {
-      printf( "\nTexture created from \"%s\"", path.c_str() );
+      printf( "\nOK: texture created from \"%s\"", path.c_str() );
 
       // Get image dimensions
       m_Width  = loadedSurface->w;
@@ -280,7 +280,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   free();
 
   // Render text surface
-  SDL_Surface* textSurface = TTF_RenderText_Solid( g_Font, textureText.c_str(), textColor );
+  SDL_Surface* textSurface = TTF_RenderText_Blended( g_Font, textureText.c_str(), textColor );
 
   if( textSurface != NULL )
   {
@@ -518,9 +518,8 @@ void Dot::ProcessMovement(void)
   {
     // Move back
     m_IsAccelLeft  = false;
-    m_IsAccelRight = false;
     m_PosX = 0;
-    m_VelX = 0;
+    m_VelX = -(m_VelX / 2);
   }
   else { /* Movement was OK */ }
 
@@ -532,10 +531,9 @@ void Dot::ProcessMovement(void)
   if( m_PosX + DOT_W > LEVEL_W )
   {
     // Move back
-    m_IsAccelLeft  = false;
     m_IsAccelRight = false;
     m_PosX = LEVEL_W - DOT_W;
-    m_VelX = 0;
+    m_VelX = -(m_VelX / 2);
   }
   else { /* Movement was OK */ }
 
@@ -555,9 +553,8 @@ void Dot::ProcessMovement(void)
   {
     // Move back
     m_IsAccelUp   = false;
-    m_IsAccelDown = false;
     m_PosY = 0;
-    m_VelY = 0;
+    m_VelY = -(m_VelY / 2);
   }
   else { /* Movement was OK */ }
 
@@ -569,10 +566,9 @@ void Dot::ProcessMovement(void)
   if( m_PosY + DOT_H > LEVEL_H )
   {
     // Move back
-    m_IsAccelUp   = false;
     m_IsAccelDown = false;
     m_PosY = LEVEL_H - DOT_H;
-    m_VelY = 0;
+    m_VelY = -(m_VelY / 2);
   }
   else { /* Movement was OK */ }
 }
@@ -694,7 +690,7 @@ static bool init(void)
   }
   else
   {
-    printf( "\nSDL initialised" );
+    printf( "\nOK: SDL initialised" );
 
     // Set texture filtering to linear
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
@@ -704,7 +700,7 @@ static bool init(void)
     }
     else
     {
-      printf( "\nLinear texture filtering enabled" );
+      printf( "\nOK: linear texture filtering enabled" );
     }
 
     // Create window
@@ -722,10 +718,10 @@ static bool init(void)
     }
     else
     {
-      printf( "\nWindow created" );
+      printf( "\nOK: window created" );
 
       // Create accelerated and vsynced renderer for window
-      g_Renderer = SDL_CreateRenderer( g_Window, INIT_F1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+      g_Renderer = SDL_CreateRenderer( g_Window, INIT_FIRST_ONE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 
       if( g_Renderer == NULL )
       {
@@ -734,7 +730,7 @@ static bool init(void)
       }
       else
       {
-        printf( "\nRenderer created" );
+        printf( "\nOK: renderer created" );
 
         // Initialize renderer color
         SDL_SetRenderDrawColor( g_Renderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
@@ -749,7 +745,7 @@ static bool init(void)
         }
         else
         {
-          printf( "\nSDL_image initialised" );
+          printf( "\nOK: SDL_image initialised" );
         }
 
         // Initialize SDL_ttf
@@ -760,7 +756,7 @@ static bool init(void)
         }
         else
         {
-          printf( "\nSDL_ttf initialised" );
+          printf( "\nOK: SDL_ttf initialised" );
         }
 
       } // Renderer created
@@ -793,7 +789,7 @@ static bool loadMedia(void)
   }
   else
   {
-    printf( "\nLazy font loaded" );
+    printf( "\nOK: Lazy Font loaded" );
   }
 
   // Load dot texture
@@ -804,7 +800,7 @@ static bool loadMedia(void)
   }
   else
   {
-    printf( "\nDot texture loaded" );
+    printf( "\nOK: dot texture loaded" );
   }
 
   // Load background texture
@@ -815,7 +811,7 @@ static bool loadMedia(void)
   }
   else
   {
-    printf( "\nBackground texture loaded" );
+    printf( "\nOK: background texture loaded" );
   }
 
   return success;
@@ -874,7 +870,7 @@ int main( int argc, char* args[] )
   }
   else
   {
-    printf( "\nAll systems initialised" );
+    printf( "\nOK: all systems initialised" );
 
     // Load media
     if( !loadMedia() )
@@ -883,7 +879,7 @@ int main( int argc, char* args[] )
     }
     else
     {
-      printf( "\nAll media loaded" );
+      printf( "\nOK: all media loaded" );
 
       // Main loop flag
       bool quit = false;

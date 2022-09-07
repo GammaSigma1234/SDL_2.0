@@ -12,6 +12,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include "colours.hpp"
 
 
 /**************************************************************************************************
@@ -20,49 +21,34 @@
 
 static constexpr int INIT_FIRST_ONE = -1; // Initialise the first rendering driver supporting the requested flags
 
-static constexpr int WINDOW_W = /* 800 */ 1024; // Screen's width
-static constexpr int WINDOW_H = /* 600 */ 768; // Screen's heigth
+static constexpr int WINDOW_W_px = 1920; // Screen's width
+static constexpr int WINDOW_H_px = 1200; // Screen's heigth
+
+static constexpr double GRAVITY       (0.5);
+static constexpr double BOUNCE_FACTOR (0.8);
+static constexpr double BRAKING_FACTOR(1.0);
 
 // The dimensions of the level
-static constexpr int LEVEL_W = 1280;
-static constexpr int LEVEL_H = 960;
+static constexpr int LEVEL_W_px = 3200;
+static constexpr int LEVEL_H_px = 2000;
 
-// Colore bianco
-static constexpr int WHITE_R = 0xFF; // Amount of red   needed to compose white
-static constexpr int WHITE_G = 0xFF; // Amount of green needed to compose white
-static constexpr int WHITE_B = 0xFF; // Amount of blue  needed to compose white
-static constexpr int WHITE_A = 0xFF; // Alpha component
+static constexpr int WALL_W_px = 64;
+static constexpr int WALL_H_px = 64;
 
-// Colore nero
-static constexpr int BLACK_R = 0x00; // Amount of red   needed to compose black
-static constexpr int BLACK_G = 0x00; // Amount of green needed to compose black
-static constexpr int BLACK_B = 0x00; // Amount of blue  needed to compose black
-static constexpr int BLACK_A = 0xFF; // Alpha component
+// static const SDL_Color g_TextColorBlack { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
+// static const SDL_Color g_TextColorRed   { RED_R  , RED_G  , RED_B  , RED_A   };
+// static const SDL_Color g_TextColorWhite { WHITE_R, WHITE_G, WHITE_B, WHITE_A };
+static const SDL_Color g_TextColorGold  { GOLD_R , GOLD_G , GOLD_B , GOLD_A  };
 
-// Colore ciano
-static constexpr int CYAN_R = 0x00; // Amount of red   needed to compose cyan
-static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
-static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
-static constexpr int CYAN_A = 0xFF; // Alpha component
-
-static const std::string DotPath  ("dot.bmp");  // Dot        texture's path
-static const std::string BGPath   ("bg.png");   // Background texture's path
-static const std::string FontPath ("lazy.ttf");
+static const std::string DotPath         ("WhiteDot.bmp");  // Dot        texture's path
+static const std::string BackGroundPath  ("Sfondo.png");    // Background texture's path
+static const std::string SpriteSheetPath ("SpriteSheet.png");
+static const std::string FontPath        ("lazy.ttf");
 
 
 /***************************************************************************************************
 * Classes
 ****************************************************************************************************/
-
-/**
- * @brief A circle stucture. Defines the centre (x, y) and the radius (r) of the circle.
- **/
-struct Circle
-{
-  int x, y;
-  int r;
-};
-
 
 // Texture wrapper class
 class LTexture
@@ -117,10 +103,6 @@ class Dot
 {
   public:
 
-  // The dimensions (width and height) of the dot
-  static constexpr int DOT_W = 20;
-  static constexpr int DOT_H = 20;
-
   // Initializes the variables
   Dot(void);
 
@@ -140,14 +122,18 @@ class Dot
   double getVelX_Debug(void) const;
   double getVelY_Debug(void) const;
 
-  // Number of decimal digits used in the acceleration DOT_A
+  // Size accessors
+  int getWidth (void) const;
+  int getHeigth(void) const;
+
+  // Number of decimal digits used in the acceleration m_DOT_ACC
   static constexpr size_t NUM_OF_DIGITS = 1;
 
 
   private:
 
   /**
-   * @brief Acceleration directions
+   * @brief Allowed directions for the acceleration of the dot
    **/
   enum class ACCEL_DIR
   {
@@ -159,14 +145,18 @@ class Dot
     HOW_MANY
   };
 
-  void AccelReq  ( ACCEL_DIR );
-  void AccelStop ( ACCEL_DIR );
+  // The dimensions (width and height) of the dot
+  static constexpr int DOT_W_px = 20;
+  static constexpr int DOT_H_px = 20;
+
+  void AccelReq   ( ACCEL_DIR );
+  void AccelStop  ( ACCEL_DIR );
 
   // Maximum axis velocity of the dot
-  static constexpr int DOT_MAX_VEL = 20;
+  static constexpr int m_DOT_MAX_VEL = 20;
 
   // Acceleration addition
-  static constexpr double DOT_A = 0.4;
+  static constexpr double m_DOT_ACC = 0.4;
 
   // The X and Y offsets of the dot
   int m_PosX, m_PosY;
@@ -175,7 +165,7 @@ class Dot
   double m_VelX, m_VelY;
 
   // Used to set the direction of the acceleration
-  bool m_IsAccelUp, m_IsAccelDown, m_IsAccelLeft, m_IsAccelRight;
+  bool m_IsAccelUp, m_IsAccelDown, m_IsAccelLeft, m_IsAccelRight, m_isBrakingRequested;
 };
 
 
@@ -188,11 +178,11 @@ static SDL_Renderer* g_Renderer = NULL; // The window renderer
 
 // Globally used font
 static TTF_Font* g_Font = NULL;
-static SDL_Color g_TextColorBlack = { BLACK_R, BLACK_G, BLACK_B, BLACK_A };
 
 // Textures
 static LTexture g_DotTexture;
 static LTexture g_BGTexture;
+static LTexture g_SSTexture;
 static LTexture g_xPosText_Debug;
 static LTexture g_yPosText_Debug;
 static LTexture g_xVelText_Debug;
@@ -403,8 +393,8 @@ int LTexture::getHeight(void) const
 
 Dot::Dot(void)
   : m_PosX(0), m_PosY(0), m_VelX(0.0), m_VelY(0.0),
-    m_IsAccelUp(false), m_IsAccelDown(false), m_IsAccelLeft(false), m_IsAccelRight(false)
-{ /* Initialise the offsets, the velocity, and the acceleration */ }
+    m_IsAccelUp(false), m_IsAccelDown(false), m_IsAccelLeft(false), m_IsAccelRight(false), m_isBrakingRequested(false)
+{ /* Initialise all non-static private members */ }
 
 
 void Dot::handleEvent( SDL_Event& e )
@@ -416,11 +406,12 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : AccelReq(Dot::ACCEL_DIR::UP);    break;
-      case SDLK_DOWN : AccelReq(Dot::ACCEL_DIR::DOWN);  break;
-      case SDLK_LEFT : AccelReq(Dot::ACCEL_DIR::LEFT);  break;
-      case SDLK_RIGHT: AccelReq(Dot::ACCEL_DIR::RIGHT); break;
-      default        :                                  break;
+      case SDLK_UP    : AccelReq  (Dot::ACCEL_DIR::UP);    break;
+      case SDLK_DOWN  : AccelReq  (Dot::ACCEL_DIR::DOWN);  break;
+      case SDLK_LEFT  : AccelReq  (Dot::ACCEL_DIR::LEFT);  break;
+      case SDLK_RIGHT : AccelReq  (Dot::ACCEL_DIR::RIGHT); break;
+      case SDLK_RETURN: m_isBrakingRequested = true;       break;
+      default         :                                    break;
     }
   }
   // If a key was released
@@ -429,11 +420,12 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : AccelStop(Dot::ACCEL_DIR::UP);    break;
-      case SDLK_DOWN : AccelStop(Dot::ACCEL_DIR::DOWN);  break;
-      case SDLK_LEFT : AccelStop(Dot::ACCEL_DIR::LEFT);  break;
-      case SDLK_RIGHT: AccelStop(Dot::ACCEL_DIR::RIGHT); break;
-      default        :                                   break;
+      case SDLK_UP    : AccelStop(Dot::ACCEL_DIR::UP);    break;
+      case SDLK_DOWN  : AccelStop(Dot::ACCEL_DIR::DOWN);  break;
+      case SDLK_LEFT  : AccelStop(Dot::ACCEL_DIR::LEFT);  break;
+      case SDLK_RIGHT : AccelStop(Dot::ACCEL_DIR::RIGHT); break;
+      case SDLK_RETURN: m_isBrakingRequested = false;     break;
+      default         :                                   break;
     }
   }
   else { /* Ignore this event */ }
@@ -451,25 +443,21 @@ void Dot::ProcessMovement(void)
 
   if ( m_IsAccelUp )
   {
-    m_VelY = m_VelY - DOT_A;
+    m_VelY = m_VelY - 1.0;
   }
   else { /* No upwards acceleration requested */ }
 
-  if ( m_IsAccelDown )
-  {
-    m_VelY = m_VelY + DOT_A;
-  }
-  else { /* No downwards acceleration requested */ }
+  m_VelY = m_VelY + GRAVITY;
 
   if ( m_IsAccelLeft )
   {
-    m_VelX = m_VelX - DOT_A;
+    m_VelX = m_VelX - m_DOT_ACC;
   }
   else { /* No upwards acceleration requested */ }
 
   if ( m_IsAccelRight )
   {
-    m_VelX = m_VelX + DOT_A;
+    m_VelX = m_VelX + m_DOT_ACC;
   }
   else { /* No downwards acceleration requested */ }
 
@@ -478,30 +466,58 @@ void Dot::ProcessMovement(void)
   * Speed check and saturation
   *****************************/
 
-  if ( m_VelY < -DOT_MAX_VEL )
+  if ( m_VelY < -m_DOT_MAX_VEL )
   {
-    m_VelY = -DOT_MAX_VEL;
+    m_VelY = -m_DOT_MAX_VEL;
   }
   else { /* Max speed on negative y axis not yet reached */ }
 
-  if ( m_VelY > DOT_MAX_VEL )
+  if ( m_VelY > m_DOT_MAX_VEL )
   {
-    m_VelY = DOT_MAX_VEL;
+    m_VelY = m_DOT_MAX_VEL;
   }
   else { /* Max speed on positive y axis not yet reached */ }
 
-  if ( m_VelX > DOT_MAX_VEL )
+  if ( m_VelX > m_DOT_MAX_VEL )
   {
-    m_VelX = DOT_MAX_VEL;
+    m_VelX = m_DOT_MAX_VEL;
   }
   else { /* Max speed on positive x axis not yet reached */ }
 
-  if ( m_VelX < -DOT_MAX_VEL )
+  if ( m_VelX < -m_DOT_MAX_VEL )
   {
-    m_VelX = -DOT_MAX_VEL;
+    m_VelX = -m_DOT_MAX_VEL;
   }
   else { /* Max speed on negative x axis not yet reached */ }
 
+
+  /* Process braking */
+
+  if ( m_isBrakingRequested )
+  {
+    if ( m_VelX > 0.0 )
+    {
+      m_VelX -= BRAKING_FACTOR;
+
+      if ( m_VelX < 0.0 )
+      {
+        m_VelX = 0.0;
+      }
+      else {;}
+    }
+    else if ( m_VelX < 0.0 )
+    {
+      m_VelX += BRAKING_FACTOR;
+
+      if ( m_VelX > 0.0 )
+      {
+        m_VelX = 0.0;
+      }
+      else {;}
+    }
+    else {;}
+  }
+  else {;}
 
  /****************************
  * Move the dot left or right
@@ -528,11 +544,11 @@ void Dot::ProcessMovement(void)
  * If the dot went too far to the right
  ***********************************************/
 
-  if( m_PosX + DOT_W > LEVEL_W )
+  if( m_PosX + DOT_W_px > LEVEL_W_px )
   {
     // Move back
     m_IsAccelRight = false;
-    m_PosX = LEVEL_W - DOT_W;
+    m_PosX = LEVEL_W_px - DOT_W_px;
     m_VelX = -(m_VelX / 2);
   }
   else { /* Movement was OK */ }
@@ -554,7 +570,7 @@ void Dot::ProcessMovement(void)
     // Move back
     m_IsAccelUp   = false;
     m_PosY = 0;
-    m_VelY = -(m_VelY / 2);
+    m_VelY = -(m_VelY * BOUNCE_FACTOR);
   }
   else { /* Movement was OK */ }
 
@@ -563,12 +579,12 @@ void Dot::ProcessMovement(void)
  * If the dot went too far down
  *************************************/
 
-  if( m_PosY + DOT_H > LEVEL_H )
+  if( m_PosY + DOT_H_px > LEVEL_H_px - WALL_H_px )
   {
     // Move back
     m_IsAccelDown = false;
-    m_PosY = LEVEL_H - DOT_H;
-    m_VelY = -(m_VelY / 2);
+    m_PosY = LEVEL_H_px - DOT_H_px - WALL_H_px;
+    m_VelY = -(m_VelY * BOUNCE_FACTOR);
   }
   else { /* Movement was OK */ }
 }
@@ -668,6 +684,18 @@ double Dot::getVelY_Debug(void) const
 }
 
 
+int Dot::getWidth(void) const
+{
+  return DOT_W_px;
+}
+
+
+int Dot::getHeigth(void) const
+{
+  return DOT_H_px;
+}
+
+
 /***************************************************************************************************
 * Private functions definitions
 ****************************************************************************************************/
@@ -707,9 +735,9 @@ static bool init(void)
     g_Window = SDL_CreateWindow( "Pallina",
                                   SDL_WINDOWPOS_UNDEFINED,
                                   SDL_WINDOWPOS_UNDEFINED,
-                                  WINDOW_W,
-                                  WINDOW_H,
-                                  SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
+                                  WINDOW_W_px,
+                                  WINDOW_H_px,
+                                  SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP );
 
     if( g_Window == NULL )
     {
@@ -804,7 +832,7 @@ static bool loadMedia(void)
   }
 
   // Load background texture
-  if ( !g_BGTexture.loadFromFile( BGPath.c_str() ) )
+  if ( !g_BGTexture.loadFromFile( BackGroundPath.c_str() ) )
   {
     printf( "\nFailed to load background texture!\n" );
     success = false;
@@ -812,6 +840,17 @@ static bool loadMedia(void)
   else
   {
     printf( "\nOK: background texture loaded" );
+  }
+
+  // Load sprite sheet
+  if ( !g_SSTexture.loadFromFile( SpriteSheetPath.c_str() ) )
+  {
+    printf( "\nFailed to load sprite sheet texture!\n" );
+    success = false;
+  }
+  else
+  {
+    printf( "\nOK: sprite sheet texture loaded" );
   }
 
   return success;
@@ -826,7 +865,7 @@ static void close(void)
 
   // Destroy window
   SDL_DestroyRenderer( g_Renderer );
-  SDL_DestroyWindow( g_Window );
+  SDL_DestroyWindow  ( g_Window );
   g_Renderer = NULL;
   g_Window   = NULL;
 
@@ -891,7 +930,10 @@ int main( int argc, char* args[] )
       Dot ScreenDot;
 
       // The camera area
-      SDL_Rect camera = { 0, 0, WINDOW_W, WINDOW_H };
+      SDL_Rect camera = { 0, 0, WINDOW_W_px, WINDOW_H_px };
+
+      // The lower wall tile
+      SDL_Rect Wall_Lower{0, 0, WALL_W_px, WALL_H_px};
 
       // While application is running
       while( !quit )
@@ -914,8 +956,8 @@ int main( int argc, char* args[] )
         ScreenDot.ProcessMovement();
 
         // Center the camera over the dot
-        camera.x = ( ScreenDot.getPosX() + Dot::DOT_W / 2 ) - WINDOW_W / 2;
-        camera.y = ( ScreenDot.getPosY() + Dot::DOT_H / 2 ) - WINDOW_H / 2;
+        camera.x = ( ScreenDot.getPosX() + ScreenDot.getWidth()  / 2 ) - WINDOW_W_px / 2;
+        camera.y = ( ScreenDot.getPosY() + ScreenDot.getHeigth() / 2 ) - WINDOW_H_px / 2;
 
         // Keep the camera in bounds
         if( camera.x < 0 )
@@ -930,28 +972,36 @@ int main( int argc, char* args[] )
         }
         else { /* Camera's position is OK */ }
 
-        if( camera.x > LEVEL_W - camera.w )
+        if( camera.x > LEVEL_W_px - camera.w )
         {
-          camera.x = LEVEL_W - camera.w;
+          camera.x = LEVEL_W_px - camera.w;
         }
         else { /* Camera's position is OK */ }
 
-        if( camera.y > LEVEL_H - camera.h )
+        if( camera.y > LEVEL_H_px - camera.h )
         {
-          camera.y = LEVEL_H - camera.h;
+          camera.y = LEVEL_H_px - camera.h;
         }
         else { /* Camera's position is OK */ }
 
 
         // Clear screen
         SDL_SetRenderDrawColor( g_Renderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
-        SDL_RenderClear( g_Renderer );
+        SDL_RenderClear       ( g_Renderer );
 
         // Render background
         g_BGTexture.render( 0, 0, &camera ); // x = 0, y = 0 --> Il background va sempre agganciato all'origine della finestra
 
-        // Render objects
+        // Render dot
         ScreenDot.render( camera.x, camera.y );
+
+        int NumOfWallTiles( LEVEL_W_px / WALL_W_px );
+
+        // Render lower wall
+        for ( int i = 0; i != NumOfWallTiles; ++i )
+        {
+          g_SSTexture.render( i * WALL_W_px - camera.x, ( LEVEL_H_px - WALL_H_px ) - camera.y, &Wall_Lower );
+        }
 
         /************************************
         * Stampa info di debugging on-screen
@@ -967,21 +1017,21 @@ int main( int argc, char* args[] )
         StringStream_xVel << "x vel: " << std::fixed << std::setprecision(Dot::NUM_OF_DIGITS) << ScreenDot.getVelX_Debug();
         StringStream_yVel << "y vel: " << std::fixed << std::setprecision(Dot::NUM_OF_DIGITS) << ScreenDot.getVelY_Debug();
 
-        g_xPosText_Debug.loadFromRenderedText(StringStream_xPos.str(), g_TextColorBlack );
-        g_yPosText_Debug.loadFromRenderedText(StringStream_yPos.str(), g_TextColorBlack );
-        g_xVelText_Debug.loadFromRenderedText(StringStream_xVel.str(), g_TextColorBlack );
-        g_yVelText_Debug.loadFromRenderedText(StringStream_yVel.str(), g_TextColorBlack );
+        g_xPosText_Debug.loadFromRenderedText(StringStream_xPos.str(), g_TextColorGold );
+        g_yPosText_Debug.loadFromRenderedText(StringStream_yPos.str(), g_TextColorGold );
+        g_xVelText_Debug.loadFromRenderedText(StringStream_xVel.str(), g_TextColorGold );
+        g_yVelText_Debug.loadFromRenderedText(StringStream_yVel.str(), g_TextColorGold );
 
         // Position of debugging text
-        int xPosText_xPos_Debug = ( WINDOW_W - g_xPosText_Debug.getWidth()  ) / 2;
-        int xPosText_yPos_Debug = ( WINDOW_H - g_xPosText_Debug.getHeight() ) / 2 + 0 * g_yPosText_Debug.getHeight();
-        int yPosText_xPos_Debug = ( WINDOW_W - g_yPosText_Debug.getWidth()  ) / 2;
-        int yPosText_yPos_Debug = ( WINDOW_H - g_yPosText_Debug.getHeight() ) / 2 + 1 * g_yPosText_Debug.getHeight();
+        int xPosText_xPos_Debug = ( WINDOW_W_px - g_xPosText_Debug.getWidth()  ) / 2;
+        int xPosText_yPos_Debug = ( WINDOW_H_px - g_xPosText_Debug.getHeight() ) / 2 + 0 * g_yPosText_Debug.getHeight();
+        int yPosText_xPos_Debug = ( WINDOW_W_px - g_yPosText_Debug.getWidth()  ) / 2;
+        int yPosText_yPos_Debug = ( WINDOW_H_px - g_yPosText_Debug.getHeight() ) / 2 + 1 * g_yPosText_Debug.getHeight();
 
-        int xVelText_xPos_Debug = ( WINDOW_W - g_xVelText_Debug.getWidth()  ) / 2;
-        int xVelText_yPos_Debug = ( WINDOW_H - g_xVelText_Debug.getHeight() ) / 2 + 2 * g_xVelText_Debug.getHeight();
-        int yVelText_xPos_Debug = ( WINDOW_W - g_yVelText_Debug.getWidth()  ) / 2;
-        int yVelText_yPos_Debug = ( WINDOW_H - g_yVelText_Debug.getHeight() ) / 2 + 3 * g_yVelText_Debug.getHeight();
+        int xVelText_xPos_Debug = ( WINDOW_W_px - g_xVelText_Debug.getWidth()  ) / 2;
+        int xVelText_yPos_Debug = ( WINDOW_H_px - g_xVelText_Debug.getHeight() ) / 2 + 2 * g_xVelText_Debug.getHeight();
+        int yVelText_xPos_Debug = ( WINDOW_W_px - g_yVelText_Debug.getWidth()  ) / 2;
+        int yVelText_yPos_Debug = ( WINDOW_H_px - g_yVelText_Debug.getHeight() ) / 2 + 3 * g_yVelText_Debug.getHeight();
 
         g_xPosText_Debug.render( xPosText_xPos_Debug, xPosText_yPos_Debug );
         g_yPosText_Debug.render( yPosText_xPos_Debug, yPosText_yPos_Debug );

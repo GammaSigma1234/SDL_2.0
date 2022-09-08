@@ -3,6 +3,26 @@
  *
  * @brief https://lazyfoo.net/tutorials/SDL/41_bitmap_fonts/index.php
  *
+ * Sometimes TTF fonts are flexible enough. Since rendering text is just rendering images of
+ * characters, we can use bitmap fonts to render text.
+ *
+ * Sunto:
+ *  - Pitch: occupazione in memoria della texture (in bytes).
+ *  - "LTexture::getPixel32" aggiunta per identificare la composizione di un singolo pixel in un
+ *    determinato punto (x, y).
+ *  - Promemoria: i pixel di una texture bidimensionale vengono memorizzati come un'unica, singola
+ *    sequenza di bytes. Quindi, è necessario "trasformare" una matrice bidimensionale in un vettore
+ *    monodimensionale.
+ *  - La classe "LBitmapFont" rappresenta una sorta di sprite sheet di glifi da cui costruire i
+ *    font.
+ *  - We did the color keying externally in the previous tutorial (in "loadMedia"), and here we're doing it
+ *    internally in the texture loading function ("loadFromFile").
+ *  - "LBitmapFont::buildFont": goes through the bitmap font and defines all the clip rectangles for
+ *    all the sprites. To do that we'll have to lock the texture to access its pixels.
+ *  - La ricerca del fondo del carattere 'A' (Find Bottom of 'A') serve per definire la baseline su
+ *    cui basare il posizionamento geometrico di tutti gli altri caratteri.
+ *  - Il metodo "renderText" renderizza il testo a partire da una
+ *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
  **/
@@ -40,10 +60,14 @@ static constexpr int CYAN_G = 0xFF; // Amount of green needed to compose cyan
 static constexpr int CYAN_B = 0xFF; // Amount of blue  needed to compose cyan
 static constexpr int CYAN_A = 0xFF; // Alpha component
 
+static constexpr int PADDING_px      = 10; // Amount of padding (lateral spacing) between characters
+static constexpr int BYTES_PER_PIXEL = 4;
+static constexpr int GLYPHS_PER_ROW  = 16; // Numero di glifi contenuti in ogni riga    dello sprite sheet
+static constexpr int GLYPHS_PER_COL  = 16; // Numero di glifi contenuti in ogni colonna dello sprite sheet
 
 /* Paths */
 
-static const std::string g_LazyFont( "lazyfont.png" );
+static const std::string g_LazyFontPath( "lazyfont.png" );
 
 
 /***************************************************************************************************
@@ -108,19 +132,19 @@ private:
 
 
 /**
- * @brief Our bitmap font
+ * @brief Our bitmap font (wrapper for a sprite sheet of glyphs)
  **/
 class LBitmapFont
 {
     public:
     // The default constructor
-    LBitmapFont();
+    LBitmapFont(void);
 
     // Generates the font
-    bool buildFont( LTexture *bitmap );
+    bool buildFont( LTexture* );
 
     // Shows the text
-    void renderText( int x, int y, std::string text );
+    void renderText( int x, int y, const std::string& );
 
     private:
     // The font texture
@@ -198,6 +222,7 @@ bool LTexture::loadFromFile( const std::string& path )
 
     // Convert surface to display format
     SDL_Surface* formattedSurface = SDL_ConvertSurfaceFormat( loadedSurface, SDL_PIXELFORMAT_RGBA8888, 0 );
+
     if( formattedSurface == NULL )
     {
       printf( "\nUnable to convert loaded surface to display format! SDL Error: %s\n", SDL_GetError() );
@@ -206,6 +231,7 @@ bool LTexture::loadFromFile( const std::string& path )
     {
       // Create blank streamable texture
       newTexture = SDL_CreateTexture( gRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, formattedSurface->w, formattedSurface->h );
+
       if( newTexture == NULL )
       {
         printf( "\nUnable to create blank texture! SDL Error: %s\n", SDL_GetError() );
@@ -227,19 +253,20 @@ bool LTexture::loadFromFile( const std::string& path )
 
         // Get pixel data in editable format
         Uint32* pixels = (Uint32*)mPixels;
-        int pixelCount = ( mPitch / 4 ) * mHeight;
+        int pixelCount = ( mPitch / BYTES_PER_PIXEL ) * mHeight;
 
         // Map colors
-        Uint32 colorKey    = SDL_MapRGB( formattedSurface->format, 0, 0xFF, 0xFF );
-        Uint32 transparent = SDL_MapRGBA( formattedSurface->format, 0x00, 0xFF, 0xFF, 0x00 );
+        Uint32 colorKey    = SDL_MapRGB ( formattedSurface->format, CYAN_R, CYAN_G, CYAN_B );
+        Uint32 transparent = SDL_MapRGBA( formattedSurface->format, CYAN_R, CYAN_G, CYAN_B, 0x00 );
 
         // Color key pixels
-        for( int i = 0; i < pixelCount; ++i )
+        for( int i = 0; i != pixelCount; ++i )
         {
           if( pixels[ i ] == colorKey )
           {
             pixels[ i ] = transparent;
           }
+          else { /* Skip this pixel */ }
         }
 
         // Unlock texture to update
@@ -448,25 +475,36 @@ int LTexture::getPitch(void) const
   return mPitch;
 }
 
+
+/**
+ * @brief I pixel di una texture bidimensionale vengono memorizzati come un'unica, singola sequenza
+ * di bytes. Quindi, è necessario "trasformare" una matrice bidimensionale in un vettore
+ * monodimensionale.
+ *
+ * @param x Coordinata x del pixel da ricavare
+ * @param y Coordinata y del pixel da ricavare
+ * @return Uint32
+ **/
 Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 {
-    // Convert the pixels to 32 bit
-    Uint32 *pixels = (Uint32*)mPixels;
+  // Convert the pixels to 32 bit
+  Uint32* pixels = (Uint32*)mPixels;
 
-    // Get the pixel requested
-    return pixels[ ( y * ( mPitch / 4 ) ) + x ];
+  // Get the pixel requested
+  return pixels[ ( y * ( mPitch / BYTES_PER_PIXEL ) ) + x ];
 }
 
 
-LBitmapFont::LBitmapFont()
-{
-    // Initialize variables
-    mBitmap = NULL;
-    mNewLine = 0;
-    mSpace = 0;
-}
+LBitmapFont::LBitmapFont(void)
+  : mBitmap(NULL), mNewLine(0), mSpace(0)
+{;}
 
 
+/**
+ * @brief Generate a font from a bitmap texture.
+ *
+ * @param bitmap Source bitmap texture
+ **/
 bool LBitmapFont::buildFont( LTexture* bitmap )
 {
   bool success = true;
@@ -474,41 +512,47 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
   // Lock pixels for access
   if( !bitmap->lockTexture() )
   {
-    printf( "Unable to lock bitmap font texture!\n" );
+    printf( "\nUnable to lock bitmap font texture!" );
     success = false;
   }
   else
   {
+    printf( "\nOK: bitmap font texture locked" );
+
     // Set the background color
-    Uint32 bgColor = bitmap->getPixel32( 0, 0 );
+    Uint32 bgColor = bitmap->getPixel32( 0, 0 ); // Il pixel in posizione (0, 0) è di colore ciano
 
     // Set the cell dimensions
-    int cellW = bitmap->getWidth() / 16;
-    int cellH = bitmap->getHeight() / 16;
+    int cellW = bitmap->getWidth()  / GLYPHS_PER_ROW;
+    int cellH = bitmap->getHeight() / GLYPHS_PER_COL;
 
     // New line variables
-    int top = cellH;
+    int top   = cellH;
     int baseA = cellH;
 
     // The current character we're setting
     int currentChar = 0;
 
     // Go through the cell rows
-    for( int rows = 0; rows < 16; ++rows )
+    for( int rows = 0; rows != GLYPHS_PER_ROW; ++rows )
     {
       // Go through the cell columns
-      for( int cols = 0; cols < 16; ++cols )
+      for( int cols = 0; cols != GLYPHS_PER_COL; ++cols )
       {
-        // Set the character offset
+        // Set the character initial offset
         mChars[ currentChar ].x = cellW * cols;
         mChars[ currentChar ].y = cellH * rows;
 
-        // Set the dimensions of the character
+        // Set the initial dimensions of the character
         mChars[ currentChar ].w = cellW;
         mChars[ currentChar ].h = cellH;
 
+        /* Restringimento delle dimensioni del clip da utilizzare per ricavare dallo sprite sheet il
+        carattere attualmente analizzato ("currentChar") */
+
         // Find Left Side
-        // Go through pixel columns
+        // Go through pixel columns. ATTENZIONE: l'ordine di ricerca qui utilizzato (prima cols e
+        // poi rows) è rovesciato rispetto al consueto (prima rows e poi cols)
         for( int pCol = 0; pCol < cellW; ++pCol )
         {
           // Go through pixel rows
@@ -528,6 +572,7 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
               pCol = cellW;
               pRow = cellH;
             }
+            else { /* Colorkey pixel found */ }
           }
         }
 
@@ -552,6 +597,7 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
               pColW = -1;
               pRowW = cellH;
             }
+            else { /* Colorkey pixel found */ }
           }
         }
 
@@ -579,10 +625,11 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
               pCol = cellW;
               pRow = cellH;
             }
+            else { /* Colorkey pixel found */ }
           }
         }
 
-        // Find Bottom of A
+        // Find Bottom of 'A'. Serve per definire la baseline dei caratteri
         if( currentChar == 'A' )
         {
           // Go through pixel rows
@@ -605,6 +652,7 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
                 pCol = cellW;
                 pRow = -1;
               }
+              else { /* Colorkey pixel found */ }
             }
           }
         }
@@ -614,6 +662,8 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
       }
     }
 
+    /* Defining space & new line + post-processing */
+
     // Calculate space
     mSpace = cellW / 2;
 
@@ -621,7 +671,7 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
     mNewLine = baseA - top;
 
     // Lop off excess top pixels
-    for( int i = 0; i < 256; ++i )
+    for( int i = 0; i != 256; ++i )
     {
       mChars[ i ].y += top;
       mChars[ i ].h -= top;
@@ -635,7 +685,7 @@ bool LBitmapFont::buildFont( LTexture* bitmap )
 }
 
 
-void LBitmapFont::renderText( int x, int y, std::string text )
+void LBitmapFont::renderText( int x, int y, const std::string& text )
 {
   // If the font has been built
   if( mBitmap != NULL )
@@ -669,8 +719,8 @@ void LBitmapFont::renderText( int x, int y, std::string text )
         // Show the character
         mBitmap->render( curX, curY, &mChars[ ascii ] );
 
-        // Move over the width of the character with one pixel of padding
-        curX += mChars[ ascii ].w + 1;
+        // Move over the width of the character with padding
+        curX += mChars[ ascii ].w + PADDING_px;
       }
     }
   }
@@ -713,7 +763,7 @@ static bool init(void)
     }
 
     // Seed random
-    srand( SDL_GetTicks() );
+    std::srand( static_cast<unsigned int>( SDL_GetTicks64() ) );
 
     // Create window
     gWindow = SDL_CreateWindow( "SDL Tutorial"         ,
@@ -779,7 +829,7 @@ static bool loadMedia( void )
   bool success = true;
 
   // Load font texture
-  if( !gBitmapTexture.loadFromFile( g_LazyFont ) )
+  if( !gBitmapTexture.loadFromFile( g_LazyFontPath ) )
   {
     printf( "\nFailed to load corner texture!" );
     success = false;
@@ -880,7 +930,7 @@ int main( int argc, char* args[] )
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
-        SDL_RenderClear( gRenderer );
+        SDL_RenderClear       ( gRenderer );
 
         // Render test text
         gBitmapFont.renderText( 0, 0, "Bitmap Font:\nABDCEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789" );

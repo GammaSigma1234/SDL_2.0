@@ -21,6 +21,7 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
 - [Errori da Segnalare](#errori-da-segnalare)
   - [Tutorial 23](#tutorial-23)
 - [Tutorial 34](#tutorial-34)
+- [Tutorial 41](#tutorial-41)
 
 
 ## Getting Started
@@ -158,3 +159,7 @@ SDL_Texture* newTexture = IMG_LoadTexture( Renderer, "PicturePath" );
 
 - In un commento del codice, "Recieved" invece che "Received".
 - Nel tutorial online, "dissapoint" al posto di "disappoint".
+
+## Tutorial 41
+
+- In un commento del codice, "rectanges" invece che "rectangles".

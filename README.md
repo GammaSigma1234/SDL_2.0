@@ -22,6 +22,7 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
   - [Tutorial 23](#tutorial-23)
 - [Tutorial 34](#tutorial-34)
 - [Tutorial 41](#tutorial-41)
+- [Tutorial 43](#tutorial-43)
 
 
 ## Getting Started
@@ -163,3 +164,7 @@ SDL_Texture* newTexture = IMG_LoadTexture( Renderer, "PicturePath" );
 ## Tutorial 41
 
 - In un commento del codice, "rectanges" invece che "rectangles".
+
+## Tutorial 43
+
+- Nel codice (terza riga), `and,`.

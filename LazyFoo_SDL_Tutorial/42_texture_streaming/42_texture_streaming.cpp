@@ -75,10 +75,6 @@ static constexpr int NUM_OF_FRAMES = 4; // I quattro "foo_walk"
 
 static constexpr int BYTES_PER_PIXEL = 4;
 
-/* Paths */
-
-static const std::string g_LazyFontPath( "lazyfont.png" );
-
 
 /***************************************************************************************************
 * Classes
@@ -127,8 +123,8 @@ class LTexture
   // Pixel manipulators
   bool   lockTexture   ( void  );
   bool   unlockTexture ( void  );
-  void   copyPixels    ( void* );
   void*  getPixels     ( void  ) const;
+  void   copyPixels    ( void* );
   int    getPitch      ( void  ) const;
   Uint32 getPixel32    ( unsigned int, unsigned int );
 

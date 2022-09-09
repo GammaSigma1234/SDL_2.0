@@ -7,7 +7,7 @@ echo.
 set SDL2_PROJECT_NAME=Pallina
 
 @REM Source files
-set SOURCE_FILES=main.cpp
+set SOURCE_FILES=main.cpp Dot.cpp Texture.cpp
 
 @REM Static libraries
 set SDL2_LIB_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\lib

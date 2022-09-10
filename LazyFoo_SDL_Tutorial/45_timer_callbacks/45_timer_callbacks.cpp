@@ -1,20 +1,23 @@
 /**
- * @file 44_frame_independent_movement.cpp
+ * @file 45_timer_callbacks.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/44_frame_independent_movement/index.php
+ * @brief https://lazyfoo.net/tutorials/SDL/45_timer_callbacks/index.php
  *
- * Whether you want to be able to handle unstable frame rates or support multiple frame rates, you
- * can set your movement based on time to make it independent of frame rate.
- * 
- * Simile all'esempio già visto in precedenza in cui VSync era stata rimossa dalla chiamata a
- * "SDL_CreateRenderer". Il frame rate di questo esempio è verosimilmente molto alto (migliaia di
- * frames al secondo): bisognerebbe reintrodurre il codice di analisi degli esempi 23-25 per
- * accertarsene. Tuttavia, il pallino percorre comunque i percorsi previsti in tempi previsti (640
- * pixel al secondo), perché la funzione "Dot::move" ora riceve un intervallo di tempo su cui basare
- * l'equazione del moto lineare, mentre prima il moto era agganciato alla frequenza di aggiornamento
- * dello schermo, essendo il renderer regolato dal VSync. L'intervallo di tempo è calcolato da un
- * apposito timer, e garantisce che il pallino si muova nella posizione corretta a prescindere dal
- * frame rate.
+ * We've covered timers with SDL before, but there are also timer callbacks which execute a function
+ * after a given amount of time. In this tutorial we'll make a simple program that prints to the
+ * console after a set time.
+ *
+ * When creating a callback function, know that they have to be declared a certain way. You can't
+ * just create any type of function and use it as a callback. The callback function needs to have a
+ * 32 bit integer as its first argument, a void pointer as its second argument, and it has to return
+ * a 32 bit integer.
+ *
+ * Our simple callback function prints a message to the console after a given amount of time. The
+ * interval argument isn't used here, but is typically used for timer callbacks that need to repeat
+ * themselves. Since void pointers can point to anything, this function is going to take in a string
+ * and print it to the console.
+ *
+ * Do make sure to "SDL_Init" with "SDL_INIT_TIMER" to use timer callbacks.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -41,13 +44,9 @@ static constexpr int FIRST_ONE       = -1;
 static constexpr int WINDOW_W        = 640; // Screen's width
 static constexpr int WINDOW_H        = 480; // Screen's heigth
 static constexpr int TRANSPARENCY    = 0x00;
-static constexpr int NUM_OF_FRAMES   = 4; // I quattro "foo_walk"
 static constexpr int BYTES_PER_PIXEL = 4;
 
-static constexpr double MS_IN_S = 1000.0; // Milliseconds in a second
-
-static std::string Path("dot.bmp");
-
+static std::string Path("splash.bmp");
 
 /***************************************************************************************************
 * Classes
@@ -104,7 +103,7 @@ class LTexture
   int    getPitch      ( void  ) const;
   Uint32 getPixel32    ( unsigned int, unsigned int );
 
-  private:
+private:
 
   // The actual hardware texture
   SDL_Texture* mTexture;
@@ -117,63 +116,6 @@ class LTexture
 };
 
 
-// The application time based timer
-class LTimer
-{
-  public:
-  LTimer(void);
-
-  // The various clock actions
-  void start  (void);
-  void stop   (void);
-  void pause  (void);
-  void unpause(void);
-
-  // Gets the timer's time
-  Uint32 getTicks(void);
-
-  // Checks the status of the timer
-  bool isStarted(void) const;
-  bool isPaused (void) const;
-
-  private:
-  // The clock time when the timer started
-  Uint32 mStartTicks;
-
-  // The ticks stored when the timer was paused
-  Uint32 mPausedTicks;
-
-  // The timer status
-  bool mPaused;
-  bool mStarted;
-};
-
-
-// The dot that will move around on the screen
-class Dot
-{
-  public:
-
-  // The dimensions of the dot
-  static const int DOT_WIDTH  = 20;
-  static const int DOT_HEIGHT = 20;
-
-  // Maximum axis velocity of the dot
-  static const int DOT_MAX_VEL_pxPerSec = 640;
-
-  Dot();
-
-  void handleEvent( SDL_Event& e );
-  void move       ( double timeStep );
-  void render     ( void );
-
-  private:
-
-  double mPosX, mPosY;
-  double mVelX, mVelY;
-};
-
-
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
@@ -181,6 +123,8 @@ class Dot
 static bool init      (void);
 static bool loadMedia (void);
 static void close     (void);
+
+static Uint32 callback( Uint32, void* );
 
 
 /***************************************************************************************************
@@ -191,7 +135,7 @@ static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 // Scene textures
-static LTexture gDotTexture;
+LTexture gSplashTexture;
 
 
 /***************************************************************************************************
@@ -548,218 +492,6 @@ Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 }
 
 
-/**
- * @brief Initializes variables
- **/
-LTimer::LTimer(void)
-{
-  // Initialize the variables
-  mStartTicks  = static_cast<Uint32>(0);
-  mPausedTicks = static_cast<Uint32>(0);
-
-  mPaused  = false;
-  mStarted = false;
-}
-
-
-void LTimer::start(void)
-{
-  // Start the timer
-  mStarted = true;
-
-  // Unpause the timer
-  mPaused = false;
-
-  // Get the current clock time
-  mStartTicks  = SDL_GetTicks();
-  mPausedTicks = 0;
-}
-
-
-void LTimer::stop(void)
-{
-  // Stop the timer
-  mStarted = false;
-
-  // Unpause the timer
-  mPaused = false;
-
-  // Clear tick variables
-  mStartTicks = 0;
-  mPausedTicks = 0;
-}
-
-
-void LTimer::pause(void)
-{
-  // If the timer is running and isn't already paused
-  if( mStarted && !mPaused )
-  {
-    // Pause the timer
-    mPaused = true;
-
-    // Calculate the paused ticks
-    mPausedTicks = SDL_GetTicks() - mStartTicks;
-    mStartTicks  = 0;
-  }
-  else { /* Not started or already paused */ }
-}
-
-
-void LTimer::unpause(void)
-{
-  // If the timer is running and paused
-  if( mStarted && mPaused )
-  {
-    // Unpause the timer
-    mPaused = false;
-
-    // Reset the starting ticks
-    mStartTicks = SDL_GetTicks() - mPausedTicks;
-
-    // Reset the paused ticks
-    mPausedTicks = 0;
-  }
-  else { /* Not started or already running */ }
-}
-
-
-Uint32 LTimer::getTicks(void)
-{
-  // The actual timer time
-  Uint32 time = 0;
-
-  // If the timer is running
-  if( mStarted )
-  {
-    // If the timer is paused
-    if( mPaused )
-    {
-      // Return the number of ticks when the timer was paused
-      time = mPausedTicks;
-    }
-    else
-    {
-      // Return the current time minus the start time
-      time = SDL_GetTicks() - mStartTicks;
-    }
-  }
-  else { /* Timer not running */ }
-
-  return time;
-}
-
-
-bool LTimer::isStarted(void) const
-{
-  // Timer is running and paused or unpaused
-  return mStarted;
-}
-
-
-bool LTimer::isPaused(void) const
-{
-  // Timer is running and paused
-  return mPaused && mStarted;
-}
-
-
-/**
- * @brief Construct a new Dot:: Dot object
- **/
-Dot::Dot(void)
-{
-  // Initialize the position
-  mPosX = 0;
-  mPosY = 0;
-
-  // Initialize the velocity
-  mVelX = 0;
-  mVelY = 0;
-}
-
-
-/**
- * @brief Takes key presses and adjusts the dot's velocity.
- *
- * @param e SDL_Event to manage
- **/
-void Dot::handleEvent( SDL_Event& e )
-{
-  // If a key was pressed
-  if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
-    {
-      // Adjust the velocity
-      switch( e.key.keysym.sym )
-      {
-        case SDLK_UP: mVelY -= DOT_MAX_VEL_pxPerSec; break;
-        case SDLK_DOWN: mVelY += DOT_MAX_VEL_pxPerSec; break;
-        case SDLK_LEFT: mVelX -= DOT_MAX_VEL_pxPerSec; break;
-        case SDLK_RIGHT: mVelX += DOT_MAX_VEL_pxPerSec; break;
-      }
-    }
-    // If a key was released
-    else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
-    {
-      // Adjust the velocity
-      switch( e.key.keysym.sym )
-      {
-        case SDLK_UP: mVelY += DOT_MAX_VEL_pxPerSec; break;
-        case SDLK_DOWN: mVelY -= DOT_MAX_VEL_pxPerSec; break;
-        case SDLK_LEFT: mVelX += DOT_MAX_VEL_pxPerSec; break;
-        case SDLK_RIGHT: mVelX -= DOT_MAX_VEL_pxPerSec; break;
-      }
-    }
-}
-
-
-/**
- * @brief Moves the dot based on a time step.
- *
- * @param timeStep
- **/
-void Dot::move( double timeStep )
-{
-  // Move the dot left or right
-  mPosX += mVelX * timeStep;
-
-  // If the dot went too far to the left or right
-  if( mPosX < 0 )
-  {
-    mPosX = 0;
-  }
-  else if( mPosX > WINDOW_W - DOT_WIDTH )
-  {
-    mPosX = WINDOW_W - DOT_WIDTH;
-  }
-  else { /* Movement was OK */ }
-
-  // Move the dot up or down
-  mPosY += mVelY * timeStep;
-
-  // If the dot went too far up or down
-  if( mPosY < 0 )
-  {
-    mPosY = 0;
-  }
-  else if( mPosY > WINDOW_H - DOT_HEIGHT )
-  {
-    mPosY = WINDOW_H - DOT_HEIGHT;
-  }
-  else { /* Movement was OK */ }
-}
-
-
-/**
- * @brief Shows the dot on the screen.
- **/
-void Dot::render(void)
-{
-  // Show the dot
-  gDotTexture.render( static_cast<int>(mPosX), static_cast<int>(mPosY) );
-}
-
-
 /***************************************************************************************************
 * Private functions definitions
 ****************************************************************************************************/
@@ -775,7 +507,7 @@ static bool init(void)
   bool success = true;
 
   // Initialize SDL
-  if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+  if (SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ) < 0 )
   {
     printf( "\nSDL could not initialize! SDL Error: \"%s\"\n", SDL_GetError() );
     success = false;
@@ -789,11 +521,14 @@ static bool init(void)
     {
       printf( "\nWarning: Linear texture filtering not enabled!" );
       success = false;
-		}
+    }
     else
     {
       printf( "\nOK: linear texture filtering enabled" );
     }
+
+    // Seed random
+    srand( SDL_GetTicks() );
 
     // Create window
     gWindow = SDL_CreateWindow( "SDL Tutorial"         ,
@@ -811,7 +546,8 @@ static bool init(void)
       printf( "\nOK: window created" );
 
       // Create renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, FIRST_ONE, SDL_RENDERER_ACCELERATED );
+      gRenderer = SDL_CreateRenderer( gWindow, FIRST_ONE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+
       if( gRenderer == NULL )
       {
         printf( "\nRenderer could not be created! SDL Error: %s", SDL_GetError() );
@@ -857,15 +593,15 @@ static bool loadMedia( void )
   // Loading success flag
   bool success = true;
 
-  // Load dot texture
-  if( !gDotTexture.loadFromFile( Path ) )
+  // Load splash texture
+  if( !gSplashTexture.loadFromFile( Path ) )
   {
-    printf( "\nFailed to load dot texture!" );
+    printf( "\nFailed to load splash texture!" );
     success = false;
   }
 	else
 	{
-		printf( "\nOK: dot texture created" );
+		printf( "\nOK: splash texture created" );
 	}
 
   return success;
@@ -875,7 +611,7 @@ static bool loadMedia( void )
 static void close(void)
 {
   // Free loaded images
-  gDotTexture.free();
+  gSplashTexture.free();
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
@@ -886,6 +622,21 @@ static void close(void)
   // Quit SDL subsystems
   IMG_Quit();
   SDL_Quit();
+}
+
+
+/**
+ * @brief // Our test callback function. Prints callback message.
+ *
+ * @param interval
+ * @param param
+ * @return Uint32
+ **/
+static Uint32 callback( [[maybe_unused]] Uint32 interval, void* param )
+{
+  printf( "\nCallback called back with message: \"%s\"", reinterpret_cast<char*>(param) );
+
+  return 0;
 }
 
 
@@ -940,11 +691,9 @@ int main( int argc, char* args[] )
       // Event handler
       SDL_Event e;
 
-      // The dot that will be moving around on the screen
-      Dot dot;
-
-      // Keeps track of time between steps
-      LTimer stepTimer;
+      // Set callback
+      //  SDL_TimerID timerID = SDL_AddTimer( 3 * 1000, callback, reinterpret_cast<void*>( "3 seconds waited!" ) ); // Istruzione originale: solleva errore "reinterpret_cast from type 'const char*' to type 'void*' casts away qualifiers"
+      SDL_TimerID timerID = SDL_AddTimer( 3 * 1000, callback, (void*)( "3 seconds waited!" ) );
 
       // While application is running
       while( !quit )
@@ -957,31 +706,21 @@ int main( int argc, char* args[] )
           {
             quit = true;
           }
-          else { /* Event not managed here */ }
-
-          // Handle input for the dot
-          dot.handleEvent( e );
         }
-
-        // Calculate time step
-        double timeStep = static_cast<double>(stepTimer.getTicks()) / MS_IN_S;
-
-        // Move for time step
-        dot.move( timeStep );
-
-        // Restart step timer
-        stepTimer.start();
 
         // Clear screen
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
         SDL_RenderClear( gRenderer );
 
-        // Render dot
-        dot.render();
+        // Render splash
+        gSplashTexture.render( 0, 0 );
 
         // Update screen
         SDL_RenderPresent( gRenderer );
       }
+
+      // Remove timer in case the call back was not called
+      SDL_RemoveTimer( timerID );
     }
   }
 

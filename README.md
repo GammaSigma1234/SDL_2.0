@@ -23,6 +23,8 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
 - [Tutorial 34](#tutorial-34)
 - [Tutorial 41](#tutorial-41)
 - [Tutorial 43](#tutorial-43)
+- [Tutorial 45](#tutorial-45)
+- [Tutorial 46](#tutorial-46)
 
 
 ## Getting Started
@@ -159,6 +161,7 @@ SDL_Texture* newTexture = IMG_LoadTexture( Renderer, "PicturePath" );
 ## Tutorial 34
 
 - In un commento del codice, "Recieved" invece che "Received".
+
 - Nel tutorial online, "dissapoint" al posto di "disappoint".
 
 ## Tutorial 41
@@ -168,3 +171,23 @@ SDL_Texture* newTexture = IMG_LoadTexture( Renderer, "PicturePath" );
 ## Tutorial 43
 
 - Nel codice (terza riga), `and,`.
+
+## Tutorial 45
+
+- Errore: reinterpret_cast from type 'const char*' to type 'void*' casts away qualifiers
+
+```C++
+SDL_TimerID timerID = SDL_AddTimer( 3 * 1000, callback, reinterpret_cast<void*>( "3 seconds waited!" ) );
+```
+
+## Tutorial 46
+
+- Errore: cast from 'void*' to 'int' loses precision [-fpermissive]
+
+```C++
+printf( "Running thread with value = %d\n", (int)data );
+```
+
+- Nel tutorial online, "need to declared" al posto di "need to be declared".
+
+- Un commento nel codice: `// Remove timer in case the call back was not called`. Probabilmente un copia-incolla dal tutorial precedente.

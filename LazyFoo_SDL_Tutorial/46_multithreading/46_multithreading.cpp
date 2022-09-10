@@ -1,8 +1,14 @@
 /**
- * @file 43_render_to_texture.cpp
+ * @file 46_multithreading.cpp
  *
- * @brief For some effects, being able to render a scene to texture is needed. Here we'll be
- * rendering a scene to a texture to achieve a spinning scene effect.
+ * @brief https://lazyfoo.net/tutorials/SDL/46_multithreading/index.php
+ *
+ * Multithreading can be used to make your program execute two things at once and take advantage of
+ * multithreaded architectures. Here we'll make a simple program that outputs to the console while
+ * the main thread runs.
+ *
+ * Just like with callback functions, thread functions need to be declared a certain way. They need
+ * to take in a void pointer as an argument and return an integer.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -13,8 +19,9 @@
 * Includes
 ***************************************************************************************************/
 
-// Using SDL, SDL_image, standard I/O, and strings
+// Using SDL, SDL Threads, SDL_image, standard I/O, and, strings
 #include <SDL.h>
+#include <SDL_thread.h>
 #include <SDL_image.h>
 #include <stdio.h>
 #include <string>
@@ -25,17 +32,13 @@
 * Private constants
 ***************************************************************************************************/
 
-static constexpr int FIRST_ONE = -1;
-
-static constexpr int WINDOW_W = 800; // Screen's width
-static constexpr int WINDOW_H = 600; // Screen's heigth
-
-static constexpr int TRANSPARENCY = 0x00;
-
-static constexpr int NUM_OF_FRAMES = 4; // I quattro "foo_walk"
-
+static constexpr int FIRST_ONE       = -1;
+static constexpr int WINDOW_W        = 640; // Screen's width
+static constexpr int WINDOW_H        = 480; // Screen's heigth
+static constexpr int TRANSPARENCY    = 0x00;
 static constexpr int BYTES_PER_PIXEL = 4;
 
+static std::string Path("splash.png");
 
 /***************************************************************************************************
 * Classes
@@ -44,7 +47,7 @@ static constexpr int BYTES_PER_PIXEL = 4;
 // Texture wrapper class
 class LTexture
 {
-	public:
+public:
 	// Initializes variables
 	LTexture(void);
 
@@ -56,23 +59,23 @@ class LTexture
 
 #if defined(SDL_TTF_MAJOR_VERSION)
 	// Creates image from font string
-  bool loadFromRenderedText( const std::string&, SDL_Color );
+	bool loadFromRenderedText( const std::string&, SDL_Color );
 #endif
 
 	// Creates blank texture
 	bool createBlank( int, int, SDL_TextureAccess = SDL_TEXTUREACCESS_STREAMING );
 
 	// Deallocates texture
-  void free(void);
+	void free(void);
 
 	// Set color modulation
-  void setColor( Uint8, Uint8, Uint8 );
+	void setColor( Uint8, Uint8, Uint8 );
 
 	// Set blending
-  void setBlendMode( SDL_BlendMode );
+	void setBlendMode( SDL_BlendMode );
 
 	// Set alpha modulation
-  void setAlpha( Uint8 );
+	void setAlpha( Uint8 );
 
 	// Renders texture at given point
 	void render( int, int, SDL_Rect* = NULL, double = 0.0, SDL_Point* = NULL, SDL_RendererFlip = SDL_FLIP_NONE );
@@ -81,23 +84,23 @@ class LTexture
 	void setAsRenderTarget(void);
 
 	// Gets image dimensions
-  int getWidth ( void ) const;
-  int getHeight( void ) const;
+	int getWidth ( void ) const;
+	int getHeight( void ) const;
 
 	// Pixel manipulators
-  bool   lockTexture   ( void  );
-  bool   unlockTexture ( void  );
-  void*  getPixels     ( void  ) const;
-  void   copyPixels    ( void* );
-  int    getPitch      ( void  ) const;
-  Uint32 getPixel32    ( unsigned int, unsigned int );
+	bool   lockTexture   ( void  );
+	bool   unlockTexture ( void  );
+	void*  getPixels     ( void  ) const;
+	void   copyPixels    ( void* );
+	int    getPitch      ( void  ) const;
+	Uint32 getPixel32    ( unsigned int, unsigned int );
 
-private:
+	private:
 
 	// The actual hardware texture
 	SDL_Texture* mTexture;
-  void*        mPixels;
-  int          mPitch;
+	void*        mPixels;
+	int          mPitch;
 
 	// Image dimensions
 	int mWidth;
@@ -113,6 +116,8 @@ static bool init      (void);
 static bool loadMedia (void);
 static void close     (void);
 
+static int threadFunction( void* );
+
 
 /***************************************************************************************************
 * Private global variables
@@ -122,7 +127,7 @@ static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 // Scene textures
-static LTexture gTargetTexture;
+LTexture gSplashTexture;
 
 
 /***************************************************************************************************
@@ -256,7 +261,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 		else
 		{
       printf( "\nOK: texture created from rendered text" );
-			
+
 			// Get image dimensions
       mWidth  = textSurface->w;
 			mHeight = textSurface->h;
@@ -471,11 +476,11 @@ int LTexture::getPitch(void) const
  **/
 Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 {
-	// Convert the pixels to 32 bit
+    // Convert the pixels to 32 bit
   Uint32* pixels = (Uint32*)mPixels;
 
-	// Get the pixel requested
-	return pixels[ ( y * ( mPitch / 4 ) ) + x ];
+    // Get the pixel requested
+    return pixels[ ( y * ( mPitch / 4 ) ) + x ];
 }
 
 
@@ -508,11 +513,14 @@ static bool init(void)
 		{
       printf( "\nWarning: Linear texture filtering not enabled!" );
       success = false;
-		}
+    }
     else
     {
       printf( "\nOK: linear texture filtering enabled" );
-    }
+		}
+
+		// Seed random
+		srand( SDL_GetTicks() );
 
 		// Create window
     gWindow = SDL_CreateWindow( "SDL Tutorial"         ,
@@ -577,15 +585,15 @@ static bool loadMedia( void )
 	// Loading success flag
 	bool success = true;
 
-	// Load texture target
-	if( !gTargetTexture.createBlank( WINDOW_W, WINDOW_H, SDL_TEXTUREACCESS_TARGET ) )
+	// Load splash texture
+	if( !gSplashTexture.loadFromFile( Path ) )
 	{
-		printf( "\nFailed to create target texture!" );
+    printf( "\nFailed to load splash texture!" );
 		success = false;
-	}
+  }
 	else
 	{
-		printf( "\nOK: target texture created" );
+		printf( "\nOK: splash texture created" );
 	}
 
 	return success;
@@ -595,7 +603,7 @@ static bool loadMedia( void )
 static void close(void)
 {
 	// Free loaded images
-	gTargetTexture.free();
+	gSplashTexture.free();
 
 	// Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -606,6 +614,23 @@ static void close(void)
 	// Quit SDL subsystems
 	IMG_Quit();
 	SDL_Quit();
+}
+
+
+/**
+ * @brief Our test thread function.
+ *
+ * @param data
+ * @return int
+ **/
+static int threadFunction( void* data )
+{
+	// Print incoming data
+
+	// printf( "Running thread with value = %d\n", (int)data );
+	printf( "\nRunning thread with value = %llu", (intptr_t)data );
+
+	return 0;
 }
 
 
@@ -636,7 +661,7 @@ int main( int argc, char* args[] )
     printf("\nArgument #%d: %s\n", i, args[i]);
   }
 
-  // Start up SDL and create window
+	// Start up SDL and create window
 	if( !init() )
 	{
     printf( "\nFailed to initialise!" );
@@ -645,7 +670,7 @@ int main( int argc, char* args[] )
 	{
     printf( "\nOK: all systems initialised" );
 
-    // Load media
+		// Load media
 		if( !loadMedia() )
 		{
       printf( "\nFailed to load media!" );
@@ -654,18 +679,18 @@ int main( int argc, char* args[] )
 		{
       printf( "\nOK: all media loaded" );
 
-      // Main loop flag
+			// Main loop flag
 			bool quit = false;
 
 			// Event handler
 			SDL_Event e;
 
-			// Rotation variables
-			double angle = 0;
-			SDL_Point screenCenter = { WINDOW_W / 2, WINDOW_H / 2 };
+			// Run the thread
+			int 				data 		 = 101;
+			SDL_Thread* threadID = SDL_CreateThread( threadFunction, "LazyThread", (void*)data );
 
 			// While application is running
-			while( quit == false )
+			while( !quit )
 			{
 				// Handle events on queue
 				while( SDL_PollEvent( &e ) != 0 )
@@ -675,55 +700,22 @@ int main( int argc, char* args[] )
 					{
 						quit = true;
 					}
-          else { /* Event not managed here */ }
+					else { /* Event not managed here */ }
 				}
-
-				// rotate
-				angle += 2;
-
-				if( angle > 360 )
-				{
-					angle -= 360;
-				}
-				else { /* Proceed */ }
-
-				// Set self as render target
-				gTargetTexture.setAsRenderTarget();
 
 				// Clear screen
 				SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
 				SDL_RenderClear( gRenderer );
 
-				// Render red filled quad
-				SDL_Rect fillRect = { WINDOW_W / 4, WINDOW_H / 4, WINDOW_W / 2, WINDOW_H / 2 };
-				SDL_SetRenderDrawColor( gRenderer, RED_R, RED_G, RED_B, RED_A );
-				SDL_RenderFillRect( gRenderer, &fillRect );
-
-				// Render green outlined quad
-				SDL_Rect outlineRect = { WINDOW_W / 6, WINDOW_H / 6, WINDOW_W * 2 / 3, WINDOW_H * 2 / 3 };
-				SDL_SetRenderDrawColor( gRenderer, GREEN_R, GREEN_G, GREEN_B, GREEN_A );
-				SDL_RenderDrawRect( gRenderer, &outlineRect );
-
-				// Draw blue horizontal line
-				SDL_SetRenderDrawColor( gRenderer, BLUE_R, BLUE_G, BLUE_B, BLUE_A );
-				SDL_RenderDrawLine( gRenderer, 0, WINDOW_H / 2, WINDOW_W, WINDOW_H / 2 );
-
-				// Draw vertical line of yellow dots
-				SDL_SetRenderDrawColor( gRenderer, YELLOW_R, YELLOW_G, YELLOW_B, YELLOW_A );
-				for( int i = 0; i < WINDOW_H; i += 4 )
-				{
-					SDL_RenderDrawPoint( gRenderer, WINDOW_W / 2, i );
-				}
-
-				// Reset render target
-				SDL_SetRenderTarget( gRenderer, NULL );
-
-				// Show rendered to texture
-				gTargetTexture.render( 0, 0, NULL, angle, &screenCenter );
+				// Render prompt
+				gSplashTexture.render( 0, 0 );
 
 				// Update screen
 				SDL_RenderPresent( gRenderer );
 			}
+
+			// Make sure the thread finishes before the application closes
+			SDL_WaitThread( threadID, NULL );
 		}
 	}
 

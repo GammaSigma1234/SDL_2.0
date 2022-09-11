@@ -25,6 +25,7 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
 - [Tutorial 43](#tutorial-43)
 - [Tutorial 45](#tutorial-45)
 - [Tutorial 46](#tutorial-46)
+- [Tutorial 47](#tutorial-47)
 
 
 ## Getting Started
@@ -191,3 +192,7 @@ printf( "Running thread with value = %d\n", (int)data );
 - Nel tutorial online, "need to declared" al posto di "need to be declared".
 
 - Un commento nel codice: `// Remove timer in case the call back was not called`. Probabilmente un copia-incolla dal tutorial precedente.
+
+## Tutorial 47
+
+- Nel tutorial online, "there no guarantee" al posto di "there **is** no guarantee".

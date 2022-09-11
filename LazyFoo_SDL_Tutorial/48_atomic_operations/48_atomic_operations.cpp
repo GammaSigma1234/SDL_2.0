@@ -1,19 +1,18 @@
 /**
- * @file 47_semaphores.cpp
+ * @file 48_atomic_operations.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/47_semaphores/index.php
- * 
- * The only multithreading we've done had the main thread and a second thread each do their
- * own thing. In most cases, two threads will have to share data, and with semaphores you can
- * prevent two threads from accidentally accessing the same piece of data at once.
+ * @brief https://lazyfoo.net/tutorials/SDL/48_atomic_operations/index.php
  *
- * In questo esercizio, il dato da proteggere è rappresentato da "gData". Il codice critico viene
- * protetto da "SDL_SemWait" e "SDL_SemPost". "SDL_SemWait" decrementa il contatore iniziale:
- * quando questo va a zero, il thread è bloccato, e impedisce l'accesso al dato protetto. Una volta
- * terminata l'esecuzione del codice critico, è possibile sbloccare il thread con "SDL_SemPost".
+ * Semaphores operate at an operating system level. Atomic operations are a way to lock data at an
+ * efficient CPU level. Here we'll be locking a critical section using CPU spinlocks.
  * 
- * Osservare il rimpallo del dato "gData" da un thread all'altro: un thread lo riceve, lo modifica
- * in modalità protetta, e lo passa all'altro thread.
+ * Unlike semaphores, spin locks do not need to be allocated and deallocated.
+ * 
+ * In this example, our critical section is protected by "SDL_AtomicLock" and "SDL_AtomicUnlock".
+ *
+ * In this case, it may seem like semaphores and atomic locks are the same, but remember that
+ * semaphores can allow access beyond a single thread. Atomic operations are for when you want a
+ * strict locked/unlocked state.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -101,7 +100,7 @@ class LTexture
 	int    getPitch      ( void  ) const;
 	Uint32 getPixel32    ( unsigned int, unsigned int );
 
-private:
+  private:
 
   // The actual hardware texture
   SDL_Texture* mTexture;
@@ -136,8 +135,8 @@ static SDL_Renderer* gRenderer = NULL; // The window renderer
 // Scene textures
 static LTexture gSplashTexture;
 
-static SDL_sem* gDataLock = NULL; // Data access semaphore
-static int      gData     = -1;   // The "data buffer"
+static SDL_SpinLock gDataLock = 0;  // Data access spin lock
+static int          gData     = -1; // The "data buffer"
 
 
 /***************************************************************************************************
@@ -486,11 +485,11 @@ int LTexture::getPitch(void) const
  **/
 Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 {
-  // Convert the pixels to 32 bit
+    // Convert the pixels to 32 bit
   Uint32* pixels = (Uint32*)mPixels;
 
-  // Get the pixel requested
-  return pixels[ ( y * ( mPitch / 4 ) ) + x ];
+    // Get the pixel requested
+    return pixels[ ( y * ( mPitch / 4 ) ) + x ];
 }
 
 
@@ -527,7 +526,7 @@ static bool init(void)
     else
     {
       printf( "\nOK: linear texture filtering enabled" );
-		}
+    }
 
     // Create window
     gWindow = SDL_CreateWindow( "SDL Tutorial"         ,
@@ -589,19 +588,8 @@ static bool init(void)
  **/
 static bool loadMedia( void )
 {
-  gDataLock = SDL_CreateSemaphore( 1 ); // Initialize semaphore
-
-  bool success = true; // Loading success flag
-
-  if( gDataLock == NULL )
-  {
-    printf( "\nFailed to create semaphore! SDL error: \"%s\"", SDL_GetError() );
-    success = false;
-  }
-  else
-  {
-    printf( "\nOK: semaphore created" );
-  }
+  // Loading success flag
+  bool success = true;
 
   // Load splash texture
   if( !gSplashTexture.loadFromFile( Path ) )
@@ -623,15 +611,11 @@ static void close(void)
   // Free loaded images
   gSplashTexture.free();
 
-  // Free semaphore
-  SDL_DestroySemaphore( gDataLock );
-  gDataLock = NULL;
-
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
-	SDL_DestroyWindow  ( gWindow );
+  SDL_DestroyWindow  ( gWindow );
   gRenderer = NULL;
-	gWindow   = NULL;
+  gWindow   = NULL;
 
   // Quit SDL subsystems
   IMG_Quit();
@@ -653,7 +637,7 @@ static int worker( void* data )
     SDL_Delay( 16 + rand() % 32 );
 
     // Lock
-    SDL_SemWait( gDataLock );
+    SDL_AtomicLock( &gDataLock );
 
     // Print pre work data
     printf( "%s gets %d\n", static_cast<char*>(data), gData );
@@ -665,7 +649,7 @@ static int worker( void* data )
     printf( "%s sets %d\n\n", static_cast<char*>(data), gData );
 
     // Unlock
-    SDL_SemPost( gDataLock );
+    SDL_AtomicUnlock( &gDataLock );
 
     // Wait randomly
     SDL_Delay( 16 + rand() % 640 );
@@ -735,7 +719,7 @@ int main( int argc, char* args[] )
       SDL_Thread* threadB = SDL_CreateThread( worker, "Thread B", (void*)"Thread B" );
 
       // While application is running
-      while( !quit )
+      while( quit == false )
       {
         // Handle events on queue
         while( SDL_PollEvent( &e ) != 0 )

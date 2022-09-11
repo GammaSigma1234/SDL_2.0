@@ -127,7 +127,7 @@ static SDL_Window*   gWindow   = NULL; // The window we'll be rendering to
 static SDL_Renderer* gRenderer = NULL; // The window renderer
 
 // Scene textures
-LTexture gSplashTexture;
+static LTexture gSplashTexture;
 
 
 /***************************************************************************************************
@@ -476,11 +476,11 @@ int LTexture::getPitch(void) const
  **/
 Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 {
-    // Convert the pixels to 32 bit
+	// Convert the pixels to 32 bit
   Uint32* pixels = (Uint32*)mPixels;
 
-    // Get the pixel requested
-    return pixels[ ( y * ( mPitch / 4 ) ) + x ];
+	// Get the pixel requested
+	return pixels[ ( y * ( mPitch / 4 ) ) + x ];
 }
 
 

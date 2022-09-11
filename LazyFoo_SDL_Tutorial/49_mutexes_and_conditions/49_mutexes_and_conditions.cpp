@@ -1,19 +1,11 @@
 /**
- * @file 47_semaphores.cpp
+ * @file 49_mutexes_and_conditions.cpp
  *
- * @brief https://lazyfoo.net/tutorials/SDL/47_semaphores/index.php
+ * @brief https://lazyfoo.net/tutorials/SDL/49_mutexes_and_conditions/index.php
  * 
- * The only multithreading we've done had the main thread and a second thread each do their
- * own thing. In most cases, two threads will have to share data, and with semaphores you can
- * prevent two threads from accidentally accessing the same piece of data at once.
- *
- * In questo esercizio, il dato da proteggere è rappresentato da "gData". Il codice critico viene
- * protetto da "SDL_SemWait" e "SDL_SemPost". "SDL_SemWait" decrementa il contatore iniziale:
- * quando questo va a zero, il thread è bloccato, e impedisce l'accesso al dato protetto. Una volta
- * terminata l'esecuzione del codice critico, è possibile sbloccare il thread con "SDL_SemPost".
- * 
- * Osservare il rimpallo del dato "gData" da un thread all'altro: un thread lo riceve, lo modifica
- * in modalità protetta, e lo passa all'altro thread.
+ * Il valore "-1" indica che il buffer "gData" è stato svuotato. Viene assegnato dal thread
+ * "consumer" quando ha consumato il dato, per segnalare al producer che il buffer è libero per il
+ * riempimento.
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
@@ -42,6 +34,7 @@ static constexpr int WINDOW_W        = 640; // Screen's width
 static constexpr int WINDOW_H        = 480; // Screen's heigth
 static constexpr int TRANSPARENCY    = 0x00;
 static constexpr int BYTES_PER_PIXEL = 4;
+static constexpr int SCREEN_FPS      = 60;
 
 static std::string Path("splash.png");
 
@@ -101,7 +94,7 @@ class LTexture
 	int    getPitch      ( void  ) const;
 	Uint32 getPixel32    ( unsigned int, unsigned int );
 
-private:
+  private:
 
   // The actual hardware texture
   SDL_Texture* mTexture;
@@ -122,8 +115,11 @@ static bool init      (void);
 static bool loadMedia (void);
 static void close     (void);
 
-// Our worker thread function
-static int worker( void* data );
+// Our worker functions
+static int  producer( void* data );
+static int  consumer( void* data );
+static void produce ( void );
+static void consume ( void );
 
 
 /***************************************************************************************************
@@ -136,8 +132,12 @@ static SDL_Renderer* gRenderer = NULL; // The window renderer
 // Scene textures
 static LTexture gSplashTexture;
 
-static SDL_sem* gDataLock = NULL; // Data access semaphore
-static int      gData     = -1;   // The "data buffer"
+static SDL_mutex* gBufferLock = NULL; // The protective mutex
+static int        gData       = -1;   // The "data buffer"
+
+// The conditions
+static SDL_cond* gCanProduce = NULL;
+static SDL_cond* gCanConsume = NULL;
 
 
 /***************************************************************************************************
@@ -486,11 +486,11 @@ int LTexture::getPitch(void) const
  **/
 Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 {
-  // Convert the pixels to 32 bit
+    // Convert the pixels to 32 bit
   Uint32* pixels = (Uint32*)mPixels;
 
-  // Get the pixel requested
-  return pixels[ ( y * ( mPitch / 4 ) ) + x ];
+    // Get the pixel requested
+    return pixels[ ( y * ( mPitch / 4 ) ) + x ];
 }
 
 
@@ -527,7 +527,7 @@ static bool init(void)
     else
     {
       printf( "\nOK: linear texture filtering enabled" );
-		}
+    }
 
     // Create window
     gWindow = SDL_CreateWindow( "SDL Tutorial"         ,
@@ -589,19 +589,15 @@ static bool init(void)
  **/
 static bool loadMedia( void )
 {
-  gDataLock = SDL_CreateSemaphore( 1 ); // Initialize semaphore
+  // Create the mutex
+  gBufferLock = SDL_CreateMutex();
 
-  bool success = true; // Loading success flag
+  // Create conditions
+  gCanProduce = SDL_CreateCond();
+  gCanConsume = SDL_CreateCond();
 
-  if( gDataLock == NULL )
-  {
-    printf( "\nFailed to create semaphore! SDL error: \"%s\"", SDL_GetError() );
-    success = false;
-  }
-  else
-  {
-    printf( "\nOK: semaphore created" );
-  }
+  // Loading success flag
+  bool success = true;
 
   // Load splash texture
   if( !gSplashTexture.loadFromFile( Path ) )
@@ -623,15 +619,21 @@ static void close(void)
   // Free loaded images
   gSplashTexture.free();
 
-  // Free semaphore
-  SDL_DestroySemaphore( gDataLock );
-  gDataLock = NULL;
+  // Destroy the mutex
+  SDL_DestroyMutex( gBufferLock );
+  gBufferLock = NULL;
+
+  // Destroy conditions
+  SDL_DestroyCond( gCanProduce );
+  SDL_DestroyCond( gCanConsume );
+  gCanProduce = NULL;
+  gCanConsume = NULL;
 
   // Destroy window
   SDL_DestroyRenderer( gRenderer );
-	SDL_DestroyWindow  ( gWindow );
+  SDL_DestroyWindow  ( gWindow );
   gRenderer = NULL;
-	gWindow   = NULL;
+  gWindow   = NULL;
 
   // Quit SDL subsystems
   IMG_Quit();
@@ -639,41 +641,98 @@ static void close(void)
 }
 
 
-static int worker( void* data )
+static int producer( [[maybe_unused]] void *data )
 {
-  printf( "\n*** %s starting... ***\n", static_cast<char*>(data) );
+  printf( "\nProducer started...\n" );
 
-  // Pre thread random seeding
+  // Seed thread random
   srand( SDL_GetTicks() );
 
-  // Work 5 times
   for( int i = 0; i != 5; ++i )
   {
-    // Wait randomly
-    SDL_Delay( 16 + rand() % 32 );
+    // Wait
+    SDL_Delay( rand() % 1000 );
 
-    // Lock
-    SDL_SemWait( gDataLock );
-
-    // Print pre work data
-    printf( "%s gets %d\n", static_cast<char*>(data), gData );
-
-    // "Work"
-    gData = rand() % 256;
-
-    // Print post work data
-    printf( "%s sets %d\n\n", static_cast<char*>(data), gData );
-
-    // Unlock
-    SDL_SemPost( gDataLock );
-
-    // Wait randomly
-    SDL_Delay( 16 + rand() % 640 );
+    // (Try to) produce
+    produce();
   }
 
-  printf( "%s finished!\n\n", static_cast<char*>(data) );
+  printf( "\nProducer finished!\n" );
 
   return 0;
+}
+
+
+static int consumer( [[maybe_unused]] void *data )
+{
+  printf( "\nConsumer started...\n" );
+
+  // Seed thread random
+  srand( SDL_GetTicks() );
+
+  for( int i = 0; i != 5; ++i )
+  {
+    // Wait
+    SDL_Delay( rand() % 1000 );
+
+    // (Try to) consume
+    consume();
+  }
+
+  printf( "\nConsumer finished!\n" );
+
+  return 0;
+}
+
+
+static void produce(void)
+{
+  // Lock
+  SDL_LockMutex( gBufferLock );
+
+  // If the buffer is full
+  if( gData != -1 )
+  {
+    // Wait for buffer to be cleared
+    printf( "\nProducer encountered full buffer. Wwaiting for consumer to empty buffer...\n" );
+    SDL_CondWait( gCanProduce, gBufferLock );
+  }
+  else { /* Buffer is empty: proceed */ }
+
+  // Fill and show buffer
+  gData = rand() % 255;
+  printf( "\nProduced %d\n", gData );
+
+  // Unlock
+  SDL_UnlockMutex( gBufferLock );
+
+  // Signal consumer
+  SDL_CondSignal( gCanConsume );
+}
+
+
+static void consume(void)
+{
+  // Lock
+  SDL_LockMutex( gBufferLock );
+
+  // If the buffer is empty
+  if( gData == -1 )
+  {
+    // Wait for buffer to be filled
+    printf( "\nConsumer encountered empty buffer. Waiting for producer to fill buffer...\n" );
+    SDL_CondWait( gCanConsume, gBufferLock );
+  }
+
+  // Show and empty buffer
+  printf( "\nConsumed %d\n", gData );
+  gData = -1;
+
+  // Unlock
+  SDL_UnlockMutex( gBufferLock );
+
+  // Signal producer
+  SDL_CondSignal( gCanProduce );
 }
 
 
@@ -729,10 +788,8 @@ int main( int argc, char* args[] )
       SDL_Event e;
 
       // Run the threads
-      srand( SDL_GetTicks() );
-      SDL_Thread* threadA = SDL_CreateThread( worker, "Thread A", (void*)"Thread A" );
-      SDL_Delay( 16 + rand() % 32 );
-      SDL_Thread* threadB = SDL_CreateThread( worker, "Thread B", (void*)"Thread B" );
+      SDL_Thread* producerThread = SDL_CreateThread( producer, "Producer", NULL );
+      SDL_Thread* consumerThread = SDL_CreateThread( consumer, "Consumer", NULL );
 
       // While application is running
       while( !quit )
@@ -759,9 +816,9 @@ int main( int argc, char* args[] )
         SDL_RenderPresent( gRenderer );
       }
 
-      // Wait for threads to finish
-      SDL_WaitThread( threadA, NULL );
-      SDL_WaitThread( threadB, NULL );
+      // Wait for producer and consumer to finish
+      SDL_WaitThread( consumerThread, NULL );
+      SDL_WaitThread( producerThread, NULL );
     }
   }
 

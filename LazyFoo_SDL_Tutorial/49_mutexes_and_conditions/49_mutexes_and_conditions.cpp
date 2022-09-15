@@ -2,13 +2,28 @@
  * @file 49_mutexes_and_conditions.cpp
  *
  * @brief https://lazyfoo.net/tutorials/SDL/49_mutexes_and_conditions/index.php
- * 
+ *
  * Il valore "-1" indica che il buffer "gData" è stato svuotato. Viene assegnato dal thread
  * "consumer" quando ha consumato il dato, per segnalare al producer che il buffer è libero per il
  * riempimento.
  *
- * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
- * and may not be redistributed without written permission.
+ * Not only can you lock critial sections in threads, but with mutexes and conditions it is possible
+ * for threads to tell each other when to unlock.
+ *
+ * To   allocate mutexes and conditions, we use "SDL_CreateMutex"  and "SDL_CreateCond"  respectively.
+ * To deallocate mutexes and conditions, we use "SDL_DestroyMutex" and "SDL_DestroyCond" respectively.
+ *
+ * Sunto: abbiamo un thread consumatore e un thread produttore. Il produttore può produrre solo a
+ * condizione che il buffer comune sia vuoto. Il consumatore può consumare solo a condizione che il
+ * buffer comune sia pieno. Ad esempio, se il produttore ha bloccato il mutex (cioè ha controllo
+ * esclusivo sull'esecuzione del codice critico mediante "SDL_LockMutex"), ma trova il buffer pieno,
+ * si va incontro a un blocco irreversibile dell'esecuzione. Fortunatamente, con "SDL_CondWait"
+ * possiamo imporre al thread di sbloccare il mutex e aspettare il via libera a riprendere
+ * l'esecuzione. Ora il consumatore trova il mutex libero, e può finalmente consumare. Inoltre, può
+ * inviare il segnale di via libera con "SDL_CondSignal".
+ *
+ * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022) and may not be
+ * redistributed without written permission.
  **/
 
 
@@ -116,10 +131,10 @@ static bool loadMedia (void);
 static void close     (void);
 
 // Our worker functions
-static int  producer( void* data );
-static int  consumer( void* data );
-static void produce ( void );
-static void consume ( void );
+static int  Producer( void* data );
+static int  Consumer( void* data );
+static void Produce ( void );
+static void Consume ( void );
 
 
 /***************************************************************************************************
@@ -641,7 +656,13 @@ static void close(void)
 }
 
 
-static int producer( [[maybe_unused]] void *data )
+/**
+ * @brief Chiama la funzione "Produce".
+ * 
+ * @param data 
+ * @return int 
+ **/
+static int Producer( [[maybe_unused]] void *data )
 {
   printf( "\nProducer started...\n" );
 
@@ -654,7 +675,7 @@ static int producer( [[maybe_unused]] void *data )
     SDL_Delay( rand() % 1000 );
 
     // (Try to) produce
-    produce();
+    Produce();
   }
 
   printf( "\nProducer finished!\n" );
@@ -663,7 +684,13 @@ static int producer( [[maybe_unused]] void *data )
 }
 
 
-static int consumer( [[maybe_unused]] void *data )
+/**
+ * @brief Chiama la funzione "Consume".
+ * 
+ * @param data 
+ * @return int 
+ **/
+static int Consumer( [[maybe_unused]] void *data )
 {
   printf( "\nConsumer started...\n" );
 
@@ -676,7 +703,7 @@ static int consumer( [[maybe_unused]] void *data )
     SDL_Delay( rand() % 1000 );
 
     // (Try to) consume
-    consume();
+    Consume();
   }
 
   printf( "\nConsumer finished!\n" );
@@ -685,7 +712,7 @@ static int consumer( [[maybe_unused]] void *data )
 }
 
 
-static void produce(void)
+static void Produce(void)
 {
   // Lock
   SDL_LockMutex( gBufferLock );
@@ -711,7 +738,7 @@ static void produce(void)
 }
 
 
-static void consume(void)
+static void Consume(void)
 {
   // Lock
   SDL_LockMutex( gBufferLock );
@@ -723,6 +750,7 @@ static void consume(void)
     printf( "\nConsumer encountered empty buffer. Waiting for producer to fill buffer...\n" );
     SDL_CondWait( gCanConsume, gBufferLock );
   }
+  else { /* Buffer is full: proceed */ }
 
   // Show and empty buffer
   printf( "\nConsumed %d\n", gData );
@@ -788,8 +816,8 @@ int main( int argc, char* args[] )
       SDL_Event e;
 
       // Run the threads
-      SDL_Thread* producerThread = SDL_CreateThread( producer, "Producer", NULL );
-      SDL_Thread* consumerThread = SDL_CreateThread( consumer, "Consumer", NULL );
+      SDL_Thread* producerThread = SDL_CreateThread( Producer, "Producer", NULL );
+      SDL_Thread* consumerThread = SDL_CreateThread( Consumer, "Consumer", NULL );
 
       // While application is running
       while( !quit )

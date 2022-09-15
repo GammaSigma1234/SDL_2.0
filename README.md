@@ -26,6 +26,8 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
 - [Tutorial 45](#tutorial-45)
 - [Tutorial 46](#tutorial-46)
 - [Tutorial 47](#tutorial-47)
+- [Tutorial 49](#tutorial-49)
+- [Tutorial 50](#tutorial-50)
 
 
 ## Getting Started
@@ -196,3 +198,11 @@ printf( "Running thread with value = %d\n", (int)data );
 ## Tutorial 47
 
 - Nel tutorial online, "there no guarantee" al posto di "there **is** no guarantee".
+
+## Tutorial 49
+
+- Nel tutorial online, "conditons" al posto di "conditions".
+
+## Tutorial 50
+
+- Nel tutorial online si dice che il `readme.txt` contiene le librerie contro cui linkare, ma ciò non risponde a verità. Nel mio caso, avevo bisogno di linkare contro `OpenGL32.Lib` e `GlU32.Lib`.

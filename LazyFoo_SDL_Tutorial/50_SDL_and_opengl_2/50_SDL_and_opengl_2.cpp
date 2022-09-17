@@ -41,9 +41,14 @@ static void update    (void); // Per frame update
 static void render    (void); // Renders quad to the screen
 static void close     (void); // Frees media and shuts down SDL
 
-SDL_Window* gWindow = NULL; // The window we'll be rendering to
-SDL_GLContext gContext; // OpenGL context
-bool gRenderQuad = true; // Render flag
+
+/***************************************************************************************************
+* Private global variables
+****************************************************************************************************/
+
+static SDL_Window*   gWindow = NULL; // The window we'll be rendering to
+static SDL_GLContext gContext; // OpenGL context
+static bool          gRenderQuad = true; // Render flag
 
 
 /***************************************************************************************************

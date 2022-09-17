@@ -28,6 +28,7 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
 - [Tutorial 47](#tutorial-47)
 - [Tutorial 49](#tutorial-49)
 - [Tutorial 50](#tutorial-50)
+- [Tutorial 50](#tutorial-50-1)
 
 
 ## Getting Started
@@ -206,3 +207,7 @@ printf( "Running thread with value = %d\n", (int)data );
 ## Tutorial 50
 
 - Nel tutorial online si dice che il `readme.txt` contiene le librerie contro cui linkare, ma ciò non risponde a verità. Nel mio caso, avevo bisogno di linkare contro `OpenGL32.Lib` e `GlU32.Lib`.
+
+## Tutorial 50
+
+- Nel tutorial online, "gets rid off al" dovrebbe essere "gets rid of all"?

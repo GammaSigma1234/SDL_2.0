@@ -20,7 +20,7 @@
       "name": "SDL2 2.0.22 + MinGW-w64",
       "includePath":
       [
-        "${workspaceFolder}\\**",
+        "${workspaceFolder}\\Colours_Lib",
         "D:\\Dati\\SDL2\\SDL2-2.0.22\\x86_64-w64-mingw32\\include\\SDL2",
         "D:\\Dati\\SDL2\\SDL2_image-2.6.0\\x86_64-w64-mingw32\\include\\SDL2",
         "D:\\Dati\\SDL2\\SDL2_ttf-2.20.0\\x86_64-w64-mingw32\\include\\SDL2",

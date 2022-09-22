@@ -29,6 +29,7 @@ Repository dedicato agli esperimenti su SDL2, seguendo la guida di [Lazy Foo](ht
 - [Tutorial 49](#tutorial-49)
 - [Tutorial 50](#tutorial-50)
 - [Tutorial 51](#tutorial-51)
+- [Tutorial Finite State Machines](#tutorial-finite-state-machines)
 
 
 ## Getting Started
@@ -211,3 +212,9 @@ printf( "Running thread with value = %d\n", (int)data );
 ## Tutorial 51
 
 - Nel tutorial online, "gets rid off al" dovrebbe essere "gets rid of all"?
+
+## Tutorial Finite State Machines
+
+- Nel tutorial online: "they declared".
+- Nel tutorial online: "we'll managing globally".
+- Nel tutorial online: "Our enter()/exit() function basically do" (plurale).

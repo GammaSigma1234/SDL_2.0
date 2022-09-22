@@ -5,6 +5,23 @@
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
+ * 
+ * You may be thinking as to why we don't put the state management and the state variables into a
+ * state manager class. This is how it is usually done, but for the sake of simplicity we'll have
+ * them be global variables/functions. In larger games, it's not uncommon for game states to have
+ * substates and state machines to have substate machines, but for this article we want to keep
+ * things simple.
+ * 
+ * We do not rotate the state pointers until after the enter()/exit() functions are called. Questo
+ * perché le funzioni enter()/exit() hanno il compito di caricare i nuovi asset e liberare i vecchi
+ * un attimo prima che il cambio di stato venga finalizzato. Ergo, nella changeState(), prima viene
+ * chiamata exit() sullo stato attuale (gCurrentState) per liberarlo, poi viene chiamata enter() sul
+ * prossimo stato (gNextState) per caricarlo. Quando ciò è stato eseguito, avviene la vera e propria
+ * rotazione degli stati, in cui gNextState rimpiazza gCurrentState, mentre gNextState diventa NULL
+ * in attesa che qualche evento lo modifichi.
+ * 
+ * In this example, the ExitState is a dummy state, but in larger games it's not uncommon to have an
+ * exit state that cleans up things before the game terminates.
  **/
 
 // Using SDL, SDL_image, standard IO, and strings
@@ -16,18 +33,18 @@
 #include "colours.hpp"
 
 // Screen attributes
-static constexpr int WINDOW_W   = 800;
-static constexpr int WINDOW_H   = 600;
-static constexpr int SCREEN_BPP = 32;
-static constexpr int FRAMES_PER_SECOND = 60;
+static constexpr int WINDOW_W = 800;
+static constexpr int WINDOW_H = 600;
+
+static constexpr int FIRST_AVAILABLE_ONE = -1;
 
 static const std::string DotPath      ("dot.bmp");
 static const std::string LazyFontPath ("lazy.ttf");
 static const std::string BGPath       ("introbg.png");
 static const std::string TitlePath    ("titlebg.png");
 static const std::string GreenOWPath  ("greenoverworld.png");
-static const std::string BluePath     ("blue.bmp");
-static const std::string RedPath      ("red.bmp");
+static const std::string BlueHousePath("blue.bmp");
+static const std::string RedHousePath ("red.bmp");
 static const std::string RedRoomPath  ("redroom.png");
 static const std::string BlueRoomPath ("blueroom.png");
 
@@ -49,11 +66,11 @@ public:
   ~LTexture(void);
 
   // Loads image at specified path
-  bool loadFromFile( std::string path );
+  bool loadFromFile( const std::string& );
 
 #if defined(SDL_TTF_MAJOR_VERSION)
   // Creates image from font string
-  bool loadFromRenderedText( std::string, SDL_Color );
+  bool loadFromRenderedText( const std::string&, SDL_Color );
 #endif
 
   // Creates blank texture
@@ -82,12 +99,12 @@ public:
   int getHeight ( void ) const;
 
   // Pixel manipulators
-  bool lockTexture  ( void );
-  bool unlockTexture( void );
-  void* getPixels   ( void );
-  void copyPixels   ( void* );
-  int getPitch      ( void );
-  Uint32 getPixel32( unsigned int, unsigned int );
+  bool    lockTexture   ( void );
+  bool    unlockTexture ( void );
+  void*   getPixels     ( void );
+  void    copyPixels    ( void* );
+  int     getPitch      ( void );
+  Uint32  getPixel32    ( unsigned int, unsigned int );
 
 private:
   // The actual hardware texture
@@ -133,11 +150,9 @@ public:
   SDL_Rect getCollider(void);
 
 private:
-  // Got collision box
-  SDL_Rect mBox;
+  SDL_Rect mBox; // Collision box
 
-  // The velocity of the dot
-  int mVelX, mVelY;
+  int mVelX, mVelY; // The velocity of the dot
 };
 
 
@@ -172,25 +187,20 @@ private:
 class Door
 {
 public:
+
   // The door dimensions
   static constexpr int DOOR_WIDTH  = 20;
   static constexpr int DOOR_HEIGHT = 40;
 
-  // Initializes variables
   Door(void);
 
-  // Sets the door position
-  void set( int, int );
-
-  // Shows the door
-  void render(void);
-
-  // Gets the collision box
-  SDL_Rect getCollider(void);
+  void     set        ( int, int );
+  void     render     ( void );
+  SDL_Rect getCollider( void );
 
 private:
-  // The area of the door
-  SDL_Rect mBox;
+
+  SDL_Rect mBox; // The area of the door
 };
 
 
@@ -200,16 +210,19 @@ private:
 class GameState
 {
 public:
-  // State transitions
+  /* State transitions */
+
   virtual bool enter( void ) = 0;
   virtual bool exit ( void ) = 0;
 
-  // Main loop functions
+  /* Main loop functions */
+
   virtual void handleEvent( SDL_Event& ) = 0;
   virtual void update     ( void )       = 0;
   virtual void render     ( void )       = 0;
 
-  // Make sure to call child destructors
+  /* Make sure to call child destructors */
+
   virtual ~GameState(){};
 };
 
@@ -406,13 +419,16 @@ private:
 * Private functions definitions
 ****************************************************************************************************/
 
-
 static bool init          ( void );
 static bool loadMedia     ( void );
 static void close         ( void );
+
 static bool HasCollisionHappened( SDL_Rect, SDL_Rect );
-static void setNextState  ( GameState* );
-static void changeState   ( void );
+
+/* State managers */
+
+static void setNextState( GameState* );
+static void changeState ( void );
 
 
 /***************************************************************************************************
@@ -425,9 +441,9 @@ static SDL_Window* gWindow = NULL;
 // The window renderer
 static SDL_Renderer* gRenderer = NULL;
 
-// Global assets
-static LTexture  gDotTexture;
-static TTF_Font* gFont = NULL;
+/* Global assets - Sia il punto sia il font vengono mantenuti nella transizione fra stati */
+static LTexture  gDotTexture;   
+static TTF_Font* gFont = NULL;  
 
 // Global game objects
 static Dot gDot;
@@ -440,6 +456,8 @@ static GameState* gNextState = NULL;
 /***************************************************************************************************
 * Methods definitions
 ****************************************************************************************************/
+
+/* LTexture */
 
 LTexture::LTexture(void)
 {
@@ -459,7 +477,7 @@ LTexture::~LTexture(void)
 }
 
 
-bool LTexture::loadFromFile( std::string path )
+bool LTexture::loadFromFile( const std::string& path )
 {
   // Get rid of preexisting texture
   free();
@@ -469,6 +487,7 @@ bool LTexture::loadFromFile( std::string path )
 
   // Load image at specified path
   SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+
   if( loadedSurface == NULL )
   {
     SDL_Log( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
@@ -488,6 +507,7 @@ bool LTexture::loadFromFile( std::string path )
     {
       // Create blank streamable texture
       newTexture = SDL_CreateTexture( gRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, formattedSurface->w, formattedSurface->h );
+
       if( newTexture == NULL )
       {
         SDL_Log( "Unable to create blank texture! SDL Error: %s\n", SDL_GetError() );
@@ -514,7 +534,7 @@ bool LTexture::loadFromFile( std::string path )
         int pixelCount = ( mPitch / 4 ) * mHeight;
 
         // Map colors
-        Uint32 colorKey    = SDL_MapRGB( formattedSurface->format, CYAN_R, CYAN_G, CYAN_B );
+        Uint32 colorKey    = SDL_MapRGB ( formattedSurface->format, CYAN_R, CYAN_G, CYAN_B );
         Uint32 transparent = SDL_MapRGBA( formattedSurface->format, CYAN_R, CYAN_G, CYAN_B, ALPHA_MIN );
 
         // Color key pixels
@@ -544,14 +564,15 @@ bool LTexture::loadFromFile( std::string path )
   return mTexture != NULL;
 }
 
+
 #if defined(SDL_TTF_MAJOR_VERSION)
-bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor )
+bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color textColor )
 {
   // Get rid of preexisting texture
   free();
 
   // Render text surface
-  SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
+  SDL_Surface* textSurface = TTF_RenderText_Blended( gFont, textureText.c_str(), textColor );
 
   if( textSurface != NULL )
   {
@@ -640,7 +661,7 @@ void LTexture::setAlpha( Uint8 alpha )
 
 void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
 {
-  // Set rendering space and render to screen
+  // Set rendering space and render to screen {x, y, w, h}
   SDL_Rect renderQuad = { x, y, mWidth, mHeight };
 
   // Set clip rendering dimensions
@@ -655,7 +676,7 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
 }
 
 
-void LTexture::setAsRenderTarget()
+void LTexture::setAsRenderTarget(void)
 {
   // Make self render target
   SDL_SetRenderTarget( gRenderer, mTexture );
@@ -697,7 +718,8 @@ bool LTexture::lockTexture(void)
   return success;
 }
 
-bool LTexture::unlockTexture()
+
+bool LTexture::unlockTexture(void)
 {
   bool success = true;
 
@@ -718,10 +740,12 @@ bool LTexture::unlockTexture()
   return success;
 }
 
-void* LTexture::getPixels()
+
+void* LTexture::getPixels(void)
 {
   return mPixels;
 }
+
 
 void LTexture::copyPixels( void* pixels )
 {
@@ -733,10 +757,12 @@ void LTexture::copyPixels( void* pixels )
   }
 }
 
-int LTexture::getPitch()
+
+int LTexture::getPitch(void)
 {
   return mPitch;
 }
+
 
 Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 {
@@ -748,7 +774,9 @@ Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 }
 
 
-Dot::Dot()
+/* Dot */
+
+Dot::Dot(void)
 {
   // Initialize the offsets
   mBox.x = 0;
@@ -761,12 +789,14 @@ Dot::Dot()
   mVelY = 0;
 }
 
+
 void Dot::set( int x, int y )
 {
   // Set position
   mBox.x = x;
   mBox.y = y;
 }
+
 
 void Dot::handleEvent( SDL_Event& e )
 {
@@ -796,6 +826,7 @@ void Dot::handleEvent( SDL_Event& e )
   }
 }
 
+
 void Dot::move( int levelWidth, int levelHeight )
 {
   // Move the dot left or right
@@ -819,6 +850,7 @@ void Dot::move( int levelWidth, int levelHeight )
   }
 }
 
+
 void Dot::render( SDL_Rect camera )
 {
   // Show the dot relative to the camera
@@ -830,6 +862,9 @@ SDL_Rect Dot::getCollider()
   // Get collision box
   return mBox;
 }
+
+
+/* House */
 
 House::House()
 {
@@ -865,7 +900,13 @@ SDL_Rect House::getCollider()
   return mBox;
 }
 
-Door::Door()
+
+/* Door */
+
+/**
+ * @brief Initializes variables
+ **/
+Door::Door(void)
 {
   // Initialize position
   mBox.x = 0;
@@ -874,6 +915,13 @@ Door::Door()
   mBox.h = DOOR_HEIGHT;
 }
 
+
+/**
+ * @brief Sets the door position
+ *
+ * @param x
+ * @param y
+ **/
 void Door::set( int x, int y )
 {
   // Initialize position
@@ -881,27 +929,38 @@ void Door::set( int x, int y )
   mBox.y = y;
 }
 
-void Door::render()
+
+/**
+ * @brief Shows the door
+ **/
+void Door::render(void)
 {
   // Draw rectangle for door
-  SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0x00, 0xFF );
+  SDL_SetRenderDrawColor( gRenderer, BLACK_R, BLACK_G, BLACK_B, ALPHA_MAX );
   SDL_RenderFillRect( gRenderer, &mBox );
 }
 
-SDL_Rect Door::getCollider()
+
+/**
+ * @brief Gets the collision box
+ *
+ * @return SDL_Rect
+ **/
+SDL_Rect Door::getCollider(void)
 {
-  // Get collision box
-  return mBox;
+  return mBox; // Get collision box
 }
 
 
-IntroState* IntroState::get()
+/* IntroState */
+
+IntroState* IntroState::get(void)
 {
-  // Get static instance
-  return &sIntroState;
+  return &sIntroState; // Get static instance
 }
 
-bool IntroState::enter()
+
+bool IntroState::enter(void)
 {
   // Loading success flag
   bool success = true;
@@ -909,22 +968,26 @@ bool IntroState::enter()
   // Load background
   if( !mBackgroundTexture.loadFromFile( BGPath ) )
   {
-  printf( "Failed to intro background!\n" );
-  success = false;
+    printf( "Failed to intro background!\n" );
+    success = false;
   }
+  else { /* Loading OK */ }
 
   // Load text
-  SDL_Color textColor = { 0x00, 0x00, 0x00, 0xFF };
+  SDL_Color textColor{ BLACK_R, BLACK_G, BLACK_B, ALPHA_MAX};
+
   if( !mMessageTexture.loadFromRenderedText( "Lazy Foo' Productions Presents...", textColor ) )
   {
-  printf( "Failed to render intro text!\n" );
-  success = false;
+    printf( "Failed to render intro text!\n" );
+    success = false;
   }
+  else { /* Loading OK */ }
 
   return success;
 }
 
-bool IntroState::exit()
+
+bool IntroState::exit(void)
 {
   // Free background and text
   mBackgroundTexture.free();
@@ -933,22 +996,25 @@ bool IntroState::exit()
   return true;
 }
 
+
 void IntroState::handleEvent( SDL_Event& e )
 {
   // If the user pressed enter
   if( ( e.type == SDL_KEYDOWN ) && ( e.key.keysym.sym == SDLK_RETURN ) )
   {
-  // Move onto title state
-  setNextState( TitleState::get() );
+    // Move onto title state
+    setNextState( TitleState::get() );
   }
+  else
+  { /* Event not managed here */ }
 }
 
-void IntroState::update()
-{
 
-}
+void IntroState::update(void)
+{;}
 
-void IntroState::render()
+
+void IntroState::render(void)
 {
   // Show the background
   mBackgroundTexture.render( 0, 0 );
@@ -957,22 +1023,26 @@ void IntroState::render()
   mMessageTexture.render( ( WINDOW_W - mMessageTexture.getWidth() ) / 2, ( WINDOW_H - mMessageTexture.getHeight() ) / 2 );
 }
 
-// Declare static instance
-IntroState IntroState::sIntroState;
 
-IntroState::IntroState()
+IntroState IntroState::sIntroState; // Declare static instance
+
+
+IntroState::IntroState(void)
 {
   // No public instantiation
 }
 
 
-TitleState* TitleState::get()
+/* TitleState */
+
+TitleState* TitleState::get(void)
 {
   // Get static instance
   return &sTitleState;
 }
 
-bool TitleState::enter()
+
+bool TitleState::enter(void)
 {
   // Loading success flag
   bool success = true;
@@ -980,22 +1050,26 @@ bool TitleState::enter()
   // Load background
   if( !mBackgroundTexture.loadFromFile( TitlePath ) )
   {
-  printf( "Failed to title background!\n" );
-  success = false;
+    printf( "Failed to title background!\n" );
+    success = false;
   }
+  else { /* Loading OK */ }
 
   // Load text
-  SDL_Color textColor = { 0x00, 0x00, 0x00, 0xFF };
+  SDL_Color textColor = { BLACK_R, BLACK_G, BLACK_B, ALPHA_MAX };
+
   if( !mMessageTexture.loadFromRenderedText( "A State Machine Demo", textColor ) )
   {
-  printf( "Failed to render title text!\n" );
-  success = false;
+    printf( "Failed to render title text!\n" );
+    success = false;
   }
+  else { /* Text rendering OK */ }
 
   return success;
 }
 
-bool TitleState::exit()
+
+bool TitleState::exit(void)
 {
   // Free background and text
   mBackgroundTexture.free();
@@ -1004,22 +1078,25 @@ bool TitleState::exit()
   return true;
 }
 
+
 void TitleState::handleEvent( SDL_Event& e )
 {
   // If the user pressed enter
   if( ( e.type == SDL_KEYDOWN ) && ( e.key.keysym.sym == SDLK_RETURN ) )
   {
-  // Move to overworld
-  setNextState( OverWorldState::get() );
+    // Move to overworld
+    setNextState( OverWorldState::get() );
   }
+  else
+  { /* Event not managed here */ }
 }
 
-void TitleState::update()
-{
 
-}
+void TitleState::update(void)
+{;}
 
-void TitleState::render()
+
+void TitleState::render(void)
 {
   // Show the background
   mBackgroundTexture.render( 0, 0 );
@@ -1028,22 +1105,26 @@ void TitleState::render()
   mMessageTexture.render( ( WINDOW_W - mMessageTexture.getWidth() ) / 2, ( WINDOW_H - mMessageTexture.getHeight() ) / 2 );
 }
 
-// Declare static instance
-TitleState TitleState::sTitleState;
 
-TitleState::TitleState()
+TitleState TitleState::sTitleState; // Declare static instance
+
+
+TitleState::TitleState(void)
 {
   // No public instantiation
 }
 
 
-OverWorldState* OverWorldState::get()
+/* OverWorldState */
+
+OverWorldState* OverWorldState::get(void)
 {
   // Get static instance
   return &sOverWorldState;
 }
 
-bool OverWorldState::enter()
+
+bool OverWorldState::enter(void)
 {
   // Loading success flag
   bool success = true;
@@ -1051,51 +1132,52 @@ bool OverWorldState::enter()
   // Load background
   if( !mBackgroundTexture.loadFromFile( GreenOWPath ) )
   {
-  printf( "Failed to load overworld background!\n" );
-  success = false;
+    printf( "Failed to load overworld background!\n" );
+    success = false;
   }
 
   // Load house texture
-  if( !mBlueHouseTexture.loadFromFile( BluePath ) )
+  if( !mBlueHouseTexture.loadFromFile( BlueHousePath ) )
   {
-  printf( "Failed to load blue house texture!\n" );
-  success = false;
+    printf( "Failed to load blue house texture!\n" );
+    success = false;
   }
 
   // Load house texture
-  if( !mRedHouseTexture.loadFromFile( RedPath ) )
+  if( !mRedHouseTexture.loadFromFile( RedHousePath ) )
   {
-  printf( "Failed to load red house texture!\n" );
-  success = false;
+    printf( "Failed to load red house texture!\n" );
+    success = false;
   }
 
   // Position houses with graphics
-  mRedHouse.set( 0, 0, &mRedHouseTexture );
+   mRedHouse.set( 0                           , 0                            , &mRedHouseTexture  );
   mBlueHouse.set( LEVEL_W - House::HOUSE_WIDTH, LEVEL_H - House::HOUSE_HEIGHT, &mBlueHouseTexture );
 
   // Came from red room state
   if( gCurrentState == RedRoomState::get() )
   {
-  // Position below red house
-  gDot.set( mRedHouse.getCollider().x + ( House::HOUSE_WIDTH - Dot::DOT_WIDTH ) / 2, mRedHouse.getCollider().y + mRedHouse.getCollider().h + Dot::DOT_HEIGHT );
+    // Position below red house
+    gDot.set( mRedHouse.getCollider().x + ( House::HOUSE_WIDTH - Dot::DOT_WIDTH ) / 2, mRedHouse.getCollider().y + mRedHouse.getCollider().h + Dot::DOT_HEIGHT );
   }
   // Came from blue room state
   else if( gCurrentState == BlueRoomState::get() )
   {
-  // Position above blue house
-  gDot.set( mBlueHouse.getCollider().x + ( House::HOUSE_WIDTH - Dot::DOT_WIDTH ) / 2, mBlueHouse.getCollider().y - Dot::DOT_HEIGHT * 2 );
+    // Position above blue house
+    gDot.set( mBlueHouse.getCollider().x + ( House::HOUSE_WIDTH - Dot::DOT_WIDTH ) / 2, mBlueHouse.getCollider().y - Dot::DOT_HEIGHT * 2 );
   }
   // Came from other state
   else
   {
-  // Position middle of overworld
-  gDot.set( ( LEVEL_W - Dot::DOT_WIDTH ) / 2, ( LEVEL_H - Dot::DOT_HEIGHT ) / 2 );
+    // Position middle of overworld
+    gDot.set( ( LEVEL_W - Dot::DOT_WIDTH ) / 2, ( LEVEL_H - Dot::DOT_HEIGHT ) / 2 );
   }
 
   return success;
 }
 
-bool OverWorldState::exit()
+
+bool OverWorldState::exit(void)
 {
   // Free textures
   mBackgroundTexture.free();
@@ -1105,13 +1187,15 @@ bool OverWorldState::exit()
   return true;
 }
 
+
 void OverWorldState::handleEvent( SDL_Event& e )
 {
   // Handle dot input
   gDot.handleEvent( e );
 }
 
-void OverWorldState::update()
+
+void OverWorldState::update(void)
 {
   // Move dot
   gDot.move( LEVEL_W, LEVEL_H );
@@ -1119,71 +1203,80 @@ void OverWorldState::update()
   // On red room collision
   if( HasCollisionHappened( gDot.getCollider(), mRedHouse.getCollider() ) )
   {
-  // Got to red room
-  setNextState( RedRoomState::get() );
+    // Got to red room
+    setNextState( RedRoomState::get() );
   }
   // On blue room collision
   else if( HasCollisionHappened( gDot.getCollider(), mBlueHouse.getCollider() ) )
   {
-  // Go to blue room
-  setNextState( BlueRoomState::get() );
+    // Go to blue room
+    setNextState( BlueRoomState::get() );
   }
+  else
+  { /* No collision happened. Continue */ }
 }
 
-void OverWorldState::render()
+
+void OverWorldState::render(void)
 {
   // Center the camera over the dot
   SDL_Rect camera =
   {
-  ( gDot.getCollider().x + Dot::DOT_WIDTH / 2 ) - WINDOW_W / 2,
-  ( gDot.getCollider().y + Dot::DOT_HEIGHT / 2 ) - WINDOW_H / 2,
-  WINDOW_W,
-  WINDOW_H
+    ( gDot.getCollider().x + Dot::DOT_WIDTH  / 2 ) - WINDOW_W / 2,
+    ( gDot.getCollider().y + Dot::DOT_HEIGHT / 2 ) - WINDOW_H / 2,
+      WINDOW_W,
+      WINDOW_H
   };
 
   // Keep the camera in bounds
   if( camera.x < 0 )
   {
-  camera.x = 0;
+    camera.x = 0;
   }
+
   if( camera.y < 0 )
   {
-  camera.y = 0;
+    camera.y = 0;
   }
+
   if( camera.x > LEVEL_W - camera.w )
   {
-  camera.x = LEVEL_W - camera.w;
+    camera.x = LEVEL_W - camera.w;
   }
+
   if( camera.y > LEVEL_H - camera.h )
   {
-  camera.y = LEVEL_H - camera.h;
+    camera.y = LEVEL_H - camera.h;
   }
 
   // Render background
   mBackgroundTexture.render( 0, 0, &camera );
 
   // Render objects
-  mRedHouse.render( camera );
+   mRedHouse.render( camera );
   mBlueHouse.render( camera );
-  gDot.render( camera );
+        gDot.render( camera );
 }
 
-// Declare static instance
-OverWorldState OverWorldState::sOverWorldState;
 
-OverWorldState::OverWorldState()
+OverWorldState OverWorldState::sOverWorldState; // Declare static instance
+
+
+OverWorldState::OverWorldState(void)
 {
   // No public instantiation
 }
 
 
-RedRoomState* RedRoomState::get()
+/* RedRoomState */
+
+RedRoomState* RedRoomState::get(void)
 {
-  // Get static instance
-  return &sRedRoomState;
+  return &sRedRoomState; // Get static instance
 }
 
-bool RedRoomState::enter()
+
+bool RedRoomState::enter(void)
 {
   // Loading success flag
   bool success = true;
@@ -1191,24 +1284,27 @@ bool RedRoomState::enter()
   // Load background
   if( !mBackgroundTexture.loadFromFile( RedRoomPath ) )
   {
-  printf( "Failed to load blue room background!\n" );
-  success = false;
+    printf( "Failed to load blue room background!\n" );
+    success = false;
   }
+  else { /* OK */ }
 
   // Place game objects
   mExitDoor.set( ( LEVEL_W - Door::DOOR_WIDTH ) / 2, LEVEL_H - Door::DOOR_HEIGHT );
-  gDot.set( ( LEVEL_W - Dot::DOT_WIDTH ) / 2, LEVEL_H - Door::DOOR_HEIGHT - Dot::DOT_HEIGHT * 2 );
+       gDot.set( ( LEVEL_W - Dot::DOT_WIDTH )   / 2, LEVEL_H - Door::DOOR_HEIGHT - Dot::DOT_HEIGHT * 2 );
 
   return success;
 }
 
-bool RedRoomState::exit()
+
+bool RedRoomState::exit(void)
 {
   // Free background
   mBackgroundTexture.free();
 
   return true;
 }
+
 
 void RedRoomState::handleEvent( SDL_Event& e )
 {
@@ -1216,7 +1312,8 @@ void RedRoomState::handleEvent( SDL_Event& e )
   gDot.handleEvent( e );
 }
 
-void RedRoomState::update()
+
+void RedRoomState::update(void)
 {
   // Move dot
   gDot.move( LEVEL_W, LEVEL_H );
@@ -1224,12 +1321,15 @@ void RedRoomState::update()
   // On exit collision
   if( HasCollisionHappened( gDot.getCollider(), mExitDoor.getCollider() ) )
   {
-  // Go back to overworld
-  setNextState( OverWorldState::get() );
+    // Go back to overworld
+    setNextState( OverWorldState::get() );
   }
+  else
+  { /* No collision happened. Continue */ }
 }
 
-void RedRoomState::render()
+
+void RedRoomState::render(void)
 {
   // Center the camera over the dot
   SDL_Rect camera = { 0, 0, LEVEL_W, LEVEL_H };
@@ -1242,22 +1342,26 @@ void RedRoomState::render()
   gDot.render( camera );
 }
 
-// Declare static instance
-RedRoomState RedRoomState::sRedRoomState;
 
-RedRoomState::RedRoomState()
+RedRoomState RedRoomState::sRedRoomState; // Declare static instance
+
+
+RedRoomState::RedRoomState(void)
 {
   // No public instantiation
 }
 
 
-BlueRoomState* BlueRoomState::get()
+/* BlueRoomState */
+
+BlueRoomState* BlueRoomState::get(void)
 {
   // Get static instance
   return &sBlueRoomState;
 }
 
-bool BlueRoomState::enter()
+
+bool BlueRoomState::enter(void)
 {
   // Loading success flag
   bool success = true;
@@ -1265,18 +1369,20 @@ bool BlueRoomState::enter()
   // Load background
   if( !mBackgroundTexture.loadFromFile( BlueRoomPath ) )
   {
-  printf( "Failed to load blue room background!\n" );
-  success = false;
+    printf( "Failed to load blue room background!\n" );
+    success = false;
   }
+  else { /* Loading OK */ }
 
   // Position game objects
   mExitDoor.set( ( LEVEL_W - Door::DOOR_WIDTH ) / 2, 0 );
-  gDot.set( ( LEVEL_W - Dot::DOT_WIDTH ) / 2, Door::DOOR_HEIGHT + Dot::DOT_HEIGHT * 2 );
+       gDot.set( ( LEVEL_W - Dot::DOT_WIDTH )   / 2, Door::DOOR_HEIGHT + Dot::DOT_HEIGHT * 2 );
 
   return success;
 }
 
-bool BlueRoomState::exit()
+
+bool BlueRoomState::exit(void)
 {
   // Free background
   mBackgroundTexture.free();
@@ -1284,13 +1390,15 @@ bool BlueRoomState::exit()
   return true;
 }
 
+
 void BlueRoomState::handleEvent( SDL_Event& e )
 {
   // Handle dot input
   gDot.handleEvent( e );
 }
 
-void BlueRoomState::update()
+
+void BlueRoomState::update(void)
 {
   // Move dot
   gDot.move( LEVEL_W, LEVEL_H );
@@ -1298,12 +1406,15 @@ void BlueRoomState::update()
   // On exit collision
   if( HasCollisionHappened( gDot.getCollider(), mExitDoor.getCollider() ) )
   {
-  // Back to overworld
-  setNextState( OverWorldState::get() );
+    // Back to overworld
+    setNextState( OverWorldState::get() );
   }
+  else
+  { /* No collision happened. Continue */ }
 }
 
-void BlueRoomState::render()
+
+void BlueRoomState::render(void)
 {
   // Center the camera over the dot
   SDL_Rect camera = { 0, 0, LEVEL_W, LEVEL_H };
@@ -1316,52 +1427,54 @@ void BlueRoomState::render()
   gDot.render( camera );
 }
 
-// Declare static instance
-BlueRoomState BlueRoomState::sBlueRoomState;
+
+BlueRoomState BlueRoomState::sBlueRoomState; // Declare static instance
+
 
 BlueRoomState::BlueRoomState(void)
 {
   // No public instantiation
 }
 
-// Hollow exit state
+/* Hollow exit state */
+
 ExitState* ExitState::get(void)
 {
   return &sExitState;
 }
+
 
 bool ExitState::enter(void)
 {
   return true;
 }
 
+
 bool ExitState::exit(void)
 {
   return true;
 }
 
-void ExitState::handleEvent( [[maybe_unused]] SDL_Event& e )
-{
 
-}
+void ExitState::handleEvent( [[maybe_unused]] SDL_Event& e )
+{;}
+
 
 void ExitState::update(void)
-{
-
-}
+{;}
 
 void ExitState::render(void)
-{
-
-}
+{;}
 
 ExitState ExitState::sExitState;
 
 ExitState::ExitState(void)
-{
+{;}
 
-}
 
+/***************************************************************************************************
+* Private functions definitions
+****************************************************************************************************/
 
 /**
  * @brief Starts up SDL and creates window
@@ -1377,35 +1490,49 @@ static bool init(void)
   // Initialize SDL
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
-  printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
-  success = false;
+    printf( "SDL could not initialize! SDL Error: \"%s\"\n", SDL_GetError() );
+    success = false;
   }
   else
   {
     // Set texture filtering to linear
     if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
     {
-      printf( "Warning: Linear texture filtering not enabled!" );
-    }
-
-    // Create window
-    gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_W, WINDOW_H, SDL_WINDOW_SHOWN );
-    if( gWindow == NULL )
-    {
-      printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
+      printf( "Warning: Linear texture filtering not enabled!\n" );
       success = false;
     }
     else
     {
+      printf( "OK: linear texture filtering enabled\n" );
+    }
+
+    // Create window
+    gWindow = SDL_CreateWindow( "SDL Tutorial",
+                                SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                WINDOW_W, WINDOW_H,
+                                SDL_WINDOW_SHOWN );
+
+    if( gWindow == NULL )
+    {
+      printf( "Window could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
+      success = false;
+    }
+    else
+    {
+      printf( "OK: window created\n" );
+
       // Create vsynced renderer for window
-      gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+      gRenderer = SDL_CreateRenderer( gWindow, FIRST_AVAILABLE_ONE, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+
       if( gRenderer == NULL )
       {
-        printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
+        printf( "Renderer could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
         success = false;
       }
       else
       {
+        printf( "OK: renderer created\n" );
+
         // Initialize renderer color
         SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, ALPHA_MAX );
 
@@ -1441,7 +1568,7 @@ static bool init(void)
 
 
 /**
- * @brief Loads cross state assets
+ * @brief Loads cross-state assets
  *
  * @return true
  * @return false
@@ -1451,20 +1578,25 @@ static bool loadMedia(void)
   // Loading success flag
   bool success = true;
 
-  // Load dot texture
+  /* Load dot texture */
+
   if( !gDotTexture.loadFromFile( DotPath ) )
   {
-  printf( "Failed to load dot texture! SDL Error: %s\n", SDL_GetError() );
-  success = false;
+    printf( "Failed to load dot texture! SDL Error: \"%s\"\n", SDL_GetError() );
+    success = false;
   }
+  else { /* Loading OK */ }
 
-  // Open the font
+  /* Open the font */
+
   gFont = TTF_OpenFont( LazyFontPath.c_str(), 28 );
+
   if( gFont == NULL )
   {
-  printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
-  success = false;
+    printf( "Failed to load lazy font! SDL_ttf Error: \"%s\"\n", TTF_GetError() );
+    success = false;
   }
+  else { /* Loading OK */ }
 
   return success;
 }
@@ -1496,7 +1628,8 @@ static void close(void)
 
 
 /**
- * @brief State managers
+ * @brief Used to mark our state machine for state transition. Gives priority to quit requests by
+ * the user.
  *
  * @param newState
  **/
@@ -1508,11 +1641,12 @@ static void setNextState( GameState* newState )
     // Set the next state
     gNextState = newState;
   }
+  else { /* Continue */ }
 }
 
 
 /**
- * @brief Change state
+ * @brief Calls the state exit/enter functions and does the actual state change
  **/
 static void changeState(void)
 {
@@ -1612,21 +1746,22 @@ int main( int argc, char* args[] )
   bool HasProgramSucceeded = true;
 
   printf("\n*** Debugging console ***\n");
-  printf("\nProgram started with %d additional arguments.", argc - 1); //  Il primo argomento è il nome dell'eseguibile
+  printf("\nProgram started with %d additional arguments.\n", argc - 1); //  Il primo argomento è il nome dell'eseguibile
 
   for (int i = 1; i != argc; ++i)
   {
-  printf("\nArgument #%d: %s\n", i, args[i]);
+    printf("\nArgument #%d: %s\n", i, args[i]);
   }
 
-  // Start up SDL and create window
+  /* Start up SDL and create window */
+
   if( !init() )
   {
   printf( "\nFailed to initialise!" );
   }
   else
   {
-    printf( "\nOK: all systems initialised" );
+    printf( "OK: all systems initialised\n" );
 
     // Load media
     if( !loadMedia() )
@@ -1635,7 +1770,7 @@ int main( int argc, char* args[] )
     }
     else
     {
-      printf( "\nOK: all media loaded" );
+      printf( "OK: all media loaded\n" );
 
       // Event handler
       SDL_Event e;
@@ -1658,10 +1793,10 @@ int main( int argc, char* args[] )
           {
             setNextState( ExitState::get() );
           }
-          else { /*  */ }
+          else { /* Event not managed here */ }
         }
 
-        // Do state logic
+        // Do state logic (with polymorphism)
         gCurrentState->update();
 
         // Change state if needed

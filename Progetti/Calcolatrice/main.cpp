@@ -262,7 +262,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
   free();
 
   // Render text surface
-  SDL_Surface* textSurface = TTF_RenderText_Solid( g_Font, textureText.c_str(), textColor );
+  SDL_Surface* textSurface = TTF_RenderText_Blended( g_Font, textureText.c_str(), textColor );
 
   if( textSurface != NULL )
   {

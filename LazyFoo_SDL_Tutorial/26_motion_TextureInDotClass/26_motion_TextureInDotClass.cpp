@@ -1,9 +1,10 @@
 /**
  * @file 26_motion_TextureInDotClass.cpp
  *
- * @brief Come l'esempio 26, ma rendendo la classe Dot autonoma, cioè eliminando la texture globale
- * "gDotTexture" e trasformandola in un membro privato di Dot, "m_DotTexture". Il constructor di Dot
- * alloca la texture; di conseguenza, la funzione privata globale "LoadMedia" diventa superflua.
+ * @brief Come l'esempio 26, ma rendendo la classe "Dot" autonoma, cioè eliminando la texture
+ * globale "gDotTexture" e trasformandola in un membro privato di "Dot", "m_DotTexture". Il
+ * constructor di "Dot" alloca la texture; di conseguenza, la funzione privata globale "LoadMedia"
+ * diventa superflua.
  **/
 
 // Using SDL, SDL_image, standard IO, and strings
@@ -125,18 +126,12 @@ class Dot
 {
   public:
 
-  // Initializes the variables
-   Dot(void);
-  ~Dot(void);
+   Dot( void );
+  ~Dot( void );
 
-  // Takes key presses and adjusts the dot's velocity
   void handleEvent( SDL_Event& );
-
-  // Moves the dot
-  void move(void);
-
-  // Shows the dot on the screen
-  void render(void);
+  void move       ( void );
+  void render     ( void );
 
   private:
 
@@ -145,7 +140,7 @@ class Dot
   static constexpr int DOT_HEIGHT = 20;
 
   // Maximum axis velocity of the dot
-  static constexpr int DOT_VEL = 5;
+  static constexpr int DOT_MAX_VEL = 5;
 
   // The X and Y offsets of the dot
   int m_PosX, m_PosY;
@@ -371,6 +366,11 @@ Dot::~Dot(void)
 }
 
 
+/**
+ * @brief Takes key presses and adjusts the dot's velocity
+ *
+ * @param e
+ **/
 void Dot::handleEvent( SDL_Event& e )
 {
   // If a key was pressed (e.key.repeat == 0 serve per ignorare la ripetizione automatica in caso di
@@ -380,10 +380,10 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : m_VelY -= DOT_VEL; break;
-      case SDLK_DOWN : m_VelY += DOT_VEL; break;
-      case SDLK_LEFT : m_VelX -= DOT_VEL; break;
-      case SDLK_RIGHT: m_VelX += DOT_VEL; break;
+      case SDLK_UP   : m_VelY -= DOT_MAX_VEL; break;
+      case SDLK_DOWN : m_VelY += DOT_MAX_VEL; break;
+      case SDLK_LEFT : m_VelX -= DOT_MAX_VEL; break;
+      case SDLK_RIGHT: m_VelX += DOT_MAX_VEL; break;
       default        :                   break;
     }
   }
@@ -393,10 +393,10 @@ void Dot::handleEvent( SDL_Event& e )
     // Adjust the velocity
     switch( e.key.keysym.sym )
     {
-      case SDLK_UP   : m_VelY += DOT_VEL; break;
-      case SDLK_DOWN : m_VelY -= DOT_VEL; break;
-      case SDLK_LEFT : m_VelX += DOT_VEL; break;
-      case SDLK_RIGHT: m_VelX -= DOT_VEL; break;
+      case SDLK_UP   : m_VelY += DOT_MAX_VEL; break;
+      case SDLK_DOWN : m_VelY -= DOT_MAX_VEL; break;
+      case SDLK_LEFT : m_VelX += DOT_MAX_VEL; break;
+      case SDLK_RIGHT: m_VelX -= DOT_MAX_VEL; break;
       default        :                   break;
     }
   }
@@ -405,6 +405,9 @@ void Dot::handleEvent( SDL_Event& e )
 }
 
 
+/**
+ * @brief Moves the dot
+ **/
 void Dot::move(void)
 {
   // Move the dot left or right
@@ -431,6 +434,9 @@ void Dot::move(void)
 }
 
 
+/**
+ * @brief Shows the dot on the screen
+ **/
 void Dot::render(void)
 {
   // Show the dot

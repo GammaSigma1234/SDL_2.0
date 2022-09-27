@@ -5,7 +5,7 @@
  *
  * Whether you want to be able to handle unstable frame rates or support multiple frame rates, you
  * can set your movement based on time to make it independent of frame rate.
- * 
+ *
  * Simile all'esempio già visto in precedenza in cui VSync era stata rimossa dalla chiamata a
  * "SDL_CreateRenderer". Il frame rate di questo esempio è verosimilmente molto alto (migliaia di
  * frames al secondo): bisognerebbe reintrodurre il codice di analisi degli esempi 23-25 per
@@ -812,6 +812,7 @@ static bool init(void)
 
       // Create renderer for window
       gRenderer = SDL_CreateRenderer( gWindow, FIRST_ONE, SDL_RENDERER_ACCELERATED );
+
       if( gRenderer == NULL )
       {
         printf( "\nRenderer could not be created! SDL Error: %s", SDL_GetError() );

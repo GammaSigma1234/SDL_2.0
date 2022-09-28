@@ -4,10 +4,10 @@ cls
 echo.
 
 @REM Project's name
-set SDL2_PROJECT_NAME=AAA
+set SDL2_PROJECT_NAME=ObjectOriented
 
 @REM Source files
-set SOURCE_FILES=main.cpp MainWindow.cpp Renderer.cpp
+set SOURCE_FILES=main.cpp Initialiser.cpp MainWindow.cpp Renderer.cpp
 
 @REM Static libraries' paths
 set SDL2_LIB_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\lib
@@ -44,10 +44,9 @@ if exist %SDL2_PROJECT_NAME%.exe (
 echo Building executable...
 echo.
 
-echo on
+@REM echo on
 g++ %COMPILATION_OPTIONS% %SOURCE_FILES% %SDL2_INCLUDE_PATHS% %SDL2_LIB_PATHS% %SDL2_LIBRARIES% -o %SDL2_PROJECT_NAME%.exe
-@REM g++ %COMPILATION_OPTIONS% %SOURCE_FILES% -o %SDL2_PROJECT_NAME%.exe
-echo off
+@REM echo off
 
 IF %ERRORLEVEL% EQU 0 (
   echo.

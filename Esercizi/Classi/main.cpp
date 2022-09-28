@@ -1,63 +1,95 @@
 /**
  * @file main.cpp
  *
- * @brief Tentativo di creare un programma ad oggetti trattando la main window e il renderer come
- * dei singleton, ma questo porta a dei problemi a causa dell'interdipendenza. Il renderer necessita
- * di una main window, ma se creiamo entrambi come delle classi singleton, non abbiamo la garanzia
- * che la main window venga istanziata prima del renderer. Pertanto, probabilmente è inevitabile
- * dover ricorrere a una funzione di inizializzazione.
+ * @brief Creazione di un programma ad oggetti trattando la main window e il renderer come dei
+ * singleton. Per evitare problemi di interdipendenza (ad esempio, il renderer necessita di una main
+ * window già inizializzata), si è dovuto ricorrere a una funzione di inizializzazione.
  **/
 
 
+/***************************************************************************************************
+* Includes
+****************************************************************************************************/
+
 #include <iostream>
-#include "MainWindow.hpp"
+#include "Initialiser.hpp"
 #include "Renderer.hpp"
 
 
-static void PressEnter(void);
+/***************************************************************************************************
+* Private prototypes
+****************************************************************************************************/
+
+static void PressEnter           ( void );
+static void StartDebuggingConsole( int, char* [] );
+static void PerformIntegrityCheck( bool );
 
 
-int main( int argc, char* args[] )
+/***************************************************************************************************
+* Private constants
+****************************************************************************************************/
+
+
+/***************************************************************************************************
+* Main
+****************************************************************************************************/
+
+int main( int argc, char* argv[] )
 {
-  std::cout << "\n*********************************** INIZIO ***********************************\n";
+  std::cout << "\n\n*********************************** INIZIO ***********************************\n";
 
-  bool HasProgramSucceeded = true;
+  bool HasProgramSucceeded;
 
-  printf("\n*** Debugging console ***\n");
-  printf("\nProgram started with %d additional arguments.", argc - 1); // Il primo argomento è il nome dell'eseguibile
+  StartDebuggingConsole( argc, argv );
 
-  for (int i = 1; i != argc; ++i)
-  {
-    printf("\nArgument #%d: %s\n", i, args[i]);
-  }
+  HasProgramSucceeded = Initialiser_InitAll();
 
-  std::cout << "\nIndirizzo istanza MainWindow singleton: " << static_cast<void*>( MainWindow::Get() );
-  std::cout << "\nIndirizzo istanza Renderer   singleton: " << static_cast<void*>( Renderer::Get() );
-  // MainWindow::Debug();
+  Renderer::Render();
 
-  // Integrity check
-  if ( HasProgramSucceeded == true )
-  {
-    printf("\nProgram ended successfully!\n");
-  }
-  else
-  {
-    printf("\nThere was a problem during the execution of the program!\n");
-  }
+  PerformIntegrityCheck( HasProgramSucceeded );
 
   PressEnter();
 
-  std::cout << "\n***********************************  FINE  ***********************************\n";
+  std::cout << "\n***********************************  FINE  ***********************************\n\n";
   return 0;
 }
 
+
+/***************************************************************************************************
+* Private functions definitions
+****************************************************************************************************/
 
 static void PressEnter(void)
 {
   int UserChoice = '\0';
 
-  printf("\nPress ENTER to continue...");
+  printf( "\nPress ENTER to continue..." );
 
   while ( ( UserChoice = getchar() ) != '\n' )
   {;}
+}
+
+
+static void StartDebuggingConsole( int argc, char* argv[] )
+{
+  printf( "\n*** Debugging console ***\n" );
+  printf( "\nProgram \"%s\" started with %d additional arguments.", argv[0], argc - 1 ); // Il primo argomento è il nome dell'eseguibile
+
+  for ( int i = 1; i != argc; ++i )
+  {
+    printf( "\nArgument #%d: %s\n", i, argv[i] );
+  }
+}
+
+
+static void PerformIntegrityCheck( bool HasProgramSucceeded )
+{
+  if ( HasProgramSucceeded == true )
+  {
+    printf( "\nProgram ended successfully!\n" );
+  }
+  else
+  {
+    printf( "\nThere was a problem during the execution of the program!\n" );
+  }
 }

@@ -9,7 +9,7 @@ class MainWindow
 
   MainWindow(const MainWindow&) = delete;
 
-  static MainWindow* Get(void);
+  static SDL_Window* Get(void);
   static void Debug(void);
 
   private:
@@ -22,7 +22,8 @@ class MainWindow
   static constexpr int s_WINDOW_H = 480;
 
   bool        m_SuccessfulInit = true;
-  SDL_Window* m_Window;
+  
+  static SDL_Window* m_Window;
 };
 
 #endif // MAINWINDOW_HPP

@@ -7,7 +7,7 @@ echo.
 set SDL2_PROJECT_NAME=AAA
 
 @REM Source files
-set SOURCE_FILES=main.cpp MainWindow.cpp
+set SOURCE_FILES=main.cpp MainWindow.cpp Renderer.cpp
 
 @REM Static libraries' paths
 set SDL2_LIB_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\lib

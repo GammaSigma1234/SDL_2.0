@@ -5,7 +5,7 @@
 
 
 MainWindow MainWindow::MainWindow_Singleton; // Static instance
-
+SDL_Window* MainWindow::m_Window;
 
 MainWindow::MainWindow(void)
 {
@@ -49,9 +49,9 @@ MainWindow::MainWindow(void)
 }
 
 
-MainWindow* MainWindow::Get(void)
+SDL_Window* MainWindow::Get(void)
 {
-  return &MainWindow_Singleton; // Get static instance
+  return m_Window; // Get static instance
 }
 
 

@@ -13,10 +13,10 @@ class Renderer
 {
 public:
 
+  ~Renderer( void );
+  
   static SDL_Renderer* Get   ( void );
   static void          Render( void );
-
-  ~Renderer( void );
 
 private:
 

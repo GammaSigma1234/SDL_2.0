@@ -8,6 +8,7 @@
 #ifndef INITIALISER_HPP
 #define INITIALISER_HPP
 
-bool Initialiser_InitAll(void);
+bool Initialiser_InitAll  (void);
+void Initialiser_DeInitAll(void);
 
 #endif // INITIALISER_HPP

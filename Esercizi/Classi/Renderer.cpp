@@ -25,16 +25,17 @@ bool          Renderer::s_WasInitSuccessful;
  **/
 Renderer::Renderer( void )
 {
+  printf( "\nInitialising renderer...\n");
   s_Renderer = SDL_CreateRenderer( MainWindow::Get(), FIRST_ONE, SDL_RENDERER_ACCELERATED );
 
   if( s_Renderer == NULL )
   {
-    printf( "\nRenderer could not be created! SDL Error: %s", SDL_GetError() );
-    printf( "\nMainWindow::Get() = %p", static_cast<void*>( MainWindow::Get() ) );
+    printf( "\tRenderer could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
+    printf( "\tMainWindow::Get() = %p\n", static_cast<void*>( MainWindow::Get() ) );
   }
   else
   {
-    printf( "\nOK: renderer created" );
+    printf( "\tOK: renderer created\n" );
   }
 }
 
@@ -43,7 +44,9 @@ Renderer::Renderer( void )
  * @brief Destructor
  **/
 Renderer::~Renderer(void)
-{;}
+{
+  printf( "Renderer's destructor called\n" );
+}
 
 
 SDL_Renderer* Renderer::Get(void)

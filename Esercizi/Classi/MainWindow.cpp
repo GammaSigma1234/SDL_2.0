@@ -20,27 +20,29 @@ bool        MainWindow::s_WasInitSuccessful;
  **/
 MainWindow::MainWindow(void)
 {
+  printf( "\nInitialising Main Window...\n" );
+
   /* Initialise SDL */
 
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
-    printf( "\nSDL could not initialize! SDL Error: \"%s\"\n", SDL_GetError() );
+    printf( "\tSDL could not initialise! SDL Error: \"%s\"\n", SDL_GetError() );
     s_WasInitSuccessful = false;
   }
   else
   {
-    printf( "\nOK: SDL initialised" );
+    printf( "\tOK: SDL initialised\n" );
   }
 
   // Set texture filtering to linear
   if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
   {
-    printf( "\nWarning: Linear texture filtering not enabled!" );
+    printf( "\tWarning: Linear texture filtering not enabled!\n" );
     s_WasInitSuccessful = false;
   }
   else
   {
-    printf( "\nOK: linear texture filtering enabled" );
+    printf( "\tOK: linear texture filtering enabled\n" );
   }
 
   /* Create window */
@@ -52,14 +54,18 @@ MainWindow::MainWindow(void)
 
   if( s_Window == NULL )
   {
-    printf( "\nWindow could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
+    printf( "\tWindow could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
     s_WasInitSuccessful = false;
   }
   else
   {
-    printf( "\nOK: window created" );
+    printf( "\tOK: window created.\n" );
   }
 }
+
+
+MainWindow::~MainWindow(void)
+{;}
 
 
 SDL_Window* MainWindow::Get(void)
@@ -80,7 +86,10 @@ int MainWindow::GetWindowHeight(void)
 }
 
 
-void MainWindow::Debug(void)
+void MainWindow::DestroyWindow(void)
 {
-  printf("\nCiao");
+  printf( "\nDestroying Main Window...\n" );
+  
+  SDL_DestroyWindow( MainWindow::Get() );
+  s_Window = NULL;
 }

@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include "Initialiser.hpp"
+#include "InputManager.hpp"
 #include "Renderer.hpp"
 
 
@@ -44,7 +45,14 @@ int main( int argc, char* argv[] )
 
   HasProgramSucceeded = Initialiser_InitAll();
 
-  Renderer::Render();
+  while( !InputManager::QuitRequested() )
+  {
+    InputManager::ManageInput();
+
+    Renderer::Render();
+  }
+
+  Initialiser_DeInitAll();
 
   PerformIntegrityCheck( HasProgramSucceeded );
 

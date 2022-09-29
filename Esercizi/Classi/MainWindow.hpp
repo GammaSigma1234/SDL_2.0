@@ -21,13 +21,14 @@ class MainWindow
 
   static SDL_Window*  Get               (void);
   static bool         WasInitSuccessful (void);
-  static void         Debug             (void);
   static int          GetWindowWidth    (void);
   static int          GetWindowHeight   (void);
+  static void         DestroyWindow     (void);
 
   private:
 
-  MainWindow(void);
+   MainWindow( void );
+  ~MainWindow( void );
 
   static constexpr int s_WINDOW_W = 640;
   static constexpr int s_WINDOW_H = 480;

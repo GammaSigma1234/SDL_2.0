@@ -13,19 +13,19 @@ class Renderer
 {
 public:
 
-  static SDL_Renderer*  Get   (void);
-  static void           Render(void);
+  static SDL_Renderer* Get   ( void );
+  static void          Render( void );
 
-  ~Renderer(void);
+  ~Renderer( void );
 
 private:
 
-  Renderer(/* args */);
+  Renderer( void );
 
-  static constexpr int  FIRST_ONE = -1; /* Used by SDL_CreateRenderer(...) in the constructor */
+  static constexpr int  FIRST_ONE = -1; /* Used by SDL_CreateRenderer(...) in Renderer's constructor */
 
   static Renderer       s_Renderer_Sgl;
-  static SDL_Renderer*  s_Renderer; // The window renderer
+  static SDL_Renderer*  s_Renderer; // The actual window renderer
   static bool           s_WasInitSuccessful;
 };
 

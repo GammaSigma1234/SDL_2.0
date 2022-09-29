@@ -16,11 +16,14 @@ class MainWindow
 {
   public:
 
-  MainWindow(const MainWindow&) = delete;
+  MainWindow( const MainWindow& )  = delete;
+  MainWindow(       MainWindow&& ) = delete;
 
   static SDL_Window*  Get               (void);
   static bool         WasInitSuccessful (void);
   static void         Debug             (void);
+  static int          GetWindowWidth    (void);
+  static int          GetWindowHeight   (void);
 
   private:
 

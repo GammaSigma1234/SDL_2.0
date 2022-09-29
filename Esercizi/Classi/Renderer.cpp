@@ -15,9 +15,6 @@ bool          Renderer::s_WasInitSuccessful;
 * Private constants
 ****************************************************************************************************/
 
-static constexpr int SCREEN_W = 640;
-static constexpr int SCREEN_H = 480;
-
 
 /***************************************************************************************************
 * Methods
@@ -60,6 +57,9 @@ SDL_Renderer* Renderer::Get(void)
  **/
 void Renderer::Render(void)
 {
+  const int WINDOW_W = MainWindow::GetWindowWidth();
+  const int WINDOW_H = MainWindow::GetWindowHeight();
+
   // We're setting the clearing color to white at every frame as opposed to setting it once in
   // the initialization function
   SDL_SetRenderDrawColor( Renderer::Get(), WHITE_R, WHITE_G, WHITE_B, ALPHA_MAX );
@@ -68,24 +68,24 @@ void Renderer::Render(void)
   SDL_RenderClear( Renderer::Get() );
 
   // Render red filled quad
-  SDL_Rect fillRect = { SCREEN_W / 4, SCREEN_H / 4, SCREEN_W / 2, SCREEN_H / 2 };
+  SDL_Rect fillRect = { WINDOW_W / 4, WINDOW_H / 4, WINDOW_W / 2, WINDOW_H / 2 };
   SDL_SetRenderDrawColor( Renderer::Get(), RED_R, RED_G, RED_B, ALPHA_MAX );
   SDL_RenderFillRect( Renderer::Get(), &fillRect );
 
   // Render green outlined quad
-  SDL_Rect outlineRect = { SCREEN_W / 6, SCREEN_H / 6, SCREEN_W * 2 / 3, SCREEN_H * 2 / 3 };
+  SDL_Rect outlineRect = { WINDOW_W / 6, WINDOW_H / 6, WINDOW_W * 2 / 3, WINDOW_H * 2 / 3 };
   SDL_SetRenderDrawColor( Renderer::Get(), GREEN_R, GREEN_G, GREEN_B, ALPHA_MAX );
   SDL_RenderDrawRect( Renderer::Get(), &outlineRect );
 
   // Draw blue horizontal line
   SDL_SetRenderDrawColor( Renderer::Get(), BLUE_R, BLUE_G, BLUE_B, ALPHA_MAX );
-  SDL_RenderDrawLine( Renderer::Get(), 0, SCREEN_H / 2, SCREEN_W, SCREEN_H / 2 );
+  SDL_RenderDrawLine( Renderer::Get(), 0, WINDOW_H / 2, WINDOW_W, WINDOW_H / 2 );
 
   // Draw vertical line of yellow dots
   SDL_SetRenderDrawColor( Renderer::Get(), YELLOW_R, YELLOW_G, YELLOW_B, ALPHA_MAX );
-  for( int i = 0; i != SCREEN_H; i += 4 )
+  for( int i = 0; i != WINDOW_H; i += 4 )
   {
-    SDL_RenderDrawPoint( Renderer::Get(), SCREEN_W / 2, i );
+    SDL_RenderDrawPoint( Renderer::Get(), WINDOW_W / 2, i );
   }
 
   // Update screen

@@ -20,7 +20,7 @@ bool        MainWindow::s_WasInitSuccessful;
  **/
 MainWindow::MainWindow(void)
 {
-  /* Initialize SDL */
+  /* Initialise SDL */
 
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
@@ -65,6 +65,18 @@ MainWindow::MainWindow(void)
 SDL_Window* MainWindow::Get(void)
 {
   return s_Window; // Get static instance
+}
+
+
+int MainWindow::GetWindowWidth(void)
+{
+  return s_WINDOW_W;
+}
+
+
+int MainWindow::GetWindowHeight(void)
+{
+  return s_WINDOW_H;
 }
 
 

@@ -7,19 +7,11 @@
 #include <iostream>
 #include <cstdio>
 
-
-/***************************************************************************************************
-* Static members
-****************************************************************************************************/
-
-bool      InputManager::s_WasInitSuccessful (true);
-bool      InputManager::s_WasQuitRequested  (false);
-SDL_Event InputManager::s_Event;
-
-
 /***************************************************************************************************
 * Private constants
 ****************************************************************************************************/
+
+static auto& Manager_Ref( InputManager::Get() );
 
 
 /***************************************************************************************************
@@ -38,23 +30,33 @@ InputManager::~InputManager( void )
 }
 
 
+/**
+ * @brief Creates instance of singleton in static memory
+ *
+ * @return InputManager&
+ **/
+InputManager& InputManager::Get(void)
+{
+  static InputManager Instance;
+  return Instance;
+}
+
+
 void InputManager::ManageInput( void )
 {
-  while( SDL_PollEvent( &s_Event ) != 0 )
+  while( SDL_PollEvent( &Manager_Ref.m_Event ) != 0 )
   {
-    if( s_Event.type == SDL_QUIT )
+    if( m_Event.type == SDL_QUIT )
     {
-      s_WasQuitRequested = true;
+      Manager_Ref.m_WasQuitRequested = true;
     }
     else
-    {
-      // s_WasQuitRequested = false;
-    }
+    { /* User did not request to quit the program. */ }
   }
 }
 
 
-bool InputManager::QuitRequested( void )
+bool InputManager::WasQuitRequested( void )
 {
-  return s_WasQuitRequested;
+  return Manager_Ref.m_WasQuitRequested;
 }

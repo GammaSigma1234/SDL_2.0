@@ -9,23 +9,32 @@
 
 #include <SDL.h>
 
+/**
+ * @brief Singleton Input Manager class.
+ **/
 class InputManager
 {
 public:
 
-  ~InputManager( void );
+  InputManager( const InputManager& )  = delete;
+  InputManager(       InputManager&& ) = delete;
 
-  static void ManageInput  ( void );
-  static bool QuitRequested( void );
+  InputManager& operator=( const InputManager& ) = delete;
+
+  static InputManager& Get( void );
+  
+  void ManageInput      ( void );
+  bool WasInitSuccessful( void );
+  bool WasQuitRequested ( void );
 
 private:
 
-  InputManager( void );
+   InputManager( void );
+  ~InputManager( void );
 
-  static InputManager s_InputManager_Sgl;
-  static bool         s_WasInitSuccessful;
-  static bool         s_WasQuitRequested;
-  static SDL_Event    s_Event;
+  bool      m_WasInitSuccessful;
+  bool      m_WasQuitRequested;
+  SDL_Event m_Event;
 };
 
 #endif // INPUTMANAGER_HPP

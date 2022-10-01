@@ -1,9 +1,10 @@
 /**
  * @file main.cpp
  *
- * @brief Creazione di un programma ad oggetti trattando la main window e il renderer come dei
- * singleton. Per evitare problemi di interdipendenza (ad esempio, il renderer necessita di una main
- * window già inizializzata), si è dovuto ricorrere a una funzione di inizializzazione.
+ * @brief Creazione di un programma con paradigma di programmazione ad oggetti, trattando la Main
+ * Window e il Renderer come dei singleton. Per evitare problemi di interdipendenza (ad esempio, il
+ * renderer necessita di una Main Window già inizializzata), si è dovuto ricorrere a una funzione di
+ * inizializzazione.
  **/
 
 
@@ -30,26 +31,29 @@ static void PerformIntegrityCheck( bool );
 * Private constants
 ****************************************************************************************************/
 
+static auto& Renderer_Ref     (     Renderer::Get() );
+static auto& InputManager_Ref ( InputManager::Get() );
+
 
 /***************************************************************************************************
-* Main
+* Main function
 ****************************************************************************************************/
 
 int main( int argc, char* argv[] )
 {
   std::cout << "\n\n*********************************** INIZIO ***********************************\n";
 
-  bool HasProgramSucceeded;
+  bool  HasProgramSucceeded;
 
   StartDebuggingConsole( argc, argv );
 
   HasProgramSucceeded = Initialiser_InitAll();
 
-  while( !InputManager::QuitRequested() )
+  while( !InputManager_Ref.WasQuitRequested() )
   {
-    InputManager::ManageInput();
+    InputManager_Ref.ManageInput();
 
-    Renderer::Render();
+    Renderer_Ref.Render();
   }
 
   Initialiser_DeInitAll();

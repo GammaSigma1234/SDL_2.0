@@ -1,7 +1,7 @@
 /**
  * @file Initialiser.cpp
- *
- * @brief Singletons are defined here in order to control the sequence of initialisation.
+ * 
+ * @brief Initialises SDL.
  **/
 
 
@@ -17,20 +17,17 @@
 
 
 /***************************************************************************************************
-* Singletons instances
+* Private constants
 ****************************************************************************************************/
 
-MainWindow   MainWindow::s_MainWindow_Sgl;
-Renderer     Renderer::s_Renderer_Sgl;
-InputManager InputManager::s_InputManager_Sgl;
+static MainWindow&     MainWindow_Ref(   MainWindow::Get() );
+static Renderer&         Renderer_Ref(     Renderer::Get() );
+static InputManager& InputManager_Ref( InputManager::Get() );
 
 
 /***************************************************************************************************
 * Private prototypes
 ****************************************************************************************************/
-
-static void MainWindow_Init(void);
-static void Renderer_Init  (void);
 
 
 /***************************************************************************************************
@@ -46,19 +43,14 @@ bool Initialiser_InitAll(void)
 {
   bool WasInitSuccessful = true;
 
-  MainWindow_Init();
-
-  Renderer_Init();
-
   return WasInitSuccessful;
 }
 
 
 void Initialiser_DeInitAll(void)
 {
-  MainWindow::DestroyWindow();
+  MainWindow_Ref.DestroyWindow();
 
-  // Quit SDL subsystems
   SDL_Quit();
 }
 
@@ -66,14 +58,3 @@ void Initialiser_DeInitAll(void)
 /***************************************************************************************************
 * Private functions definitions
 ****************************************************************************************************/
-
-static void MainWindow_Init(void)
-{
-  /* Perform init as needed here... */
-}
-
-
-static void Renderer_Init  (void)
-{
-  /* Perform init as needed here... */
-}

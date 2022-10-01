@@ -1,7 +1,7 @@
 /**
  * @file Renderer.hpp
  * 
- * @brief The renderer.
+ * @brief The renderer. It is a singleton class.
  **/
 
 #ifndef RENDERER_HPP
@@ -9,24 +9,32 @@
 
 #include <SDL.h>
 
+/**
+ * @brief Singleton renderer class.
+ **/
 class Renderer
 {
 public:
 
-  ~Renderer( void );
+  Renderer( const Renderer& )  = delete;
+  Renderer(       Renderer&& ) = delete;
   
-  static SDL_Renderer* Get   ( void );
-  static void          Render( void );
+  Renderer& operator=( const Renderer& ) = delete;
+  
+  static Renderer& Get( void );
+  
+  SDL_Renderer* GetSDLRendererPtr( void );
+  void          Render           ( void );
 
 private:
 
-  Renderer( void );
+   Renderer( void );
+  ~Renderer( void );
 
   static constexpr int  FIRST_ONE = -1; /* Used by SDL_CreateRenderer(...) in Renderer's constructor */
 
-  static Renderer       s_Renderer_Sgl;
-  static SDL_Renderer*  s_Renderer; // The actual window renderer
-  static bool           s_WasInitSuccessful;
+  SDL_Renderer* m_Renderer; // The actual window renderer
+  bool          m_WasInitSuccessful;
 };
 
 

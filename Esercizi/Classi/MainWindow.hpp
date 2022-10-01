@@ -1,7 +1,7 @@
 /**
  * @file MainWindow.hpp
- * 
- * @brief The main window.
+ *
+ * @brief The main window. It is a singleton class.
  **/
 
 #ifndef MAINWINDOW_HPP
@@ -19,11 +19,15 @@ class MainWindow
   MainWindow( const MainWindow& )  = delete;
   MainWindow(       MainWindow&& ) = delete;
 
-  static SDL_Window*  Get               (void);
-  static bool         WasInitSuccessful (void);
-  static int          GetWindowWidth    (void);
-  static int          GetWindowHeight   (void);
-  static void         DestroyWindow     (void);
+  MainWindow& operator=( const MainWindow& ) = delete;
+
+  static MainWindow& Get(void);
+
+  SDL_Window* GetSDLWindowPtr  (void);
+  bool        WasInitSuccessful(void);
+  int         GetWindowWidth   (void);
+  int         GetWindowHeight  (void);
+  void        DestroyWindow    (void);
 
   private:
 
@@ -33,9 +37,8 @@ class MainWindow
   static constexpr int s_WINDOW_W = 640;
   static constexpr int s_WINDOW_H = 480;
 
-  static MainWindow   s_MainWindow_Sgl;
-  static SDL_Window*  s_Window;
-  static bool         s_WasInitSuccessful;
+  SDL_Window* m_Window;
+  bool        m_WasInitSuccessful;
 };
 
 #endif // MAINWINDOW_HPP

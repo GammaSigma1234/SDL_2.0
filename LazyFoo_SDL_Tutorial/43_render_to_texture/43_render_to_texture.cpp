@@ -1,3 +1,4 @@
+ 
 /**
  * @file 43_render_to_texture.cpp
  *
@@ -18,7 +19,7 @@
 #include <SDL_image.h>
 #include <stdio.h>
 #include <string>
-#include "colours.hpp"
+#include "../../Colours_Lib/colours.hpp"
 
 
 /**************************************************************************************************
@@ -31,8 +32,6 @@ static constexpr int WINDOW_W = 800; // Screen's width
 static constexpr int WINDOW_H = 600; // Screen's heigth
 
 static constexpr int TRANSPARENCY = 0x00;
-
-static constexpr int NUM_OF_FRAMES = 4; // I quattro "foo_walk"
 
 static constexpr int BYTES_PER_PIXEL = 4;
 
@@ -256,7 +255,7 @@ bool LTexture::loadFromRenderedText( const std::string& textureText, SDL_Color t
 		else
 		{
       printf( "\nOK: texture created from rendered text" );
-			
+
 			// Get image dimensions
       mWidth  = textSurface->w;
 			mHeight = textSurface->h;
@@ -542,7 +541,7 @@ static bool init(void)
         printf( "\nOK: renderer created" );
 
 				// Initialize renderer color
-        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
+        SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, ALPHA_MAX );
 
 				// Initialize PNG loading
 				int imgFlags = IMG_INIT_PNG;
@@ -691,25 +690,25 @@ int main( int argc, char* args[] )
 				gTargetTexture.setAsRenderTarget();
 
 				// Clear screen
-				SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, WHITE_A );
+				SDL_SetRenderDrawColor( gRenderer, WHITE_R, WHITE_G, WHITE_B, ALPHA_MAX );
 				SDL_RenderClear( gRenderer );
 
 				// Render red filled quad
 				SDL_Rect fillRect = { WINDOW_W / 4, WINDOW_H / 4, WINDOW_W / 2, WINDOW_H / 2 };
-				SDL_SetRenderDrawColor( gRenderer, RED_R, RED_G, RED_B, RED_A );
+				SDL_SetRenderDrawColor( gRenderer, RED_R, RED_G, RED_B, ALPHA_MAX );
 				SDL_RenderFillRect( gRenderer, &fillRect );
 
 				// Render green outlined quad
 				SDL_Rect outlineRect = { WINDOW_W / 6, WINDOW_H / 6, WINDOW_W * 2 / 3, WINDOW_H * 2 / 3 };
-				SDL_SetRenderDrawColor( gRenderer, GREEN_R, GREEN_G, GREEN_B, GREEN_A );
+				SDL_SetRenderDrawColor( gRenderer, GREEN_R, GREEN_G, GREEN_B, ALPHA_MAX );
 				SDL_RenderDrawRect( gRenderer, &outlineRect );
 
 				// Draw blue horizontal line
-				SDL_SetRenderDrawColor( gRenderer, BLUE_R, BLUE_G, BLUE_B, BLUE_A );
+				SDL_SetRenderDrawColor( gRenderer, BLUE_R, BLUE_G, BLUE_B, ALPHA_MAX );
 				SDL_RenderDrawLine( gRenderer, 0, WINDOW_H / 2, WINDOW_W, WINDOW_H / 2 );
 
 				// Draw vertical line of yellow dots
-				SDL_SetRenderDrawColor( gRenderer, YELLOW_R, YELLOW_G, YELLOW_B, YELLOW_A );
+				SDL_SetRenderDrawColor( gRenderer, YELLOW_R, YELLOW_G, YELLOW_B, ALPHA_MAX );
 				for( int i = 0; i < WINDOW_H; i += 4 )
 				{
 					SDL_RenderDrawPoint( gRenderer, WINDOW_W / 2, i );

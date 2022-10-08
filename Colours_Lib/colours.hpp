@@ -1,6 +1,6 @@
 /**
  * @file colours.hpp
- * 
+ *
  * @brief Composizione RGBA dei vari colori.
  **/
 

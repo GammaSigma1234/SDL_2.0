@@ -550,7 +550,7 @@ static bool init(void)
 
         if( !( IMG_Init( imgFlags ) & imgFlags ) )
         {
-          printf( "\nSDL_image could not initialize! SDL_mage Error: %s", IMG_GetError() );
+          printf( "\nSDL_image could not initialize! SDL_Image Error: %s", IMG_GetError() );
           success = false;
         }
         else

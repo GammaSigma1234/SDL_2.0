@@ -44,11 +44,11 @@ InputManager& InputManager::Get(void)
 
 void InputManager::ManageInput( void )
 {
-  while( SDL_PollEvent( &InputManager::Get().m_Event ) != 0 )
+  while( SDL_PollEvent( &m_Event ) != 0 )
   {
     if( m_Event.type == SDL_QUIT )
     {
-      InputManager::Get().m_WasQuitRequested = true;
+      m_WasQuitRequested = true;
     }
     else if ( m_Event.type == SDL_KEYDOWN ) // User presses a key
     {
@@ -70,5 +70,5 @@ void InputManager::ManageInput( void )
 
 bool InputManager::WasQuitRequested( void )
 {
-  return InputManager::Get().m_WasQuitRequested;
+  return m_WasQuitRequested;
 }

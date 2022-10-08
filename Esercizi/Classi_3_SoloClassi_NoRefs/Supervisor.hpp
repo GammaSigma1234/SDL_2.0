@@ -34,7 +34,6 @@ private:
 
    Supervisor( void );
   ~Supervisor( void );
-
 };
 
 #endif // SUPERVISOR_HPP

@@ -16,7 +16,7 @@
 SDL_Initialiser::SDL_Initialiser(void)
   : m_WasInitSuccessful(true)
 {
-  printf("\nInitialising SDL sybsystems...\n");
+  printf("\nInitialising SDL subsystems...\n");
   /* Initialise SDL */
 
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )

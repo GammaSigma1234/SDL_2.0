@@ -5,8 +5,8 @@
  * all'inizializzazione di tutti i sottosistemi SDL.
  *
  * Problema: probabilmente a causa di un errore nella sequenza d'inizializzazione, l'aggiunta
- * dell'SDL_Initialiser manda il programma in crash subito dopo averlo avviato. Rimuovendo tutte le
- * references statiche (usate come costanti private) e usando le ::Get() al loro posto ha risolto il
+ * dell'SDL_Initialiser manda il programma in crash subito dopo averlo avviato. Rimuovere tutte le
+ * references statiche (usate come costanti private) e usare le "::Get()" al loro posto ha risolto il
  * problema.
  **/
 

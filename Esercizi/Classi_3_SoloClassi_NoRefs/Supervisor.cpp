@@ -54,11 +54,11 @@ void Supervisor::PressEnter(void)
 void Supervisor::StartDebuggingConsole( int argc, char* argv[] )
 {
   printf( "\n*** Debugging console ***\n" );
-  printf( "\nProgram \"%s\" started with %d additional arguments.", argv[0], argc - 1 ); // Il primo argomento è il nome dell'eseguibile
+  printf( "\tProgram \"%s\" started with %d additional arguments.\n", argv[0], argc - 1 ); // Il primo argomento è il nome dell'eseguibile
 
   for ( int i = 1; i != argc; ++i )
   {
-    printf( "\nArgument #%d: %s\n", i, argv[i] );
+    printf( "\tArgument #%d: %s\n", i, argv[i] );
   }
 }
 

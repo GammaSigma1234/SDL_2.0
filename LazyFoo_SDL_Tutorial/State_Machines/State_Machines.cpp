@@ -5,13 +5,13 @@
  *
  * @copyright This source code copyrighted by Lazy Foo' Productions (2004-2022)
  * and may not be redistributed without written permission.
- * 
+ *
  * You may be thinking as to why we don't put the state management and the state variables into a
  * state manager class. This is how it is usually done, but for the sake of simplicity we'll have
  * them be global variables/functions. In larger games, it's not uncommon for game states to have
  * substates and state machines to have substate machines, but for this article we want to keep
  * things simple.
- * 
+ *
  * We do not rotate the state pointers until after the enter()/exit() functions are called. Questo
  * perché le funzioni enter()/exit() hanno il compito di caricare i nuovi asset e liberare i vecchi
  * un attimo prima che il cambio di stato venga finalizzato. Ergo, nella changeState(), prima viene
@@ -19,7 +19,7 @@
  * prossimo stato (gNextState) per caricarlo. Quando ciò è stato eseguito, avviene la vera e propria
  * rotazione degli stati, in cui gNextState rimpiazza gCurrentState, mentre gNextState diventa NULL
  * in attesa che qualche evento lo modifichi.
- * 
+ *
  * In this example, the ExitState is a dummy state, but in larger games it's not uncommon to have an
  * exit state that cleans up things before the game terminates.
  **/
@@ -442,8 +442,8 @@ static SDL_Window* gWindow = NULL;
 static SDL_Renderer* gRenderer = NULL;
 
 /* Global assets - Sia il punto sia il font vengono mantenuti nella transizione fra stati */
-static LTexture  gDotTexture;   
-static TTF_Font* gFont = NULL;  
+static LTexture  gDotTexture;
+static TTF_Font* gFont = NULL;
 
 // Global game objects
 static Dot gDot;

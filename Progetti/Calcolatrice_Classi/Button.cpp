@@ -1,26 +1,32 @@
 #include "Button.hpp"
+#include "Renderer.hpp"
 
 
-LButton::LButton(void)
+Button::Button(void)
 {
-  mPosition.x = 0;
-  mPosition.y = 0;
-
-  mCurrentSprite = BUTTON_SPRITE_MOUSE_OUT;
+  m_Position.x    = 0;
+  m_Position.y    = 0;
+  m_CurrentSprite = ButtonSprite::BUTTON_SPRITE_NORMAL;
 }
 
 
-void LButton::setPosition( int x, int y )
+void Button::setPosition( int x, int y )
 {
-  mPosition.x = x;
-  mPosition.y = y;
+  m_Position.x = x;
+  m_Position.y = y;
 }
 
 
-void LButton::handleEvent( SDL_Event* e )
+void Button::setClip ( SDL_Rect Clip )
+{
+  m_Clip = Clip;
+}
+
+
+void Button::handleEvent( SDL_Event* e )
 {
   // If mouse event happened
-  if( e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP )
+  if( /* e->type == SDL_MOUSEMOTION || */ e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP )
   {
     // Get mouse position
     int x, y;
@@ -30,22 +36,22 @@ void LButton::handleEvent( SDL_Event* e )
     bool inside = true;
 
     // Mouse is left of the button
-    if( x < mPosition.x )
+    if( x < m_Position.x )
     {
       inside = false;
     }
     // Mouse is right of the button
-    else if( x > mPosition.x + BUTTON_W )
+    else if( x > m_Position.x + BUTTON_W_px )
     {
       inside = false;
     }
     // Mouse above the button
-    else if( y < mPosition.y )
+    else if( y < m_Position.y )
     {
       inside = false;
     }
     // Mouse below the button
-    else if( y > mPosition.y + BUTTON_H )
+    else if( y > m_Position.y + BUTTON_H_px )
     {
       inside = false;
     }
@@ -55,7 +61,7 @@ void LButton::handleEvent( SDL_Event* e )
     // Mouse is outside button
     if( !inside )
     {
-      mCurrentSprite = BUTTON_SPRITE_MOUSE_OUT;
+      m_CurrentSprite = BUTTON_SPRITE_NORMAL;
     }
     // Mouse is inside button
     else
@@ -63,17 +69,21 @@ void LButton::handleEvent( SDL_Event* e )
       // Set mouse over sprite
       switch( e->type )
       {
-        case SDL_MOUSEMOTION:
-        mCurrentSprite = BUTTON_SPRITE_MOUSE_OVER_MOTION;
-        break;
+        // case SDL_MOUSEMOTION:
+        // mCurrentSprite = BUTTON_SPRITE_MOUSE_OVER_MOTION;
+        // break;
 
         case SDL_MOUSEBUTTONDOWN:
-        mCurrentSprite = BUTTON_SPRITE_MOUSE_DOWN;
-        break;
+          m_CurrentSprite = BUTTON_SPRITE_PRESSED;
+          break;
 
         case SDL_MOUSEBUTTONUP:
-        mCurrentSprite = BUTTON_SPRITE_MOUSE_UP;
-        break;
+          m_CurrentSprite = BUTTON_SPRITE_NORMAL;
+          break;
+
+        default:
+          m_CurrentSprite = BUTTON_SPRITE_NORMAL;
+          break;
       }
     }
   }
@@ -82,8 +92,9 @@ void LButton::handleEvent( SDL_Event* e )
 }
 
 
-void LButton::render(void)
+void Button::render(void)
 {
   // Show current button sprite
-  gButtonSpriteSheetTexture.render( mPosition.x, mPosition.y, &gSpriteClips[ mCurrentSprite ] );
+  // Renderer::Get().GetKeysTexture().render( m_Position.x, m_Position.y, &gSpriteClips[ mCurrentSprite ] );
+  Renderer::Get().GetKeysTexture().render( m_Position.x, m_Position.y, &m_Clip );
 }

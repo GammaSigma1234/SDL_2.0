@@ -28,6 +28,8 @@ Renderer::Renderer( void )
   CreateRenderer_Pvt();
 
   LoadMedia_Pvt();
+
+  CreateButtons_Pvt();
 }
 
 
@@ -79,72 +81,42 @@ void Renderer::LoadMedia_Pvt( void )
 {
   if( !m_Keys.loadFromFile( m_KeysPath, m_Renderer ) )
   {
-    printf( "Failed to load button sprite texture!\n" );
+    printf( "\nFailed to load \"%s\"!\n", m_KeysPath.c_str() );
     m_WasInitSuccessful = false;
   }
   else
   {
-    // printf( "\nTexture created from \"%s\".\n", m_KeysPath.c_str() );
-    printf( "\nTexture creation OK." );
-  }
-
-  if( !m_KeysPressed.loadFromFile( m_KeysPressedPath, m_Renderer ) )
-  {
-    printf( "\nFailed to load button sprite texture!\n" );
-    m_WasInitSuccessful = false;
-  }
-  else
-  {
-    // printf( "\nTexture created from \"%s\".\n", m_KeysPressedPath.c_str() );
     printf( "\nTexture creation OK." );
   }
 }
 
+
+void Renderer::CreateButtons_Pvt(void)
+{
+  m_Button_1.setPosition(0, 600);
+  m_Button_1.setClip(SDL_Rect{0, 400, Button::BUTTON_W_px, Button::BUTTON_H_px});
+
+  m_Button_2.setPosition(100, 600);
+  m_Button_2.setClip(SDL_Rect{100, 400, Button::BUTTON_W_px, Button::BUTTON_H_px});
+}
+
+
+Texture& Renderer::GetKeysTexture ( void )
+{
+  return m_Keys;
+}
 
 /**
  * @brief Performs all the rendering.
  **/
 void Renderer::Render(void)
 {
-  // const int WINDOW_W = MainWindow::Get().GetWindowWidth();
-  // const int WINDOW_H = MainWindow::Get().GetWindowHeight();
-
-  // We're setting the clearing color to white at every frame as opposed to setting it once in
-  // the initialization function
   SDL_SetRenderDrawColor( m_Renderer, WHITE_R, WHITE_G, WHITE_B, ALPHA_MAX );
 
-  // Clear screen
   SDL_RenderClear( m_Renderer );
 
-  static SDL_Rect SrcClip{0, 0, 5000, 6719};
-  // static SDL_Rect DstClip{0, 0, 500 , 672};
-  static SDL_Rect DstClip{0, 0, 5000 / 10, 6719 / 10};
+  m_Button_1.render();
+  m_Button_2.render();
 
-  // m_Keys.render(&SrcClip, &DstClip);
-  // m_KeysPressed.render(&SrcClip, &DstClip);
-  m_KeysPressed.render(nullptr, &DstClip);
-
-  // // Render red filled quad
-  // SDL_Rect fillRect = { WINDOW_W / 4, WINDOW_H / 4, WINDOW_W / 2, WINDOW_H / 2 };
-  // SDL_SetRenderDrawColor( m_Renderer, RED_R, RED_G, RED_B, ALPHA_MAX );
-  // SDL_RenderFillRect( m_Renderer, &fillRect );
-
-  // // Render green outlined quad
-  // SDL_Rect outlineRect = { WINDOW_W / 6, WINDOW_H / 6, WINDOW_W * 2 / 3, WINDOW_H * 2 / 3 };
-  // SDL_SetRenderDrawColor( m_Renderer, GREEN_R, GREEN_G, GREEN_B, ALPHA_MAX );
-  // SDL_RenderDrawRect( m_Renderer, &outlineRect );
-
-  // // Draw blue horizontal line
-  // SDL_SetRenderDrawColor( m_Renderer, BLUE_R, BLUE_G, BLUE_B, ALPHA_MAX );
-  // SDL_RenderDrawLine( m_Renderer, 0, WINDOW_H / 2, WINDOW_W, WINDOW_H / 2 );
-
-  // // Draw vertical line of yellow dots
-  // SDL_SetRenderDrawColor( m_Renderer, YELLOW_R, YELLOW_G, YELLOW_B, ALPHA_MAX );
-  // for( int i = 0; i != WINDOW_H; i += 4 )
-  // {
-  //   SDL_RenderDrawPoint( m_Renderer, WINDOW_W / 2, i );
-  // }
-
-  // Update screen
-  SDL_RenderPresent( m_Renderer );
+  SDL_RenderPresent( m_Renderer ); // Update screen
 }

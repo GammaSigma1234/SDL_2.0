@@ -32,7 +32,7 @@ MainWindow::MainWindow(void)
     m_Window = SDL_CreateWindow( "SDL Tutorial"          ,
                                   SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   s_WINDOW_W             , s_WINDOW_H             ,
-                                  SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_MAXIMIZED );
+                                  SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI );
 
     if( m_Window == NULL )
     {

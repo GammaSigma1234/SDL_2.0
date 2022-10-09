@@ -23,10 +23,10 @@ void Button::setClip ( SDL_Rect Clip )
 }
 
 
-void Button::handleEvent( SDL_Event* e )
+void Button::handleEvent( SDL_Event* Event )
 {
   // If mouse event happened
-  if( /* e->type == SDL_MOUSEMOTION || */ e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP )
+  if( /* Event->type == SDL_MOUSEMOTION || */ Event->type == SDL_MOUSEBUTTONDOWN || Event->type == SDL_MOUSEBUTTONUP )
   {
     // Get mouse position
     int x, y;
@@ -58,16 +58,18 @@ void Button::handleEvent( SDL_Event* e )
     else
     {;} // Mouse is inside the button
 
-    // Mouse is outside button
     if( !inside )
     {
+      // Mouse is outside button
       m_CurrentSprite = BUTTON_SPRITE_NORMAL;
     }
-    // Mouse is inside button
     else
     {
+      // Mouse is inside button
+      // printf("\nInside!"); // TODO: Debug
+
       // Set mouse over sprite
-      switch( e->type )
+      switch( Event->type )
       {
         // case SDL_MOUSEMOTION:
         // mCurrentSprite = BUTTON_SPRITE_MOUSE_OVER_MOTION;
@@ -92,9 +94,21 @@ void Button::handleEvent( SDL_Event* e )
 }
 
 
+/**
+ * @brief Show current button sprite
+ **/
 void Button::render(void)
 {
-  // Show current button sprite
+  switch ( m_CurrentSprite )
+  {
+    default:
+    case ButtonSprite::BUTTON_SPRITE_NORMAL:
+      Renderer::Get().GetNormalButtonsSpriteSheet().render( m_Position.x, m_Position.y, &m_Clip );
+      break;
+
+    case ButtonSprite::BUTTON_SPRITE_PRESSED:
+      Renderer::Get().GetPressedButtonsSpriteSheet().render( m_Position.x, m_Position.y, &m_Clip );
+      break;
+  }
   // Renderer::Get().GetKeysTexture().render( m_Position.x, m_Position.y, &gSpriteClips[ mCurrentSprite ] );
-  Renderer::Get().GetKeysTexture().render( m_Position.x, m_Position.y, &m_Clip );
 }

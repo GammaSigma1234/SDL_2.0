@@ -4,6 +4,7 @@
 
 #include "InputManager.hpp"
 #include "Supervisor.hpp" // TODO: test fault
+#include "Renderer.hpp"
 
 #include <iostream>
 #include <cstdio>
@@ -46,7 +47,7 @@ void InputManager::ManageInput( void )
 {
   while( SDL_PollEvent( &m_Event ) != 0 )
   {
-    if( m_Event.type == SDL_QUIT )
+    if ( m_Event.type == SDL_QUIT )
     {
       m_WasQuitRequested = true;
     }
@@ -64,6 +65,15 @@ void InputManager::ManageInput( void )
     }
     else
     { /* User did not request to quit the program. */ }
+
+    /* Handle button events */
+
+    size_t NumOfButtons(static_cast<size_t>(Renderer::ButtonsClips_Enum::HOW_MANY));
+
+    for ( size_t i = 0; i != NumOfButtons; ++i )
+    {
+      Renderer::Get().GetButtonVector()[ i ].handleEvent( &m_Event );
+    }
   }
 }
 

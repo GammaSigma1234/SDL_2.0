@@ -1,7 +1,7 @@
 /**
  * @file 07_texture_loading_and_rendering_IMG_LoadTexture.cpp
  *
- * @brief Come il precedente, ma con l'uso di "IMG_LoadTexture".
+ * @brief Come il precedente, ma con l'uso di "IMG_LoadTexture" anziché "loadSurface".
  *
  * main
  * |
@@ -18,7 +18,7 @@
  * |    |
  * |    |----loadTexture
  * |         |
- * |         |----IMG_LoadTexture               (carica immagine come surface, e non come texture)
+ * |         |----IMG_LoadTexture
  * |
  * |----SDL_PollEvent     (gestisce l'ultimo evento nella coda degli eventi)
  * |----SDL_RenderClear   (riempie lo schermo del colore impostato tramite SDL_SetRenderDrawColor)

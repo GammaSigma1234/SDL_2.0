@@ -13,7 +13,7 @@
  *  - Avviamo il main loop.
  *  - Nel main loop, facciamo il clear dello schermo e poi renderizziamo i quattro punti colorati
  *    nelle posizioni indicate dai vari rettangoli di nome "Dest". La funzione "SDL_RenderCopy"
- *    richiede di specificare quattro paramteri: il motore di rendering; la texture da renderizzare;
+ *    richiede di specificare quattro parametri: il motore di rendering; la texture da renderizzare;
  *    la sorgente (cioè la porzione di texture da renderizzare); la destinazione (dove fare apparire
  *    la porzione di texture nella finestra da renderizzare). La sorgente può coincidere con
  *    l'intera texture, mentre la destinazione può coincidere con l'intera finestra da renderizzare.
@@ -68,7 +68,7 @@ int main( int argc, char* args[] )
   SDL_Window*   Window;
   SDL_Renderer* Renderer;
   SDL_Texture*  Texture = NULL; // The final texture
-  SDL_Surface*  loadedSurface = IMG_Load( FilePath.c_str() ); // Load image at specified path. Verrà convertita in texture
+  SDL_Surface*  loadedSurface; // Load image at specified path. Verrà convertita in texture
 
   constexpr int INITIALISE_FIRST_ONE_AVAILABLE = -1;
 

@@ -7,12 +7,24 @@
 #ifndef SUPERVISOR_HPP
 #define SUPERVISOR_HPP
 
+#include <string>
+
+
 /**
  * @brief Singleton supervisor class
  **/
 class Supervisor
 {
 public:
+
+  enum class FaultLevel
+  {
+    NO_FAULT = 0,
+    WARNING,
+    BLOCKING,
+
+    HOW_MANY
+  };
 
   Supervisor( const Supervisor&  ) = delete;
   Supervisor(       Supervisor&& ) = delete;
@@ -26,6 +38,7 @@ public:
   void PressEnter           ( void );
   void PerformIntegrityCheck( void );
   void RaiseFault           ( void );
+  void PrintMessage           ( const std::string&, FaultLevel );
   bool IsThereAnyFault      ( void );
 
 private:

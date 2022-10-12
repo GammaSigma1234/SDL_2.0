@@ -14,8 +14,8 @@ public:
 
   Button(void); // Initializes internal variables
 
-  void setPosition( int, int ); // Sets top left position
-  void setClip    ( SDL_Rect ); // Sets top left position
+  void setPosition( SDL_Point );
+  void setClip    ( SDL_Rect );
   void handleEvent( SDL_Event* ); // Handles mouse event
   void render     ( void ); // Shows button sprite
 

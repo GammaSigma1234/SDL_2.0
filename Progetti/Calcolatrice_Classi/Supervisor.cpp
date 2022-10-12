@@ -85,6 +85,30 @@ void Supervisor::RaiseFault( void )
 }
 
 
+void Supervisor::PrintMessage ( const std::string& Msg, FaultLevel Level)
+{
+  switch ( Level )
+  {
+  case FaultLevel::NO_FAULT:
+    std::cout << "\nSupervisor OK: " << Msg;
+    break;
+
+  case FaultLevel::WARNING:
+    std::cerr << "\nSupervisor WARNING: " << Msg;
+    break;
+
+  case FaultLevel::BLOCKING:
+    std::cerr << "\nSupervisor BLOCKING FAULT: "  << Msg;
+    std::exit(EXIT_FAILURE); // TODO: GS solo per test. Non va bene uscire così in caso di errore!
+    break;
+
+  default:
+    std::cerr << "\nUnexpected error.";
+    break;
+  }
+}
+
+
 bool Supervisor::IsThereAnyFault( void )
 {
   return m_isThereAnyFault;

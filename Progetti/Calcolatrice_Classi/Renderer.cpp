@@ -2,6 +2,7 @@
 * Includes
 ****************************************************************************************************/
 
+#include <sstream>
 #include <cstdio>
 #include "MainWindow.hpp"
 #include "Supervisor.hpp"
@@ -13,6 +14,43 @@
 * Private constants
 ****************************************************************************************************/
 
+static std::stringstream Msg;
+
+static const char* NormalKeys_Path("./Sprites/Keys_Normal_400x600.png");
+static const char* PressedKeys_Path("./Sprites/Keys_Pressed_400x600.png");
+
+/* The following variables are used for the geometry of the buttons */
+
+/* Positions of rows and columns of the sprite sheets in pixels */
+
+static constexpr int Row_0_px   (0);
+static constexpr int Row_1_px   (100);
+static constexpr int Row_2_px   (200);
+static constexpr int Row_3_px   (300);
+static constexpr int Row_4_px   (400);
+static constexpr int Row_5_px   (500);
+static constexpr int Column_0_px(0);
+static constexpr int Column_1_px(100);
+static constexpr int Column_2_px(200);
+static constexpr int Column_3_px(300);
+
+/* Positions of the buttons */
+
+static const SDL_Point Key0_Pos     {0  , 600};
+static const SDL_Point KeyPoint_Pos {100, 600};
+static const SDL_Point KeyEquals_Pos{200, 600};
+static const SDL_Point Key1_Pos     {0  , 500};
+static const SDL_Point Key2_Pos     {100, 500};
+static const SDL_Point Key3_Pos     {200, 500};
+static const SDL_Point Key4_Pos     {0  , 400};
+static const SDL_Point Key5_Pos     {100, 400};
+static const SDL_Point Key6_Pos     {200, 400};
+static const SDL_Point Key7_Pos     {0  , 300};
+static const SDL_Point Key8_Pos     {100, 300};
+static const SDL_Point Key9_Pos     {200, 300};
+
+static constexpr int ButtonWidth_px ( Button::BUTTON_W_px );
+static constexpr int ButtonHeight_px( Button::BUTTON_H_px);
 
 /***************************************************************************************************
 * Methods
@@ -48,13 +86,17 @@ void Renderer::CreateRenderer_Pvt(void)
 
   if( m_Renderer == NULL )
   {
-    printf( "\tRenderer could not be created! SDL Error: \"%s\"\n", SDL_GetError() );
-    printf( "\tMainWindow::Get() = %p\n", static_cast<void*>( MainWindow::Get().GetSDLWindowPtr() ) );
+    Msg.str(std::string());
+    Msg << "Renderer could not be created! SDL Error: \"" << SDL_GetError()
+        << "\nMainWindow::Get() = " << static_cast<void*>( MainWindow::Get().GetSDLWindowPtr());
     Supervisor::Get().RaiseFault();
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::BLOCKING);
   }
   else
   {
-    printf( "\tOK: Renderer created. Address: %p\n", static_cast<void*>( m_Renderer ) );
+    Msg.str(std::string());
+    Msg << "Renderer created. Address: " << static_cast<void*>( m_Renderer );
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
   }
 }
 
@@ -66,16 +108,20 @@ void Renderer::LoadMedia_Pvt( void )
 {
   size_t SpriteSheetsNum(static_cast<size_t>(SpriteSheets_Enum::HOW_MANY));
 
-  m_SpriteSheets_Paths.push_back("./Sprites/Keys_Normal_400x600.png");
-  m_SpriteSheets_Paths.push_back("./Sprites/Keys_Pressed_400x600.png");
+  m_SpriteSheets_Paths.push_back(NormalKeys_Path);
+  m_SpriteSheets_Paths.push_back(PressedKeys_Path);
 
   if ( m_SpriteSheets_Paths.size() == SpriteSheetsNum )
   {
-    printf("\nSprite sheets enumeration OK.");
+    Msg.str(std::string());
+    Msg << "Sprite sheets enumeration successful.";
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
   }
   else
   {
-    printf("\n*** WARNING ***\n\tNumber of specified sprite sheets: %llu. Expected: %llu.", m_SpriteSheets_Paths.size(), SpriteSheetsNum);
+    Msg.str(std::string());
+    Msg << "*** WARNING ***\n\tNumber of specified sprite sheets: " << m_SpriteSheets_Paths.size() << ". Expected: " << SpriteSheetsNum;
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::BLOCKING);
   }
 
   m_SpriteSheets_Vec.resize(SpriteSheetsNum);
@@ -86,11 +132,16 @@ void Renderer::LoadMedia_Pvt( void )
 
     if( m_SpriteSheets_Vec[i].isValid() )
     {
-      printf( "\nTexture creation OK." );
+      Msg.str(std::string());
+      Msg << "Texture creation successful.";
+      Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
     }
     else
     {
-      printf( "\nFailed to load \"%s\"!\n", m_SpriteSheets_Paths[i].c_str() );
+      Msg.str(std::string());
+      Msg << "Failed to load \"" << m_SpriteSheets_Paths[i].c_str() << "\"!",
+      Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::BLOCKING);
+
       m_WasInitSuccessful = false;
     }
   }
@@ -99,67 +150,83 @@ void Renderer::LoadMedia_Pvt( void )
 
 void Renderer::CreateShapes_Pvt(void)
 {
-  m_Buttons_Vec.resize(static_cast<size_t>(ButtonsClips_Enum::HOW_MANY));
+  size_t NumOfCreatedButtons(0);
+  size_t NumOfExpectedButtons(static_cast<size_t>(ButtonsClips_Enum::HOW_MANY));
 
-  int Row_0(0);
-  int Row_1(100);
-  int Row_2(200);
-  int Row_3(300);
-  int Row_4(400);
-  int Row_5(500);
-
-  int Column_0(0);
-  int Column_1(100);
-  int Column_2(200);
-  int Column_3(300);
+  m_Buttons_Vec.resize(NumOfExpectedButtons);
 
   size_t Key_0(static_cast<size_t>(ButtonsClips_Enum::KEY_0));
-  m_Buttons_Vec[Key_0].setPosition(0, 600);
-  m_Buttons_Vec[Key_0].setClip(SDL_Rect{Column_0, Row_5, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_0].setPosition(Key0_Pos);
+  m_Buttons_Vec[Key_0].setClip(SDL_Rect{Column_0_px, Row_5_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_Point(static_cast<size_t>(ButtonsClips_Enum::KEY_POINT));
-  m_Buttons_Vec[Key_Point].setPosition(100, 600);
-  m_Buttons_Vec[Key_Point].setClip(SDL_Rect{Column_1, Row_5, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_Point].setPosition(KeyPoint_Pos);
+  m_Buttons_Vec[Key_Point].setClip(SDL_Rect{Column_1_px, Row_5_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_Equals(static_cast<size_t>(ButtonsClips_Enum::KEY_EQUALS));
-  m_Buttons_Vec[Key_Equals].setPosition(200, 600);
-  m_Buttons_Vec[Key_Equals].setClip(SDL_Rect{Column_2, Row_5, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_Equals].setPosition(KeyEquals_Pos);
+  m_Buttons_Vec[Key_Equals].setClip(SDL_Rect{Column_2_px, Row_5_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_1(static_cast<size_t>(ButtonsClips_Enum::KEY_1));
-  m_Buttons_Vec[Key_1].setPosition(0, 500);
-  m_Buttons_Vec[Key_1].setClip(SDL_Rect{Column_0, Row_4, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_1].setPosition(Key1_Pos);
+  m_Buttons_Vec[Key_1].setClip(SDL_Rect{Column_0_px, Row_4_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_2(static_cast<size_t>(ButtonsClips_Enum::KEY_2));
-  m_Buttons_Vec[Key_2].setPosition(100, 500);
-  m_Buttons_Vec[Key_2].setClip(SDL_Rect{Column_1, Row_4, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_2].setPosition(Key2_Pos);
+  m_Buttons_Vec[Key_2].setClip(SDL_Rect{Column_1_px, Row_4_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_3(static_cast<size_t>(ButtonsClips_Enum::KEY_3));
-  m_Buttons_Vec[Key_3].setPosition(200, 500);
-  m_Buttons_Vec[Key_3].setClip(SDL_Rect{Column_2, Row_4, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_3].setPosition(Key3_Pos);
+  m_Buttons_Vec[Key_3].setClip(SDL_Rect{Column_2_px, Row_4_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_4(static_cast<size_t>(ButtonsClips_Enum::KEY_4));
-  m_Buttons_Vec[Key_4].setPosition(0, 400);
-  m_Buttons_Vec[Key_4].setClip(SDL_Rect{Column_0, Row_3, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_4].setPosition(Key4_Pos);
+  m_Buttons_Vec[Key_4].setClip(SDL_Rect{Column_0_px, Row_3_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_5(static_cast<size_t>(ButtonsClips_Enum::KEY_5));
-  m_Buttons_Vec[Key_5].setPosition(100, 400);
-  m_Buttons_Vec[Key_5].setClip(SDL_Rect{Column_1, Row_3, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_5].setPosition(Key5_Pos);
+  m_Buttons_Vec[Key_5].setClip(SDL_Rect{Column_1_px, Row_3_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_6(static_cast<size_t>(ButtonsClips_Enum::KEY_6));
-  m_Buttons_Vec[Key_6].setPosition(200, 400);
-  m_Buttons_Vec[Key_6].setClip(SDL_Rect{Column_2, Row_3, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_6].setPosition(Key6_Pos);
+  m_Buttons_Vec[Key_6].setClip(SDL_Rect{Column_2_px, Row_3_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_7(static_cast<size_t>(ButtonsClips_Enum::KEY_7));
-  m_Buttons_Vec[Key_7].setPosition(0, 300);
-  m_Buttons_Vec[Key_7].setClip(SDL_Rect{Column_0, Row_2, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_7].setPosition(Key7_Pos);
+  m_Buttons_Vec[Key_7].setClip(SDL_Rect{Column_0_px, Row_2_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_8(static_cast<size_t>(ButtonsClips_Enum::KEY_8));
-  m_Buttons_Vec[Key_8].setPosition(100, 300);
-  m_Buttons_Vec[Key_8].setClip(SDL_Rect{Column_1, Row_2, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_8].setPosition(Key8_Pos);
+  m_Buttons_Vec[Key_8].setClip(SDL_Rect{Column_1_px, Row_2_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
 
   size_t Key_9(static_cast<size_t>(ButtonsClips_Enum::KEY_9));
-  m_Buttons_Vec[Key_9].setPosition(200, 300);
-  m_Buttons_Vec[Key_9].setClip(SDL_Rect{Column_2, Row_2, Button::BUTTON_W_px, Button::BUTTON_H_px});
+  m_Buttons_Vec[Key_9].setPosition(Key9_Pos);
+  m_Buttons_Vec[Key_9].setClip(SDL_Rect{Column_2_px, Row_2_px, ButtonWidth_px, ButtonHeight_px});
+  ++NumOfCreatedButtons;
+
+  if ( NumOfCreatedButtons == NumOfExpectedButtons)
+  {
+    Msg.str(std::string());
+    Msg << "Number of created buttons OK.";
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
+  }
+  else
+  {
+    Msg.str(std::string());
+    Msg << "Number of created buttons: " << NumOfCreatedButtons << ". Expected: " << NumOfExpectedButtons;
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::WARNING);
+  }
 }
 
 Texture& Renderer::GetSpriteSheet( SpriteSheets_Enum ss )

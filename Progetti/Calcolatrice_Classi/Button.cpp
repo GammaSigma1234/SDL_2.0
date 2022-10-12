@@ -10,10 +10,10 @@ Button::Button(void)
 }
 
 
-void Button::setPosition( int x, int y )
+void Button::setPosition( SDL_Point Point )
 {
-  m_Position.x = x;
-  m_Position.y = y;
+  m_Position.x = Point.x;
+  m_Position.y = Point.y;
 }
 
 

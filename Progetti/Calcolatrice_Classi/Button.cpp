@@ -103,11 +103,11 @@ void Button::render(void)
   {
     default:
     case ButtonSprite::BUTTON_SPRITE_NORMAL:
-      Renderer::Get().GetNormalButtonsSpriteSheet().render( m_Position.x, m_Position.y, &m_Clip );
+      Renderer::Get().GetSpriteSheet(Renderer::SpriteSheets_Enum::NORMAL_BUTTONS).render( m_Position.x, m_Position.y, &m_Clip );
       break;
 
     case ButtonSprite::BUTTON_SPRITE_PRESSED:
-      Renderer::Get().GetPressedButtonsSpriteSheet().render( m_Position.x, m_Position.y, &m_Clip );
+      Renderer::Get().GetSpriteSheet(Renderer::SpriteSheets_Enum::PRESSED_BUTTONS).render( m_Position.x, m_Position.y, &m_Clip );
       break;
   }
   // Renderer::Get().GetKeysTexture().render( m_Position.x, m_Position.y, &gSpriteClips[ mCurrentSprite ] );

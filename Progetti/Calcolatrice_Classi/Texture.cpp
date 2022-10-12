@@ -208,3 +208,14 @@ int Texture::getHeight(void) const
 {
   return m_Height;
 }
+
+
+/**
+ * @brief Checks whether the texture has been successfully created.
+ * 
+ * @return true, false 
+ **/
+bool Texture::isValid(void) const
+{
+  return !(m_Texture == nullptr);
+}

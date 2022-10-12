@@ -29,7 +29,7 @@ Renderer::Renderer( void )
 
   LoadMedia_Pvt();
 
-  CreateButtons_Pvt();
+  CreateShapes_Pvt();
 }
 
 
@@ -39,24 +39,6 @@ Renderer::Renderer( void )
 Renderer::~Renderer(void)
 {
   printf( "Renderer's destructor called\n" );
-}
-
-
-/**
- * @brief Creates instance of singleton in static memory
- *
- * @return Renderer&
- **/
-Renderer& Renderer::Get(void)
-{
-  static Renderer Instance;
-  return Instance;
-}
-
-
-SDL_Renderer* Renderer::GetSDLRendererPtr(void)
-{
-  return m_Renderer;
 }
 
 
@@ -77,31 +59,45 @@ void Renderer::CreateRenderer_Pvt(void)
 }
 
 
+/**
+ * @brief Loads all media needed for this project.
+ **/
 void Renderer::LoadMedia_Pvt( void )
 {
-  if( !m_NormalButtonsSpriteSheet.loadFromFile( m_NormalButtonsSpriteSheetPath, m_Renderer ) )
+  size_t SpriteSheetsNum(static_cast<size_t>(SpriteSheets_Enum::HOW_MANY));
+
+  m_SpriteSheets_Paths.push_back("./Sprites/Keys_Normal_400x600.png");
+  m_SpriteSheets_Paths.push_back("./Sprites/Keys_Pressed_400x600.png");
+
+  if ( m_SpriteSheets_Paths.size() == SpriteSheetsNum )
   {
-    printf( "\nFailed to load \"%s\"!\n", m_NormalButtonsSpriteSheetPath.c_str() );
-    m_WasInitSuccessful = false;
+    printf("\nSprite sheets enumeration OK.");
   }
   else
   {
-    printf( "\nTexture creation OK." );
+    printf("\n*** WARNING ***\n\tNumber of specified sprite sheets: %llu. Expected: %llu.", m_SpriteSheets_Paths.size(), SpriteSheetsNum);
   }
 
-  if( !m_PressedButtonsSpriteSheet.loadFromFile( m_PressedButtonsSpriteSheetPath, m_Renderer ) )
+  m_SpriteSheets_Vec.resize(SpriteSheetsNum);
+
+  for (size_t i = 0; i != SpriteSheetsNum; ++i)
   {
-    printf( "\nFailed to load \"%s\"!\n", m_PressedButtonsSpriteSheetPath.c_str() );
-    m_WasInitSuccessful = false;
-  }
-  else
-  {
-    printf( "\nTexture creation OK." );
+    m_SpriteSheets_Vec[i].loadFromFile( m_SpriteSheets_Paths[i], m_Renderer );
+
+    if( m_SpriteSheets_Vec[i].isValid() )
+    {
+      printf( "\nTexture creation OK." );
+    }
+    else
+    {
+      printf( "\nFailed to load \"%s\"!\n", m_SpriteSheets_Paths[i].c_str() );
+      m_WasInitSuccessful = false;
+    }
   }
 }
 
 
-void Renderer::CreateButtons_Pvt(void)
+void Renderer::CreateShapes_Pvt(void)
 {
   m_Buttons_Vec.resize(static_cast<size_t>(ButtonsClips_Enum::HOW_MANY));
 
@@ -166,16 +162,23 @@ void Renderer::CreateButtons_Pvt(void)
   m_Buttons_Vec[Key_9].setClip(SDL_Rect{Column_2, Row_2, Button::BUTTON_W_px, Button::BUTTON_H_px});
 }
 
-
-Texture& Renderer::GetNormalButtonsSpriteSheet( void )
+Texture& Renderer::GetSpriteSheet( SpriteSheets_Enum ss )
 {
-  return m_NormalButtonsSpriteSheet;
-}
+  size_t SpriteSheets_Index;
 
+  switch ( ss )
+  {
+    default:
+    case SpriteSheets_Enum::NORMAL_BUTTONS:
+      SpriteSheets_Index = static_cast<size_t>(SpriteSheets_Enum::NORMAL_BUTTONS);
+      return m_SpriteSheets_Vec[SpriteSheets_Index];
+      break;
 
-Texture& Renderer::GetPressedButtonsSpriteSheet( void )
-{
-  return m_PressedButtonsSpriteSheet;
+    case SpriteSheets_Enum::PRESSED_BUTTONS:
+      SpriteSheets_Index = static_cast<size_t>(SpriteSheets_Enum::PRESSED_BUTTONS);
+      return m_SpriteSheets_Vec[SpriteSheets_Index];
+      break;
+  }
 }
 
 
@@ -200,4 +203,22 @@ void Renderer::Render(void)
   }
 
   SDL_RenderPresent( m_Renderer ); // Update screen
+}
+
+
+/**
+ * @brief Use this function to invoke the Renderer when needed.
+ *
+ * @return Renderer&
+ **/
+Renderer& Renderer::Get(void)
+{
+  static Renderer Instance; // Creates instance of singleton in static memory.
+  return Instance;
+}
+
+
+SDL_Renderer* Renderer::GetSDLRendererPtr(void)
+{
+  return m_Renderer;
 }

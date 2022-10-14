@@ -4,26 +4,28 @@
 
 Button::Button(void)
 {
-  m_Position.x    = 0;
-  m_Position.y    = 0;
   m_CurrentSprite = ButtonSprite::BUTTON_SPRITE_NORMAL;
+  m_Clips_RectVec.reserve(ButtonSprite::BUTTON_SPRITE_HOWMANY);
 }
 
 
-void Button::setPosition( SDL_Point Point )
+/**
+ * @brief Sets the current clip of the sprite sheet that has do be drawn for this graphic element.
+ *
+ * @param Clip which clip of the sprite sheet has do be drawn.
+ **/
+void Button::setClip(const SDL_Rect& Clip, ButtonSprite Button_Sprite)
 {
-  m_Position.x = Point.x;
-  m_Position.y = Point.y;
+  m_Clips_RectVec[Button_Sprite] = Clip;
 }
 
 
-void Button::setClip ( SDL_Rect Clip )
-{
-  m_Clip = Clip;
-}
-
-
-void Button::handleEvent( SDL_Event* Event )
+/**
+ * @brief Manages mouse clicks. Overrides pure virtual function.
+ *
+ * @param Event The mouse event to be managed.
+ **/
+void Button::handleMouseEvent( SDL_Event* Event )
 {
   // If mouse event happened
   if( /* Event->type == SDL_MOUSEMOTION || */ Event->type == SDL_MOUSEBUTTONDOWN || Event->type == SDL_MOUSEBUTTONUP )
@@ -36,22 +38,22 @@ void Button::handleEvent( SDL_Event* Event )
     bool inside = true;
 
     // Mouse is left of the button
-    if( x < m_Position.x )
+    if( x < m_CurrentPosition_pt.x )
     {
       inside = false;
     }
     // Mouse is right of the button
-    else if( x > m_Position.x + BUTTON_W_px )
+    else if( x > m_CurrentPosition_pt.x + m_Width_px )
     {
       inside = false;
     }
     // Mouse above the button
-    else if( y < m_Position.y )
+    else if( y < m_CurrentPosition_pt.y )
     {
       inside = false;
     }
     // Mouse below the button
-    else if( y > m_Position.y + BUTTON_H_px )
+    else if( y > m_CurrentPosition_pt.y + m_Height_px )
     {
       inside = false;
     }
@@ -95,20 +97,9 @@ void Button::handleEvent( SDL_Event* Event )
 
 
 /**
- * @brief Show current button sprite
+ * @brief Renders current button sprite.
  **/
 void Button::render(void)
 {
-  switch ( m_CurrentSprite )
-  {
-    default:
-    case ButtonSprite::BUTTON_SPRITE_NORMAL:
-      Renderer::Get().GetSpriteSheet(Renderer::SpriteSheets_Enum::NORMAL_BUTTONS).render( m_Position.x, m_Position.y, &m_Clip );
-      break;
-
-    case ButtonSprite::BUTTON_SPRITE_PRESSED:
-      Renderer::Get().GetSpriteSheet(Renderer::SpriteSheets_Enum::PRESSED_BUTTONS).render( m_Position.x, m_Position.y, &m_Clip );
-      break;
-  }
-  // Renderer::Get().GetKeysTexture().render( m_Position.x, m_Position.y, &gSpriteClips[ mCurrentSprite ] );
+  Renderer::Get().GetSpriteSheet().render( m_CurrentPosition_pt.x, m_CurrentPosition_pt.y, &m_Clips_RectVec[m_CurrentSprite] );
 }

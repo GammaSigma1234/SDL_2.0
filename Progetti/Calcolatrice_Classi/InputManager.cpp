@@ -68,12 +68,16 @@ void InputManager::ManageInput( void )
 
     /* Handle button events */
 
-    size_t NumOfButtons(static_cast<size_t>(Renderer::ButtonsClips_Enum::HOW_MANY));
+    // size_t NumOfButtons(static_cast<size_t>(Renderer::ButtonsClips_Enum::HOW_MANY));
 
-    for ( size_t i = 0; i != NumOfButtons; ++i )
-    {
-      Renderer::Get().GetButtonVector()[ i ].handleEvent( &m_Event );
-    }
+    // for ( size_t i = 0; i != NumOfButtons; ++i )
+    // {
+    //   Renderer::Get().GetButtonVector()[ i ].handleEvent( &m_Event );
+    // }
+
+    Renderer::Get().m_Button0.handleMouseEvent( &m_Event );
+    Renderer::Get().m_Button1.handleMouseEvent( &m_Event );
+    Renderer::Get().m_Button2.handleMouseEvent( &m_Event );
   }
 }
 

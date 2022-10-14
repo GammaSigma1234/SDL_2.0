@@ -2,27 +2,18 @@
 #define BUTTON_HPP
 
 #include <SDL.h>
+#include "GraphicElement.hpp"
+#include "I_Clickable.hpp"
 
 /**
- * @brief This class represents a button. It has a constructor to initialize, a position setter, an
- * event handler for the event loop, and a rendering function. It also has a position and a sprite
- * enumeration, so we know which sprite to render for the button.
+ * @brief This class represents a clickable button. It has a sprite enumeration, to change the
+ * rendered sprite when the button is clicked.
  **/
-class Button
+class Button : public GraphicElement, public I_Clickable
 {
-public:
-
-  Button(void); // Initializes internal variables
-
-  void setPosition( SDL_Point );
-  void setClip    ( SDL_Rect );
-  void handleEvent( SDL_Event* ); // Handles mouse event
-  void render     ( void ); // Shows button sprite
-
-  static constexpr int BUTTON_W_px = 100;
-  static constexpr int BUTTON_H_px = 100;
-
 private:
+
+public:
 
   enum ButtonSprite
   {
@@ -32,9 +23,17 @@ private:
     BUTTON_SPRITE_HOWMANY
   };
 
-  SDL_Point    m_Position; // Top left position
-  SDL_Rect     m_Clip;
-  ButtonSprite m_CurrentSprite; // Currently used sprite
+  Button(void);
+
+  virtual void handleMouseEvent ( SDL_Event* ) override;
+  virtual void render           ( void )       override;
+
+          void setClip          ( const SDL_Rect&, ButtonSprite );
+
+private:
+
+  ButtonSprite          m_CurrentSprite; // Currently used sprite
+  std::vector<SDL_Rect> m_Clips_RectVec; // All the usable clips for this element
 };
 
 #endif // BUTTON_HPP

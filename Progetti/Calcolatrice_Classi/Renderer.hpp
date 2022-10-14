@@ -20,6 +20,14 @@ class Renderer
 {
 public:
 
+  enum class ComponentsClips_Enum
+  {
+    DISPLAY = 0,
+    PHOTOVOLTAIC_CELL,
+
+    HOW_MANY
+  };
+
   enum class ButtonsClips_Enum
   {
     KEY_0 = 0,
@@ -42,16 +50,6 @@ public:
     HOW_MANY
   };
 
-  /**
-   * @brief All the sprite sheets used by the renderer.
-   **/
-  enum class SpriteSheets_Enum
-  {
-    NORMAL_BUTTONS = 0,
-    PRESSED_BUTTONS,
-
-    HOW_MANY
-  };
 
   Renderer( const Renderer&  ) = delete; // Singleton
   Renderer(       Renderer&& ) = delete; // Singleton
@@ -62,8 +60,8 @@ public:
   static Renderer& Get( void );
 
   SDL_Renderer*        GetSDLRendererPtr( void );
-  Texture&             GetSpriteSheet   ( SpriteSheets_Enum );
-  std::vector<Button>& GetButtonVector  ( void );
+  Texture&             GetSpriteSheet   ( void );
+  // std::vector<GraphicElement>& GetButtonVector  ( void );
   void                 Render           ( void );
 
 private:
@@ -75,15 +73,17 @@ private:
   void CreateRenderer_Pvt ( void );
   void CreateShapes_Pvt   ( void );
 
-  const int     FIRST_ONE = -1; /* Used by SDL_CreateRenderer(...) in Renderer's constructor */
-
   SDL_Renderer* m_Renderer          = nullptr; // The actual window renderer
   bool          m_WasInitSuccessful = true;
   bool          m_MediaLoaded       = false;
 
-  std::vector<std::string> m_SpriteSheets_Paths;
-  std::vector<Texture>     m_SpriteSheets_Vec;
-  std::vector<Button>      m_Buttons_Vec;
+  Texture                       m_SpriteSheet;
+  // std::vector<GraphicElement*>  m_GraphicElem_Vec;
+
+public:
+  Button m_Button0;
+  Button m_Button1;
+  Button m_Button2;
 };
 
 

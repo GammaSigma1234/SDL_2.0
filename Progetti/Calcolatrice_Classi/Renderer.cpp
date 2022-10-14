@@ -16,52 +16,79 @@
 
 static std::stringstream Msg;
 
-// static const char* NormalKeys_Path  ("./Sprites/Keys_Normal_400x600.png");
-// static const char* PressedKeys_Path ("./Sprites/Keys_Pressed_400x600.png");
-// static const char* Components_Path  ("./Sprites/Components_400x200_px.png");
 static const char* AllComponents_Path  ("./Sprites/AllComponents_800x750.png");
 
 static constexpr int FIRST_ONE_AVAILABLE = -1;
 
-/* The following variables are used for the geometry of the buttons */
+/* Various sizes */
 
 static constexpr int NormalButtonW_px(100);
 static constexpr int NormalButtonH_px(100);
 
-/* Positions of rows and columns of the sprite sheets in pixels */
+static constexpr int SolarCellW_px(100);
+static constexpr int SolarCellH_px(50);
 
-static constexpr int Row_0_px   (0);
-static constexpr int Row_1_px   (100);
-static constexpr int Row_2_px   (200);
-static constexpr int Row_3_px   (300);
-static constexpr int Row_4_px   (400);
-static constexpr int Row_5_px   (500);
-static constexpr int Column_0_px(0);
-static constexpr int Column_1_px(100);
-static constexpr int Column_2_px(200);
-static constexpr int Column_3_px(300);
+static constexpr int DisplayW_px(380);
+static constexpr int DisplayH_px(130);
 
-/* Positions of display and photovoltaic cell of the sprite sheets in pixels */
+/* Positions of rows and columns in pixels in the sprite sheet */
 
-static constexpr int PhotovoltaicCell_x_px(0);
-static constexpr int PhotovoltaicCell_y_px(0);
-static constexpr int Display_x_px(0);
-static constexpr int Display_y_px(100);
+// static constexpr int Row_0_px   (0);
+// static constexpr int Row_1_px   (100);
+// static constexpr int Row_2_px   (200);
+// static constexpr int Row_3_px   (300);
+// static constexpr int Row_4_px   (400);
+// static constexpr int Row_5_px   (500);
+// static constexpr int Column_0_px(0);
+// static constexpr int Column_1_px(100);
+// static constexpr int Column_2_px(200);
+// static constexpr int Column_3_px(300);
 
-/* Positions of the buttons */
+static constexpr int Key0_xSS_px(0);
+static constexpr int Key0_ySS_px(650);
 
-static const SDL_Point Key0_Pos     {0  , 600};
-static const SDL_Point KeyPoint_Pos {100, 600};
-static const SDL_Point KeyEquals_Pos{200, 600};
-static const SDL_Point Key1_Pos     {0  , 500};
-static const SDL_Point Key2_Pos     {100, 500};
-static const SDL_Point Key3_Pos     {200, 500};
-static const SDL_Point Key4_Pos     {0  , 400};
-static const SDL_Point Key5_Pos     {100, 400};
-static const SDL_Point Key6_Pos     {200, 400};
-static const SDL_Point Key7_Pos     {0  , 300};
-static const SDL_Point Key8_Pos     {100, 300};
-static const SDL_Point Key9_Pos     {200, 300};
+static constexpr int KeyPoint_xSS_px(100);
+static constexpr int KeyPoint_ySS_px(650);
+
+static constexpr int KeyEquals_xSS_px(200);
+static constexpr int KeyEquals_ySS_px(650);
+
+static constexpr int Key1_xSS_px(0);
+static constexpr int Key1_ySS_px(550);
+
+static constexpr int Key2_xSS_px(100);
+static constexpr int Key2_ySS_px(550);
+
+static constexpr int Key3_xSS_px(200);
+static constexpr int Key3_ySS_px(550);
+
+/* Positions of display and photovoltaic cell in pixels in the sprite sheets */
+
+static constexpr int SolarCell_xSS_px(0);
+static constexpr int SolarCell_ySS_px(10);
+static constexpr int Display_xSS_px(120);
+static constexpr int Display_ySS_px(10);
+
+/* Positions of elements in the Main Window (MW) */
+
+static const SDL_Point Key0_MWPos     {0  , 600};
+static const SDL_Point KeyPoint_MWPos {100, 600};
+static const SDL_Point KeyEquals_MWPos{200, 600};
+static const SDL_Point Key1_MWPos     {0  , 500};
+static const SDL_Point Key2_MWPos     {100, 500};
+static const SDL_Point Key3_MWPos     {200, 500};
+static const SDL_Point Key4_MWPos     {0  , 400};
+static const SDL_Point Key5_MWPos     {100, 400};
+static const SDL_Point Key6_MWPos     {200, 400};
+static const SDL_Point Key7_MWPos     {0  , 300};
+static const SDL_Point Key8_MWPos     {100, 300};
+static const SDL_Point Key9_MWPos     {200, 300};
+
+static constexpr int SolarCell_xMW_px(10);
+static constexpr int SolarCell_yMW_px(10);
+
+static constexpr int Display_xMW_px(10);
+static constexpr int Display_yMW_px(100);
 
 
 /***************************************************************************************************
@@ -79,7 +106,7 @@ Renderer::Renderer( void )
 
   LoadMedia_Pvt();
 
-  CreateShapes_Pvt();
+  CreateGraphicElements_Pvt();
 }
 
 
@@ -119,76 +146,58 @@ void Renderer::CreateRenderer_Pvt(void)
 void Renderer::LoadMedia_Pvt( void )
 {
   m_SpriteSheet.loadFromFile(AllComponents_Path, m_Renderer);
-  /* Manually add here the sprite sheets to be loaded */
-
-  // size_t SpriteSheetsNum(static_cast<size_t>(SpriteSheets_Enum::HOW_MANY));
-
-  // m_SpriteSheets_Paths.push_back(NormalKeys_Path);
-  // m_SpriteSheets_Paths.push_back(PressedKeys_Path);
-  // m_SpriteSheets_Paths.push_back(Components_Path);
-
-  /* Automatic management of the sprite sheets vector */
-
-  // if ( m_SpriteSheets_Paths.size() == SpriteSheetsNum )
-  // {
-  //   Msg.str(std::string());
-  //   Msg << "Sprite sheets enumeration successful.";
-  //   Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
-  // }
-  // else
-  // {
-  //   Msg.str(std::string());
-  //   Msg << "*** WARNING ***\n\tNumber of specified sprite sheets: " << m_SpriteSheets_Paths.size() << ". Expected: " << SpriteSheetsNum;
-  //   Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::BLOCKING);
-  // }
-
-  // m_SpriteSheets_Vec.resize(SpriteSheetsNum);
-
-  // for (size_t i = 0; i != SpriteSheetsNum; ++i)
-  // {
-  //   m_SpriteSheets_Vec[i].loadFromFile( m_SpriteSheets_Paths[i], m_Renderer );
-
-  //   if( m_SpriteSheets_Vec[i].isValid() )
-  //   {
-  //     Msg.str(std::string());
-  //     Msg << "Texture creation successful.";
-  //     Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
-  //   }
-  //   else
-  //   {
-  //     Msg.str(std::string());
-  //     Msg << "Failed to load \"" << m_SpriteSheets_Paths[i].c_str() << "\"!",
-  //     Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::BLOCKING);
-
-  //     m_WasInitSuccessful = false;
-  //   }
-  // }
 }
 
 
-void Renderer::CreateShapes_Pvt(void)
+void Renderer::CreateGraphicElements_Pvt(void)
 {
   /* Buttons */
 
   size_t NumOfCreatedButtons(0);
   size_t NumOfExpectedButtons(static_cast<size_t>(ButtonsClips_Enum::HOW_MANY));
 
-  m_Button0.setPosition(SDL_Point{0, 650});
-  m_Button0.setSize(NormalButtonW_px, NormalButtonH_px);
-  m_Button0.setClip(SDL_Rect{0  , 650, m_Button0.GetWidth(), m_Button0.GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
-  m_Button0.setClip(SDL_Rect{400, 650, m_Button0.GetWidth(), m_Button0.GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
+  m_Button_Vec.resize(static_cast<size_t>(ButtonsClips_Enum::HOW_MANY));
+
+  size_t Key0(static_cast<size_t>(ButtonsClips_Enum::KEY_0));
+  m_Button_Vec[Key0].setPosition(Key0_MWPos);
+  m_Button_Vec[Key0].setSize(NormalButtonW_px, NormalButtonH_px);
+  m_Button_Vec[Key0].setClip(SDL_Rect{Key0_xSS_px, Key0_ySS_px, m_Button_Vec[Key0].GetWidth(), m_Button_Vec[Key0].GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
+  m_Button_Vec[Key0].setClip(SDL_Rect{400, 650, m_Button_Vec[Key0].GetWidth(), m_Button_Vec[Key0].GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
   ++NumOfCreatedButtons;
 
-  m_Button1.setPosition(SDL_Point{100, 650});
-  m_Button1.setSize(NormalButtonW_px, NormalButtonH_px);
-  m_Button1.setClip(SDL_Rect{100, 650, m_Button1.GetWidth(), m_Button1.GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
-  m_Button1.setClip(SDL_Rect{500, 650, m_Button1.GetWidth(), m_Button1.GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
+  size_t KeyPoint(static_cast<size_t>(ButtonsClips_Enum::KEY_POINT));
+  m_Button_Vec[KeyPoint].setPosition(KeyPoint_MWPos);
+  m_Button_Vec[KeyPoint].setSize(NormalButtonW_px, NormalButtonH_px);
+  m_Button_Vec[KeyPoint].setClip(SDL_Rect{KeyPoint_xSS_px, KeyPoint_ySS_px, m_Button_Vec[KeyPoint].GetWidth(), m_Button_Vec[KeyPoint].GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
+  m_Button_Vec[KeyPoint].setClip(SDL_Rect{500, 650, m_Button_Vec[KeyPoint].GetWidth(), m_Button_Vec[KeyPoint].GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
   ++NumOfCreatedButtons;
 
-  m_Button2.setPosition(SDL_Point{200, 650});
-  m_Button2.setSize(NormalButtonW_px, NormalButtonH_px);
-  m_Button2.setClip(SDL_Rect{200, 650, m_Button2.GetWidth(), m_Button2.GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
-  m_Button2.setClip(SDL_Rect{600, 650, m_Button2.GetWidth(), m_Button2.GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
+  size_t KeyEquals(static_cast<size_t>(ButtonsClips_Enum::KEY_EQUALS));
+  m_Button_Vec[KeyEquals].setPosition(KeyEquals_MWPos);
+  m_Button_Vec[KeyEquals].setSize(NormalButtonW_px, NormalButtonH_px);
+  m_Button_Vec[KeyEquals].setClip(SDL_Rect{KeyEquals_xSS_px, KeyEquals_ySS_px, m_Button_Vec[KeyEquals].GetWidth(), m_Button_Vec[KeyEquals].GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
+  m_Button_Vec[KeyEquals].setClip(SDL_Rect{600, 650, m_Button_Vec[KeyEquals].GetWidth(), m_Button_Vec[KeyEquals].GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
+  ++NumOfCreatedButtons;
+
+  size_t Key1(static_cast<size_t>(ButtonsClips_Enum::KEY_1));
+  m_Button_Vec[Key1].setPosition(Key1_MWPos);
+  m_Button_Vec[Key1].setSize(NormalButtonW_px, NormalButtonH_px);
+  m_Button_Vec[Key1].setClip(SDL_Rect{Key1_xSS_px, Key1_ySS_px, m_Button_Vec[Key1].GetWidth(), m_Button_Vec[Key1].GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
+  m_Button_Vec[Key1].setClip(SDL_Rect{400, 550, m_Button_Vec[Key1].GetWidth(), m_Button_Vec[Key1].GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
+  ++NumOfCreatedButtons;
+
+  size_t Key2(static_cast<size_t>(ButtonsClips_Enum::KEY_2));
+  m_Button_Vec[Key2].setPosition(Key2_MWPos);
+  m_Button_Vec[Key2].setSize(NormalButtonW_px, NormalButtonH_px);
+  m_Button_Vec[Key2].setClip(SDL_Rect{Key2_xSS_px, Key2_ySS_px, m_Button_Vec[Key2].GetWidth(), m_Button_Vec[Key2].GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
+  m_Button_Vec[Key2].setClip(SDL_Rect{500, 550, m_Button_Vec[Key2].GetWidth(), m_Button_Vec[Key2].GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
+  ++NumOfCreatedButtons;
+
+  size_t Key3(static_cast<size_t>(ButtonsClips_Enum::KEY_3));
+  m_Button_Vec[Key3].setPosition(Key3_MWPos);
+  m_Button_Vec[Key3].setSize(NormalButtonW_px, NormalButtonH_px);
+  m_Button_Vec[Key3].setClip(SDL_Rect{Key3_xSS_px, Key3_ySS_px, m_Button_Vec[Key3].GetWidth(), m_Button_Vec[Key3].GetHeight()}, Button::BUTTON_SPRITE_NORMAL);
+  m_Button_Vec[Key3].setClip(SDL_Rect{600, 550, m_Button_Vec[Key3].GetWidth(), m_Button_Vec[Key3].GetHeight()}, Button::BUTTON_SPRITE_PRESSED);
   ++NumOfCreatedButtons;
 
 
@@ -207,65 +216,38 @@ void Renderer::CreateShapes_Pvt(void)
 
   /* Other components */
 
-  // size_t NumOfCreatedComponents(0);
-  // size_t NumOfExpectedComponents(static_cast<size_t>(ComponentsClips_Enum::HOW_MANY));
+  size_t NumOfCreatedComponents(0);
+  size_t NumOfExpectedComponents(static_cast<size_t>(ComponentsClips_Enum::HOW_MANY));
 
-  // m_Components_Vec.resize(NumOfExpectedComponents);
+  m_SolarCell.setPosition(SDL_Point{SolarCell_xMW_px, SolarCell_yMW_px});
+  m_SolarCell.setSize(SolarCellW_px, SolarCellH_px);
+  m_SolarCell.setClip(SDL_Rect{SolarCell_xSS_px, SolarCell_ySS_px, m_SolarCell.GetWidth(), m_SolarCell.GetHeight()});
+  ++NumOfCreatedComponents;
 
-  // size_t PhotoVoltCell(static_cast<size_t>(ComponentsClips_Enum::PHOTOVOLTAIC_CELL));
-  // m_Components_Vec[PhotoVoltCell].setPosition(Key0_Pos);
-  // m_Components_Vec[PhotoVoltCell].setClip(SDL_Rect{Column_0_px, Row_5_px, ButtonWidth_px, ButtonHeight_px});
-  // ++NumOfCreatedComponents;
+  m_Display.setPosition(SDL_Point{Display_xMW_px, Display_yMW_px});
+  m_Display.setSize(DisplayW_px, DisplayH_px);
+  m_Display.setClip(SDL_Rect{Display_xSS_px, Display_ySS_px, m_Display.GetWidth(), m_Display.GetHeight()});
+  ++NumOfCreatedComponents;
 
-  // if ( NumOfCreatedButtons == NumOfExpectedComponents)
-  // {
-  //   Msg.str(std::string());
-  //   Msg << "Number of created buttons OK.";
-  //   Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
-  // }
-  // else
-  // {
-  //   Msg.str(std::string());
-  //   Msg << "Number of created buttons: " << NumOfCreatedButtons << ". Expected: " << NumOfExpectedButtons;
-  //   Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::WARNING);
-  // }
+  if ( NumOfCreatedComponents == NumOfExpectedComponents)
+  {
+    Msg.str(std::string());
+    Msg << "Number of created components OK.";
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::NO_FAULT);
+  }
+  else
+  {
+    Msg.str(std::string());
+    Msg << "Number of created components: " << NumOfCreatedComponents << ". Expected: " << NumOfExpectedComponents;
+    Supervisor::Get().PrintMessage(Msg.str(), Supervisor::FaultLevel::WARNING);
+  }
 }
-
-
-// Texture& Renderer::GetSpriteSheet( SpriteSheets_Enum ss )
-// {
-//   size_t SpriteSheets_Index;
-
-//   switch ( ss )
-//   {
-//     default:
-//     case SpriteSheets_Enum::NORMAL_BUTTONS:
-//       SpriteSheets_Index = static_cast<size_t>(SpriteSheets_Enum::NORMAL_BUTTONS);
-//       return m_SpriteSheets_Vec[SpriteSheets_Index];
-//       break;
-
-//     case SpriteSheets_Enum::PRESSED_BUTTONS:
-//       SpriteSheets_Index = static_cast<size_t>(SpriteSheets_Enum::PRESSED_BUTTONS);
-//       return m_SpriteSheets_Vec[SpriteSheets_Index];
-
-//     case SpriteSheets_Enum::COMPONENTS:
-//       SpriteSheets_Index = static_cast<size_t>(SpriteSheets_Enum::COMPONENTS);
-//       return m_SpriteSheets_Vec[SpriteSheets_Index];
-//       break;
-//   }
-// }
 
 
 Texture& Renderer::GetSpriteSheet( void )
 {
   return m_SpriteSheet;
 }
-
-
-// std::vector<GraphicElement>& Renderer::GetButtonVector( void )
-// {
-//   return m_GraphicElem_Vec;
-// }
 
 
 /**
@@ -277,25 +259,13 @@ void Renderer::Render(void)
 
   SDL_RenderClear( m_Renderer );
 
-  // for (auto& Button : m_GraphicElem_Vec)
-  // {
-  //   Button.render();
-  // }
+  for (auto& Button : m_Button_Vec)
+  {
+    Button.render();
+  }
 
-  m_Button0.render();
-  m_Button1.render();
-  m_Button2.render();
-
-  // SDL_Rect Rect{0, 0, 50, 50};
-
-  // m_SpriteSheet.render(100, 100, &Rect);
-
-  // SDL_Rect Test1{0, 0, 50, 50};
-  // SDL_Rect Test2{100, 100, 50, 50};
-  // // Renderer::Get().GetSpriteSheet(SpriteSheets_Enum::COMPONENTS).render(0, 0, NULL);
-  // Renderer::Get().GetSpriteSheet(SpriteSheets_Enum::COMPONENTS).render(100, 300, NULL);
-  // // Renderer::Get().GetSpriteSheet(SpriteSheets_Enum::COMPONENTS).render(0, 0, &Test1);
-  // // Renderer::Get().GetSpriteSheet(SpriteSheets_Enum::COMPONENTS).render(100, 100, &Test2);
+  m_SolarCell.render();
+  m_Display.render();
 
   SDL_RenderPresent( m_Renderer ); // Update screen
 }
@@ -316,4 +286,10 @@ Renderer& Renderer::Get(void)
 SDL_Renderer* Renderer::GetSDLRendererPtr(void)
 {
   return m_Renderer;
+}
+
+
+std::vector<Button>& Renderer::GetButtonVector ( void )
+{
+  return m_Button_Vec;
 }

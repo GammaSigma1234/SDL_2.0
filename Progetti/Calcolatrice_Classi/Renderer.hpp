@@ -12,6 +12,7 @@
 #include <vector>
 #include "Texture.hpp"
 #include "Button.hpp"
+#include "GenericGraphicElement.hpp"
 
 /**
  * @brief Singleton renderer class.
@@ -61,7 +62,7 @@ public:
 
   SDL_Renderer*        GetSDLRendererPtr( void );
   Texture&             GetSpriteSheet   ( void );
-  // std::vector<GraphicElement>& GetButtonVector  ( void );
+  std::vector<Button>& GetButtonVector  ( void );
   void                 Render           ( void );
 
 private:
@@ -69,21 +70,21 @@ private:
    Renderer( void );
   ~Renderer( void );
 
-  void LoadMedia_Pvt      ( void );
-  void CreateRenderer_Pvt ( void );
-  void CreateShapes_Pvt   ( void );
+  void LoadMedia_Pvt            ( void );
+  void CreateRenderer_Pvt       ( void );
+  void CreateGraphicElements_Pvt( void );
 
   SDL_Renderer* m_Renderer          = nullptr; // The actual window renderer
   bool          m_WasInitSuccessful = true;
   bool          m_MediaLoaded       = false;
 
-  Texture                       m_SpriteSheet;
-  // std::vector<GraphicElement*>  m_GraphicElem_Vec;
+  Texture             m_SpriteSheet;
+  std::vector<Button> m_Button_Vec;
 
 public:
-  Button m_Button0;
-  Button m_Button1;
-  Button m_Button2;
+
+  GenericGraphicElement m_SolarCell;
+  GenericGraphicElement m_Display;
 };
 
 

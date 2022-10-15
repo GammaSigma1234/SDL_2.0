@@ -7,9 +7,10 @@ echo.
 set SDL2_PROJECT_NAME=Calculator
 
 @REM Source files
-set SOURCE_FILES=main.cpp Supervisor.cpp MainWindow.cpp Renderer.cpp InputManager.cpp SDL_Initialiser.cpp Texture.cpp Button.cpp GraphicElement.cpp GenericGraphicElement.cpp
+set CLASSES_DIR=.\Classes
+set SOURCE_FILES=main.cpp
 
-@REM Static libraries' paths
+@REM Static libraries paths
 set SDL2_LIB_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\lib
 set SDL2_IMAGE_LIB_PATH=D:\Dati\SDL2\SDL2_image-2.6.0\x86_64-w64-mingw32\lib\
 set SDL2_TTF_LIB_PATH=D:\Dati\SDL2\SDL2_ttf-2.20.0\x86_64-w64-mingw32\lib\
@@ -22,7 +23,10 @@ set SDL2_LIBRARIES=-lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf
 set SDL2_INCLUDE_PATH=D:\Dati\SDL2\SDL2-2.0.22\x86_64-w64-mingw32\include\SDL2
 set SDL2_IMAGE_INCLUDE_PATH=D:\Dati\SDL2\SDL2_image-2.6.0\x86_64-w64-mingw32\include\SDL2\
 set SDL2_TTF_INCLUDE_PATH=D:\Dati\SDL2\SDL2_ttf-2.20.0\x86_64-w64-mingw32\include\SDL2
-set SDL2_INCLUDE_PATHS=-I%SDL2_INCLUDE_PATH% -I%SDL2_IMAGE_INCLUDE_PATH% -I%SDL2_TTF_INCLUDE_PATH%
+set CLASSES_INCLUDE_PATH=.\Classes
+set INTERFACES_INCLUDE_PATH=.\Interfaces
+set COLOURS_LIB_INCLUDE_PATH=D:\Dati\Versionamento\Git\Esercizi_Programmazione\SDL_2.0\Colours_Lib
+set SDL2_INCLUDE_PATHS=-I%SDL2_INCLUDE_PATH% -I%SDL2_IMAGE_INCLUDE_PATH% -I%SDL2_TTF_INCLUDE_PATH% -I%CLASSES_INCLUDE_PATH% -I%INTERFACES_INCLUDE_PATH% -I%COLOURS_LIB_INCLUDE_PATH%
 
 @REM C++ compilation options
 set COMPILATION_OPTIONS=-Wall -Wextra -Wpedantic -Wconversion
@@ -45,7 +49,7 @@ echo Building executable...
 echo.
 
 @REM echo on
-g++ %COMPILATION_OPTIONS% %SOURCE_FILES% %SDL2_INCLUDE_PATHS% %SDL2_LIB_PATHS% %SDL2_LIBRARIES% -o %SDL2_PROJECT_NAME%.exe
+g++ %COMPILATION_OPTIONS% %CLASSES_DIR%\*.cpp %SOURCE_FILES% %SDL2_INCLUDE_PATHS% %SDL2_LIB_PATHS% %SDL2_LIBRARIES% -o %SDL2_PROJECT_NAME%.exe
 @REM echo off
 
 IF %ERRORLEVEL% EQU 0 (

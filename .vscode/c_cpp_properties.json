@@ -2,24 +2,10 @@
   "configurations":
   [
     {
-      "name": "SDL2 2.0.16 + MinGW-w64",
-      "includePath":
-      [
-        "${workspaceFolder}\\**",
-        "D:\\Dati\\SDL2-2.0.16\\x86_64-w64-mingw32\\include\\SDL2"
-      ],
-      "defines": [ "_DEBUG", "UNICODE", "_UNICODE" ],
-      // "compilerPath": "D:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe",
-      "compilerPath": "D:\\MSYS64\\mingw64\\bin\\g++.exe",
-      "cStandard": "gnu17",
-      "cppStandard": "gnu++20",
-      "intelliSenseMode": "windows-gcc-x64"
-    },
-
-    {
       "name": "SDL2 2.0.22 + MinGW-w64",
       "includePath":
       [
+        "${workspaceFolder}\\Progetti\\Calcolatrice_Classi\\**",
         "${workspaceFolder}\\Colours_Lib",
         "D:\\Dati\\SDL2\\SDL2-2.0.22\\x86_64-w64-mingw32\\include\\SDL2",
         "D:\\Dati\\SDL2\\SDL2_image-2.6.0\\x86_64-w64-mingw32\\include\\SDL2",

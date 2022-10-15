@@ -7,7 +7,7 @@
 #include "MainWindow.hpp"
 #include "Supervisor.hpp"
 #include "Renderer.hpp"
-#include "..\..\Colours_Lib\colours.hpp"
+#include "colours.hpp"
 
 
 /***************************************************************************************************

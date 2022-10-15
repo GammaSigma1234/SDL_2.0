@@ -1,6 +1,6 @@
 #include "Texture.hpp"
 #include "Renderer.hpp"
-#include "../../Colours_Lib/colours.hpp"
+#include "colours.hpp"
 #include <SDL_Image.h>
 
 

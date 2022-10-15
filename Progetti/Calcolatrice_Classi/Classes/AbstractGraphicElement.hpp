@@ -5,7 +5,7 @@
 #include <vector>
 
 /**
- * @brief This class represents a generic graphic element to be drawn by the renderer. 
+ * @brief This class represents a generic abstract graphic element to be drawn by the renderer. 
  **/
 class GraphicElement
 {

@@ -22,7 +22,7 @@ SDL_Initialiser::SDL_Initialiser(void)
 
   if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
   {
-    printf( "\tSDL could not initialise! SDL Error: \"%s\"\n", SDL_GetError() );
+    printf( "\tWarning: SDL could not initialise! SDL Error: \"%s\"\n", SDL_GetError() );
     m_WasInitSuccessful = false;
   }
   else
@@ -46,12 +46,12 @@ SDL_Initialiser::SDL_Initialiser(void)
 
   if( !( IMG_Init( imgFlags ) & imgFlags ) )
   {
-    printf( "\tSDL_image could not initialize! SDL_Image Error: %s", IMG_GetError() );
-    // success = false;
+    printf( "\tWarning: SDL_image could not initialise! SDL_Image Error: %s", IMG_GetError() );
+    m_WasInitSuccessful = false;
   }
   else
   {
-    printf( "\tSDL_image initialised.\n" );
+    printf( "\tOK: SDL_image initialised.\n" );
   }
 }
 

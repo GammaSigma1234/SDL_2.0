@@ -35,6 +35,11 @@ int main( int argc, char* argv[] )
 {
   std::cout << "\n\n*********************************** INIZIO ***********************************\n";
 
+  if ( SDL_Initialiser::Get().isSDLInitialised() )
+    std::cout << "\nSDL initialised.";
+  else
+    std::cout << "\nSDL not yet initialised.";
+
   Supervisor::Get().StartDebuggingConsole( argc, argv );
 
   while( !InputManager::Get().WasQuitRequested() && !Supervisor::Get().IsThereAnyFault() )

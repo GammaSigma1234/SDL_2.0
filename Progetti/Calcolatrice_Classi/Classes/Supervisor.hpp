@@ -38,7 +38,7 @@ public:
   void PressEnter           ( void );
   void PerformIntegrityCheck( void );
   void RaiseFault           ( void );
-  void PrintMessage           ( const std::string&, FaultLevel );
+  void PrintMessage         ( const std::string&, FaultLevel = FaultLevel::NO_FAULT);
   bool IsThereAnyFault      ( void );
 
 private:

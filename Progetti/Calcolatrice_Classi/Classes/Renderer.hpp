@@ -41,6 +41,9 @@ public:
     KEY_7,
     KEY_8,
     KEY_9,
+    KEY_MRC,
+    KEY_MEMMINUS,
+    KEY_MEMPLUS,
     KEY_PLUS,
     KEY_MINUS,
     KEY_DIVIDE,
@@ -78,11 +81,8 @@ private:
   bool          m_WasInitSuccessful = true;
   bool          m_MediaLoaded       = false;
 
-  Texture             m_SpriteSheet;
-  std::vector<Button> m_Button_Vec;
-
-public:
-
+  Texture               m_SpriteSheet;
+  std::vector<Button>   m_Button_Vec;
   GenericGraphicElement m_SolarCell;
   GenericGraphicElement m_Display;
 };

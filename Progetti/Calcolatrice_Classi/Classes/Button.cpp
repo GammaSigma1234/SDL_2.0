@@ -5,14 +5,15 @@
 Button::Button(void)
 {
   m_CurrentSprite = ButtonSprite::BUTTON_SPRITE_NORMAL;
-  m_Clips_RectVec.reserve(ButtonSprite::BUTTON_SPRITE_HOWMANY);
+  m_Clips_RectVec.resize(ButtonSprite::BUTTON_SPRITE_HOWMANY);
 }
 
 
 /**
- * @brief Sets the current clip of the sprite sheet that has do be drawn for this graphic element.
+ * @brief Sets the clip from the sprite sheet that has do be drawn for this graphic element.
  *
- * @param Clip which clip of the sprite sheet has do be drawn.
+ * @param Clip the clip from the sprite sheet.
+ * @param Button_Sprite the sprite associated to the clip
  **/
 void Button::setClip(const SDL_Rect& Clip, ButtonSprite Button_Sprite)
 {

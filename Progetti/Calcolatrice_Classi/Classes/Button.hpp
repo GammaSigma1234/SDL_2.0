@@ -2,14 +2,14 @@
 #define BUTTON_HPP
 
 #include <SDL.h>
-#include "GraphicElement.hpp"
+#include "AbstractGraphicElement.hpp"
 #include "I_Clickable.hpp"
 
 /**
  * @brief This class represents a clickable button. It has a sprite enumeration, to change the
  * rendered sprite when the button is clicked.
  **/
-class Button : public GraphicElement, public I_Clickable
+class Button : public AbstractGraphicElement, public I_Clickable
 {
 private:
 

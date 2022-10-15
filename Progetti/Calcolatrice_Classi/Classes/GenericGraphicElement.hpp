@@ -2,12 +2,12 @@
 #define GENERICGRAPHICELEMENT_HPP
 
 #include <SDL.h>
-#include "GraphicElement.hpp"
+#include "AbstractGraphicElement.hpp"
 
 /**
  * @brief This class represents a generic, non-interactable graphic element.
  **/
-class GenericGraphicElement : public GraphicElement
+class GenericGraphicElement : public AbstractGraphicElement
 {
 private:
 

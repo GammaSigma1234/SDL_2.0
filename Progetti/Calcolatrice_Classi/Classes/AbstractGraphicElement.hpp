@@ -1,5 +1,5 @@
-#ifndef GRAPHICELEMENT_HPP
-#define GRAPHICELEMENT_HPP
+#ifndef ABSTRACTGRAPHICELEMENT_HPP
+#define ABSTRACTGRAPHICELEMENT_HPP
 
 #include <SDL.h>
 #include <vector>
@@ -7,12 +7,12 @@
 /**
  * @brief This class represents a generic abstract graphic element to be drawn by the renderer. 
  **/
-class GraphicElement
+class AbstractGraphicElement
 {
 public:
 
-  GraphicElement( void );
-  GraphicElement( const SDL_Point&, int, int );
+  AbstractGraphicElement( void );
+  AbstractGraphicElement( const SDL_Point&, int, int );
 
   void setPosition( const SDL_Point& );
   void setSize    ( int const, int const );
@@ -28,4 +28,4 @@ protected:
   SDL_Point m_CurrentPosition_pt; // Top left position
 };
 
-#endif // GRAPHICELEMENT_HPP
+#endif // ABSTRACTGRAPHICELEMENT_HPP

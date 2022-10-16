@@ -29,7 +29,7 @@ MainWindow::MainWindow(void)
   {
     printf( "\nInitialising Main Window...\n" );
 
-    m_Window = SDL_CreateWindow( "SDL Tutorial"          ,
+    m_Window = SDL_CreateWindow( "Handheld Calculator"   ,
                                   SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   s_WINDOW_W             , s_WINDOW_H             ,
                                   SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI );

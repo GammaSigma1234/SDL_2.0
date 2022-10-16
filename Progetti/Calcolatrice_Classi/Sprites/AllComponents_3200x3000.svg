@@ -7,7 +7,7 @@
    viewBox="0 0 846.66664 793.75"
    version="1.1"
    id="svg5"
-   sodipodi:docname="AllComponents.svg"
+   sodipodi:docname="AllComponents_3200x3000.svg"
    inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
    inkscape:export-filename="AllComponents_800x750.png"
    inkscape:export-xdpi="24.000002"
@@ -436,14 +436,14 @@
        transform="translate(-2.1789825,6.8518933)"><tspan
          x="24.86931"
          y="184.22991"
-         id="tspan3429"><tspan
+         id="tspan3841"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3427">ON / </tspan></tspan><tspan
+           id="tspan3839">ON / </tspan></tspan><tspan
          x="25.661641"
          y="219.56629"
-         id="tspan3433"><tspan
+         id="tspan3845"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3431">OFF</tspan></tspan></text>
+           id="tspan3843">OFF</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1248"
@@ -453,9 +453,9 @@
        transform="translate(-1.5511455,20.675338)"><tspan
          x="124.43314"
          y="190.59993"
-         id="tspan3437"><tspan
+         id="tspan3849"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3435">DEL</tspan></tspan></text>
+           id="tspan3847">DEL</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1339"
@@ -465,9 +465,9 @@
        transform="translate(-1.4604892,10.623721)"><tspan
          x="242.01767"
          y="206.52489"
-         id="tspan3441"><tspan
+         id="tspan3853"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3439">%</tspan></tspan></text>
+           id="tspan3851">%</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1376"
@@ -477,9 +477,9 @@
        transform="translate(-2.4559522,11.062971)"><tspan
          x="333.85986"
          y="206.52489"
-         id="tspan3445"><tspan
+         id="tspan3857"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3443">+/–</tspan></tspan></text>
+           id="tspan3855">+/–</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1503"
@@ -489,9 +489,9 @@
        transform="translate(-1.5511455,20.675231)"><tspan
          x="13.707114"
          y="296.64485"
-         id="tspan3449"><tspan
+         id="tspan3861"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3447">MRC</tspan></tspan></text>
+           id="tspan3859">MRC</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1507"
@@ -501,9 +501,9 @@
        transform="translate(-1.5511455,11.06341)"><tspan
          x="122.95598"
          y="312.56981"
-         id="tspan3453"><tspan
+         id="tspan3865"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3451">M–</tspan></tspan></text>
+           id="tspan3863">M–</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1511"
@@ -513,9 +513,9 @@
        transform="translate(-1.5511455,11.06341)"><tspan
          x="228.05211"
          y="312.56981"
-         id="tspan3457"><tspan
+         id="tspan3869"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3455">M+</tspan></tspan></text>
+           id="tspan3867">M+</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1515"
@@ -525,9 +525,9 @@
        transform="translate(-1.5511455,11.064182)"><tspan
          x="364.02599"
          y="312.35887"
-         id="tspan3461"><tspan
+         id="tspan3873"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3459">/</tspan></tspan></text>
+           id="tspan3871">/</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1595"
@@ -537,9 +537,9 @@
        transform="translate(-1.5511455,10.804497)"><tspan
          x="39.162085"
          y="418.19091"
-         id="tspan3465"><tspan
+         id="tspan3877"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3463">7</tspan></tspan></text>
+           id="tspan3875">7</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1599"
@@ -549,9 +549,9 @@
        transform="translate(-1.5511455,10.804497)"><tspan
          x="144.996"
          y="418.19091"
-         id="tspan3469"><tspan
+         id="tspan3881"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3467">8</tspan></tspan></text>
+           id="tspan3879">8</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1603"
@@ -561,9 +561,9 @@
        transform="translate(-1.5511455,10.804497)"><tspan
          x="250.82851"
          y="418.19091"
-         id="tspan3473"><tspan
+         id="tspan3885"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3471">9</tspan></tspan></text>
+           id="tspan3883">9</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1607"
@@ -573,9 +573,9 @@
        transform="translate(-1.5511455,21.617791)"><tspan
          x="361.08042"
          y="418.19091"
-         id="tspan3477"><tspan
+         id="tspan3889"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3475">*</tspan></tspan></text>
+           id="tspan3887">*</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1715"
@@ -585,9 +585,9 @@
        transform="translate(-1.5511455,11.141048)"><tspan
          x="39.16208"
          y="524.02489"
-         id="tspan3481"><tspan
+         id="tspan3893"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3479">4</tspan></tspan></text>
+           id="tspan3891">4</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1719"
@@ -597,9 +597,9 @@
        transform="translate(-1.5511455,10.482174)"><tspan
          x="144.996"
          y="524.02489"
-         id="tspan3485"><tspan
+         id="tspan3897"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3483">5</tspan></tspan></text>
+           id="tspan3895">5</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1723"
@@ -609,9 +609,9 @@
        transform="translate(-1.5511455,10.818071)"><tspan
          x="250.82851"
          y="524.02489"
-         id="tspan3489"><tspan
+         id="tspan3901"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3487">6</tspan></tspan></text>
+           id="tspan3899">6</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1727"
@@ -621,9 +621,9 @@
        transform="translate(-1.5511455,5.8571331)"><tspan
          x="356.6621"
          y="524.02489"
-         id="tspan3493"><tspan
+         id="tspan3905"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3491">–</tspan></tspan></text>
+           id="tspan3903">–</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1743"
@@ -633,9 +633,9 @@
        transform="translate(-1.5511455,11.141703)"><tspan
          x="39.16208"
          y="629.91161"
-         id="tspan3497"><tspan
+         id="tspan3909"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3495">1</tspan></tspan></text>
+           id="tspan3907">1</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1747"
@@ -645,9 +645,9 @@
        transform="translate(-1.5511455,11.141703)"><tspan
          x="144.996"
          y="629.91161"
-         id="tspan3501"><tspan
+         id="tspan3913"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3499">2</tspan></tspan></text>
+           id="tspan3911">2</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1751"
@@ -657,9 +657,9 @@
        transform="translate(-1.5511455,10.818725)"><tspan
          x="250.82851"
          y="629.91161"
-         id="tspan3505"><tspan
+         id="tspan3917"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3503">3</tspan></tspan></text>
+           id="tspan3915">3</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1755"
@@ -669,9 +669,9 @@
        transform="translate(-1.5511455,10.817426)"><tspan
          x="39.162085"
          y="735.69091"
-         id="tspan3509"><tspan
+         id="tspan3921"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3507">0</tspan></tspan></text>
+           id="tspan3919">0</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1759"
@@ -681,9 +681,9 @@
        transform="translate(-1.5511455,-4.246254)"><tspan
          x="152.3599"
          y="735.69091"
-         id="tspan3513"><tspan
+         id="tspan3925"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3511">.</tspan></tspan></text>
+           id="tspan3923">.</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1763"
@@ -693,9 +693,9 @@
        transform="translate(-1.5511455,10.914447)"><tspan
          x="250.0921"
          y="735.58097"
-         id="tspan3517"><tspan
+         id="tspan3929"><tspan
            style="baseline-shift:baseline;vector-effect:none;stop-color:#000000;stop-opacity:1"
-           id="tspan3515">=</tspan></tspan></text>
+           id="tspan3927">=</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1769"
@@ -705,9 +705,9 @@
        transform="translate(-1.537679,57.172977)"><tspan
          x="355.92571"
          y="629.85887"
-         id="tspan3521"><tspan
+         id="tspan3933"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3519">+</tspan></tspan></text>
+           id="tspan3931">+</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-0.36276074,145.52084)"
@@ -722,14 +722,14 @@
        transform="translate(-0.99059101,-6.6418639)"><tspan
          x="447.01579"
          y="197.72405"
-         id="tspan3525"><tspan
+         id="tspan3937"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3523">ON / </tspan></tspan><tspan
+           id="tspan3935">ON / </tspan></tspan><tspan
          x="447.80646"
          y="233.06043"
-         id="tspan3529"><tspan
+         id="tspan3941"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3527">OFF</tspan></tspan></text>
+           id="tspan3939">OFF</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1248-2"
@@ -739,9 +739,9 @@
        transform="translate(-0.36276102,7.1811971)"><tspan
          x="546.57767"
          y="204.09407"
-         id="tspan3533"><tspan
+         id="tspan3945"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3531">DEL</tspan></tspan></text>
+           id="tspan3943">DEL</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1339-9"
@@ -751,9 +751,9 @@
        transform="translate(-0.27210102,-2.8700359)"><tspan
          x="664.16304"
          y="220.01903"
-         id="tspan3537"><tspan
+         id="tspan3949"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3535">%</tspan></tspan></text>
+           id="tspan3947">%</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1376-7"
@@ -763,9 +763,9 @@
        transform="translate(-1.267561,-2.4307861)"><tspan
          x="756.00477"
          y="220.01903"
-         id="tspan3541"><tspan
+         id="tspan3953"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3539">+/–</tspan></tspan></text>
+           id="tspan3951">+/–</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1503-0"
@@ -775,9 +775,9 @@
        transform="translate(-0.36276102,7.1816207)"><tspan
          x="435.85261"
          y="310.34993"
-         id="tspan3545"><tspan
+         id="tspan3957"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3543">MRC</tspan></tspan></text>
+           id="tspan3955">MRC</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1507-8"
@@ -787,9 +787,9 @@
        transform="translate(-0.36276102,-2.4302001)"><tspan
          x="545.10061"
          y="326.27489"
-         id="tspan3549"><tspan
+         id="tspan3961"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3547">M–</tspan></tspan></text>
+           id="tspan3959">M–</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1511-6"
@@ -799,9 +799,9 @@
        transform="translate(-0.36276102,-2.4302001)"><tspan
          x="650.19748"
          y="326.27489"
-         id="tspan3553"><tspan
+         id="tspan3965"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3551">M+</tspan></tspan></text>
+           id="tspan3963">M+</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1515-8"
@@ -811,9 +811,9 @@
        transform="translate(-0.36276102,-2.4295751)"><tspan
          x="786.17093"
          y="326.06395"
-         id="tspan3557"><tspan
+         id="tspan3969"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3555">/</tspan></tspan></text>
+           id="tspan3967">/</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1595-5"
@@ -823,9 +823,9 @@
        transform="translate(-0.36276102,-2.6892599)"><tspan
          x="461.30702"
          y="431.89598"
-         id="tspan3561"><tspan
+         id="tspan3973"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3559">7</tspan></tspan></text>
+           id="tspan3971">7</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1599-7"
@@ -835,9 +835,9 @@
        transform="translate(-0.36276102,-2.6892599)"><tspan
          x="567.1406"
          y="431.89598"
-         id="tspan3565"><tspan
+         id="tspan3977"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3563">8</tspan></tspan></text>
+           id="tspan3975">8</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1603-7"
@@ -847,9 +847,9 @@
        transform="translate(-0.36276102,-2.6892599)"><tspan
          x="672.97388"
          y="431.89598"
-         id="tspan3569"><tspan
+         id="tspan3981"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3567">9</tspan></tspan></text>
+           id="tspan3979">9</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1607-1"
@@ -859,9 +859,9 @@
        transform="translate(-0.36276102,8.124034)"><tspan
          x="783.22538"
          y="431.89598"
-         id="tspan3573"><tspan
+         id="tspan3985"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3571">*</tspan></tspan></text>
+           id="tspan3983">*</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1715-5"
@@ -871,9 +871,9 @@
        transform="translate(-0.36276102,-2.3527091)"><tspan
          x="461.30701"
          y="537.72997"
-         id="tspan3577"><tspan
+         id="tspan3989"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3575">4</tspan></tspan></text>
+           id="tspan3987">4</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1719-9"
@@ -883,9 +883,9 @@
        transform="translate(-0.36276102,-3.011583)"><tspan
          x="567.14063"
          y="537.72997"
-         id="tspan3581"><tspan
+         id="tspan3993"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3579">5</tspan></tspan></text>
+           id="tspan3991">5</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1723-5"
@@ -895,9 +895,9 @@
        transform="translate(-0.36276102,-2.675686)"><tspan
          x="672.97385"
          y="537.72997"
-         id="tspan3585"><tspan
+         id="tspan3997"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3583">6</tspan></tspan></text>
+           id="tspan3995">6</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1727-0"
@@ -907,9 +907,9 @@
        transform="translate(-0.36276102,-7.6366239)"><tspan
          x="778.80701"
          y="537.72997"
-         id="tspan3589"><tspan
+         id="tspan4001"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3587">–</tspan></tspan></text>
+           id="tspan3999">–</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1743-2"
@@ -919,9 +919,9 @@
        transform="translate(-0.36276102,-2.352054)"><tspan
          x="461.30704"
          y="643.61669"
-         id="tspan3593"><tspan
+         id="tspan4005"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3591">1</tspan></tspan></text>
+           id="tspan4003">1</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1747-2"
@@ -931,9 +931,9 @@
        transform="translate(-0.36276102,-2.352054)"><tspan
          x="567.14063"
          y="643.61669"
-         id="tspan3597"><tspan
+         id="tspan4009"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3595">2</tspan></tspan></text>
+           id="tspan4007">2</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1751-2"
@@ -943,9 +943,9 @@
        transform="translate(-0.36276102,-2.6750319)"><tspan
          x="672.97388"
          y="643.61669"
-         id="tspan3601"><tspan
+         id="tspan4013"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3599">3</tspan></tspan></text>
+           id="tspan4011">3</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1755-9"
@@ -955,9 +955,9 @@
        transform="translate(-0.36276102,-2.676331)"><tspan
          x="461.30702"
          y="749.39598"
-         id="tspan3605"><tspan
+         id="tspan4017"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3603">0</tspan></tspan></text>
+           id="tspan4015">0</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1759-9"
@@ -967,9 +967,9 @@
        transform="translate(-0.36276102,-17.740011)"><tspan
          x="574.50449"
          y="749.39598"
-         id="tspan3609"><tspan
+         id="tspan4021"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3607">.</tspan></tspan></text>
+           id="tspan4019">.</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1763-4"
@@ -979,9 +979,9 @@
        transform="translate(-0.36276102,-2.5793099)"><tspan
          x="672.23743"
          y="749.28604"
-         id="tspan3613"><tspan
+         id="tspan4025"><tspan
            style="baseline-shift:baseline;vector-effect:none;stop-color:#000000;stop-opacity:1"
-           id="tspan3611">=</tspan></tspan></text>
+           id="tspan4023">=</tspan></tspan></text>
     <text
        xml:space="preserve"
        id="text1279"
@@ -991,8 +991,8 @@
        transform="translate(-0.3493,43.68079)"><tspan
          x="778.29874"
          y="643.35106"
-         id="tspan3617"><tspan
+         id="tspan4029"><tspan
            style="font-weight:bold;font-family:Arial;-inkscape-font-specification:'Arial Bold';fill:#ffffff"
-           id="tspan3615">+</tspan></tspan></text>
+           id="tspan4027">+</tspan></tspan></text>
   </g>
 </svg>

@@ -50,6 +50,10 @@ public:
     KEY_MULTIPLY,
     KEY_POINT,
     KEY_EQUALS,
+    KEY_SIGN,
+    KEY_POWER,
+    KEY_DEL,
+    KEY_PERCENT,
 
     HOW_MANY
   };

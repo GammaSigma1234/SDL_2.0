@@ -170,13 +170,11 @@ void Texture::setAlpha( Uint8 alpha )
 
 
 /**
- * @brief Renders texture at given (x, y) point of the target window. Accepts a rectangle defining
- * which portion of the texture we want to render. Default argument of NULL to render the whole
- * texture.
+ * @brief Renders texture at given (x, y) point of the target window.
  *
  * @param x x coordinate of the destination rendering point.
  * @param y y coordinate of the destination rendering point.
- * @param SourceClip Rectangle defining which portion of the texture we want to render. Defaults to
+ * @param SourceClip Rectangle defining which portion of the texture we wish to render. Defaults to
  * NULL (to render the whole texture).
  **/
 void Texture::render( int x, int y, SDL_Rect* SourceClip, double angle, SDL_Point* center, SDL_RendererFlip flip )

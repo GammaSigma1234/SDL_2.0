@@ -35,8 +35,8 @@ class MainWindow
    MainWindow( void );
   ~MainWindow( void );
 
-  static constexpr int s_WINDOW_W = 1024;
-  static constexpr int s_WINDOW_H = 768;
+  static constexpr int s_WINDOW_W = 600;
+  static constexpr int s_WINDOW_H = 800;
 
   SDL_Window* m_Window;
   bool        m_WasInitSuccessful;
